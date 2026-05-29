@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CopilotDiffPersistence">
+    <option name="pendingDiffs">
+      <map>
+        <entry key="$PROJECT_DIR$/.git/config">
+          <value>
+            <PendingDiffInfo>
+              <option name="filePath" value="$PROJECT_DIR$/.git/config" />
+              <option name="originalContent" value="[core]&#10;&#9;repositoryformatversion = 0&#10;&#9;filemode = false&#10;&#9;bare = false&#10;&#9;logallrefupdates = true&#10;&#9;symlinks = false&#10;&#9;ignorecase = true&#10;&#10;" />
+              <option name="updatedContent" value="[core]&#10;&#9;repositoryformatversion = 0&#10;&#9;filemode = false&#10;&#9;bare = false&#10;&#9;logallrefupdates = true&#10;&#9;symlinks = false&#10;&#9;ignorecase = true&#10;&#10;[user]&#10;&#9;name = Your Name&#10;&#9;email = your.email@example.com&#10;&#10;" />
+            </PendingDiffInfo>
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+</project>

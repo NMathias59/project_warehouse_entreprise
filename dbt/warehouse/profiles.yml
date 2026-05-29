@@ -6,7 +6,7 @@ warehouse:
       port: 8123
       driver: http          # ou 'native' et port 9000 si vous utilisez le protocole natif
       user: admin
-      password: password123
+      password: password123 # à sécuriser en production !
       schema: 'DB_WH_ERP'
       secure: false
       verify: false
@@ -18,7 +18,7 @@ warehouse:
       port: 8123
       driver: http
       user: admin
-      password: password123
+      password: password123 # à sécuriser en production !
       schema: 'DB_WH_MKT'
       secure: false
       verify: false

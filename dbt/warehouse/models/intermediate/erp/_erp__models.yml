@@ -1,0 +1,198 @@
+version: 2
+
+models:
+  - name: int_erp__component_stock_alerts
+    description: "Alertes de stock par composant (total stock vs min_stock)."
+    columns:
+      - name: component_id
+        description: "Identifiant du composant"
+        tests:
+          - not_null
+      - name: component_name
+        description: "Nom du composant"
+      - name: min_stock
+        description: "Seuil mini configuré pour le composant"
+      - name: total_stock
+        description: "Stock total agrégé"
+      - name: is_below_min
+        description: "Booléen indiquant si le stock total est inférieur au seuil"
+
+  - name: int_erp__component_stock_status
+    description: "État courant du stock par composant (quantité par emplacement)."
+    columns:
+      - name: component_id
+        description: "Identifiant du composant"
+        tests:
+          - not_null
+      - name: component_name
+        description: "Nom du composant"
+      - name: unit
+        description: "Unité de mesure du composant"
+      - name: is_active
+        description: "Indique si le composant est actif"
+      - name: max_stock
+        description: "Seuil maximum configuré"
+      - name: min_stock
+        description: "Seuil minimum configuré"
+      - name: current_stock
+        description: "Quantité actuelle disponible"
+      - name: location_id
+        description: "Emplacement où le stock est localisé"
+      - name: stock_updated_at
+        description: "Horodatage de la dernière mise à jour du stock"
+
+  - name: int_erp__employee_contracts_stats
+    description: "Statistiques des contrats par employé (salaire min/max/moyenne, nombre de contrats actifs)."
+    columns:
+      - name: employee_id
+        description: "Identifiant de l'employé"
+        tests:
+          - not_null
+      - name: max_salary
+        description: "Salaire maximum parmi les contrats actifs"
+      - name: min_salary
+        description: "Salaire minimum parmi les contrats actifs"
+      - name: avg_salary
+        description: "Salaire moyen parmi les contrats actifs"
+      - name: nb_contracts
+        description: "Nombre de contrats actifs"
+
+  - name: int_erp__employee_overview
+    description: "Vue consolidée employé + poste + département + contrat actif (si présent)."
+    columns:
+      - name: id_employee
+        description: "Identifiant de l'employé"
+        tests:
+          - not_null
+      - name: first_name
+        description: "Prénom de l'employé"
+      - name: last_name
+        description: "Nom de l'employé"
+      - name: email
+        description: "Email de l'employé"
+      - name: hired_at
+        description: "Date d'embauche"
+      - name: left_at
+        description: "Date de départ (si applicable)"
+      - name: is_active
+        description: "Statut d'activation de l'employé"
+      - name: position_title
+        description: "Intitulé du poste"
+      - name: department_name
+        description: "Nom du département"
+      - name: contract_type
+        description: "Type de contrat actif"
+      - name: salary
+        description: "Salaire du contrat actif (si présent)"
+      - name: contract_start
+        description: "Date de début du contrat actif"
+      - name: contract_end
+        description: "Date de fin du contrat actif (si applicable)"
+      - name: contract_active
+        description: "Booléen indiquant si le contrat est actif"
+
+  - name: int_erp__employee_with_contract_stats
+    description: "Employés enrichis avec les statistiques de contrats (max/min/avg/nb)."
+    columns:
+      - name: id_employee
+        description: "Identifiant de l'employé"
+        tests:
+          - not_null
+      - name: first_name
+        description: "Prénom"
+      - name: last_name
+        description: "Nom"
+      - name: email
+        description: "Email"
+      - name: max_salary
+        description: "Salaire maximum"
+      - name: min_salary
+        description: "Salaire minimum"
+      - name: avg_salary
+        description: "Salaire moyen"
+      - name: nb_contracts
+        description: "Nombre de contrats"
+
+  - name: int_erp__product_stock_summary
+    description: "Récapitulatif du stock produit (somme des composants liés)."
+    columns:
+      - name: id_product
+        description: "Identifiant du produit"
+        tests:
+          - not_null
+      - name: product_name
+        description: "Nom du produit"
+      - name: sku
+        description: "SKU du produit"
+      - name: is_active
+        description: "Indique si le produit est actif"
+      - name: weight_kg
+        description: "Poids en kg"
+      - name: category_id
+        description: "Référence de la catégorie"
+      - name: total_stock
+        description: "Stock total agrégé pour le produit"
+
+  - name: int_erp__purchase_orders_details
+    description: "Détail des commandes et lignes associées (jointure PO / POL / produits / fournisseurs)."
+    columns:
+      - name: id_purchase_order
+        description: "Identifiant de la commande"
+        tests:
+          - not_null
+      - name: status
+        description: "Statut de la commande"
+      - name: currency
+        description: "Devise de la commande"
+      - name: created_at
+        description: "Date de création de la commande"
+      - name: ordered_at
+        description: "Date de commande effective"
+      - name: expected_at
+        description: "Date de réception prévue"
+      - name: supplier_id
+        description: "Référence du fournisseur"
+      - name: supplier_name
+        description: "Nom du fournisseur"
+      - name: id_purchase_order_line
+        description: "Identifiant de la ligne de commande"
+      - name: quantity
+        description: "Quantité commandée"
+      - name: line_total_ht
+        description: "Montant hors taxe de la ligne"
+      - name: unit_price
+        description: "Prix unitaire"
+      - name: component_id
+        description: "Référence du composant (produit)"
+      - name: product_name
+        description: "Nom du produit associé à la ligne"
+
+  - name: int_erp__purchase_order_status_stats
+    description: "Statistiques agrégées par statut de commande (nombre et montant total HT)."
+    columns:
+      - name: status
+        description: "Statut de la commande"
+        tests:
+          - not_null
+      - name: nb_orders
+        description: "Nombre de commandes pour ce statut"
+      - name: total_ht
+        description: "Total hors taxes des commandes pour ce statut"
+
+  - name: int_erp__supplier_stats
+    description: "Statistiques fournisseurs : nombre de commandes et montant total par fournisseur."
+    columns:
+      - name: id_supplier
+        description: "Identifiant du fournisseur"
+        tests:
+          - not_null
+      - name: supplier_name
+        description: "Nom du fournisseur"
+      - name: country
+        description: "Pays du fournisseur"
+      - name: is_active
+        description: "Statut actif du fournisseur"
+      - name: nb_purchase_orders
+        description: "Nombre de commandes"
+      - name: total_purchase_ht
+        description: "Montant total HT des commandes"

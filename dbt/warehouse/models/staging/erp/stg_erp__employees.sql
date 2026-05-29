@@ -4,7 +4,8 @@ select
     cast(id as varchar)                  as id_employee,
     cast(email as varchar)               as email,
     -- null-safe date: avoid inserting NULLs into non-nullable Date columns in ClickHouse
-    coalesce(toDateOrNull(left_at), toDate('1970-01-01')) as left_at,
+    -- `left_at` is already a Date (Date32), avoid toDateOrNull which expects a String
+    coalesce(left_at, toDate('1970-01-01')) as left_at,
     cast(hired_at as date)               as hired_at,
     cast(is_active as boolean)           as is_active,
     cast(last_name as varchar)           as last_name,

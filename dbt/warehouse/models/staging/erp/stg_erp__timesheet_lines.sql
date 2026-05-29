@@ -10,7 +10,7 @@ select
     cast(day as date)                  as day,
     cast(type as varchar)              as type,
     cast(hours as decimal(10,2))       as hours,
-    cast(notes as varchar)             as notes,
+    cast(nullIf(notes, '') as Nullable(String)) as notes,
     cast(_ab_cdc_updated_at as varchar) as updated_at
 from source
 where id is not null

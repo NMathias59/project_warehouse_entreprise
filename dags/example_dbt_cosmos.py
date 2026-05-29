@@ -1,4 +1,4 @@
-# Airflow DAG for running dbt on the jaffle_shop project using the duckdb adapter.
+# Airflow DAG for running dbt on the warehouse project using the duckdb adapter.
 from datetime import datetime
 
 from cosmos import DbtDag, ProjectConfig, ProfileConfig
@@ -7,12 +7,12 @@ from include.constants import jaffle_shop_path, venv_execution_config
 
 dbt_cosmos_dag = DbtDag(
     # dbt/cosmos-specific parameters
-    project_config=ProjectConfig(jaffle_shop_path),
+    project_config=ProjectConfig(warehouse_path),
     profile_config=ProfileConfig(
-        # these map to dbt/jaffle_shop/profiles.yml
+        # these map to dbt/warehouse/profiles.yml
         profile_name="duckdb_profile",
         target_name="dev",
-        profiles_yml_filepath=jaffle_shop_path / "profiles.yml",
+        profiles_yml_filepath=warehouse_path / "profiles.yml",
     ),
     execution_config=venv_execution_config,
     # normal dag parameters

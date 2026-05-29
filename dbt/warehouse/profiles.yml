@@ -1,0 +1,28 @@
+warehouse:
+  outputs:
+    erp:
+      type: clickhouse
+      host: host.docker.internal
+      port: 8123
+      driver: http          # ou 'native' et port 9000 si vous utilisez le protocole natif
+      user: admin
+      password: password123
+      schema: 'DB_WH_ERP'
+      secure: false
+      verify: false
+      connect_timeout: 10
+
+    mkt:
+      type: clickhouse
+      host: host.docker.internal
+      port: 8123
+      driver: http
+      user: admin
+      password: password123
+      schema: 'DB_WH_MKT'
+      secure: false
+      verify: false
+      connect_timeout: 10
+
+  # target par défaut (erp ou mkt)
+  target: erp

@@ -1,0 +1,114 @@
+name: 'warehouse'
+config-version: 2
+version: '0.1'
+
+profile: 'warehouse'
+
+# --- Paths ---
+model-paths: ["models"]
+seed-paths: ["seeds"]
+snapshot-paths: ["snapshots"]
+test-paths: ["tests"]
+analysis-paths: ["analyses"]
+macro-paths: ["macros"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+  - "logs"
+
+require-dbt-version: [">=1.8.0", "<2.0.0"]
+
+# --- Query annotation ---
+# Chaque requête générée par dbt est préfixée d'un commentaire visible dans
+# `system.query_log` ClickHouse — facilite le debug et le profilage côté serveur :
+#   SELECT query, log_comment, query_duration_ms
+#   FROM system.query_log
+#   WHERE query LIKE '%dbt%' AND type = 'QueryFinish'
+#   ORDER BY event_time DESC;
+query-comment:
+  comment: "dbt | target={{ target.name }} | node={{ node.unique_id if node else 'init' }} | run={{ invocation_id }}"
+  append: true   # ClickHouse parse mieux les commentaires en fin de requête
+
+# --- Variables globales ---
+# Surchargeables via `dbt run --vars '{dev_lookback_days: 30}'`
+vars:
+  # Fenêtre de filtrage en dev pour limiter le scan (cf. pattern target.name == 'dev')
+  dev_lookback_days: 7
+
+# --- Models ---
+# Hiérarchie qui cascade : la config la plus spécifique l'emporte.
+# Le `+` distingue la config (`+materialized`) du nom de dossier (`staging`).
+models:
+  warehouse:
+    # Defaults globaux héritables
+    # - on_schema_change: nouvelle colonne en source -> ajoutée automatiquement
+    #   sur les modèles incrementaux (au lieu de fail).
+    +on_schema_change: append_new_columns
+
+    # ---------- STAGING ----------
+    # Atomes du DAG : 1-to-1 avec les sources, nettoyage léger.
+    staging:
+      +materialized: view
+      +tags: ["staging"]
+      # `source()` autorisé uniquement ici (best practices §1.1).
+
+    # ---------- INTERMEDIATE ----------
+    # Molécules : transformations intermédiaires non exposées aux end users.
+    # Ephemeral = CTE inline, pas d'objet créé côté ClickHouse.
+    intermediate:
+      +materialized: ephemeral
+      +tags: ["intermediate"]
+
+    # ---------- MARTS ----------
+    # Cellules finales business-conformed. Consommées par BI / autres équipes.
+    marts:
+      +materialized: table
+      +tags: ["marts"]
+
+      # ---- ClickHouse-specific defaults ----
+      # MergeTree = moteur analytique standard, le plus performant en self-hosted.
+      # Pour de la réplication future (multi-nœud) : passer à ReplicatedMergeTree(...).
+      +engine: "MergeTree()"
+
+      # ORDER BY est OBLIGATOIRE pour MergeTree. `tuple()` = pas de clé de tri
+      # (équivalent d'une table non-clustered).
+      # À OVERRIDE par mart sur le champ le plus filtré, ex. dans le modèle :
+      #   {{ config(order_by='(order_date, customer_id)') }}
+      +order_by: "(tuple())"
+
+      # Pas de PARTITION BY par défaut : sur self-hosted single-node, le partitioning
+      # est utile uniquement pour les grosses tables temporelles (>100M lignes).
+      # Override par mart si pertinent :
+      #   {{ config(partition_by='toYYYYMM(order_date)') }}
+
+# --- Seeds (CSV de référence statique) ---
+seeds:
+  warehouse:
+    +quote_columns: false
+    +tags: ["seeds"]
+
+# --- Snapshots (SCD type 2) ---
+snapshots:
+  warehouse:
+    +tags: ["snapshots"]
+    # Note ClickHouse : les snapshots dbt s'appuient sur MergeTree avec
+    # versioning par colonne dbt_valid_to/dbt_valid_from.
+
+# --- Tests (renommé data_tests en dbt 1.8+) ---
+data_tests:
+  warehouse:
+    # Sévérité par défaut : erreur (bloque le build).
+    # Override par test : `severity: warn` pour ne pas bloquer.
+    +severity: error
+    # Stocker les lignes en échec dans une table dédiée (debug).
+    # Activer ponctuellement avec `--store-failures` plutôt que par défaut.
+    +store_failures: false
+
+# --- Flags globaux ---
+# Comportements à appliquer sur toutes les invocations dbt.
+flags:
+  send_anonymous_usage_stats: false
+  use_colors: true
+  printer_width: 120

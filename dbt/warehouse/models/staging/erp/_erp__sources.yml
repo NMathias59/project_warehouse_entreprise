@@ -1,0 +1,82 @@
+version: 2
+
+sources:
+  - name: erp
+    description: >
+      Source ERP — données opérationnelles depuis le data warehouse DB_WH_ERP
+      (achats, ventes, comptabilité, RH, stock, production).
+    # En ClickHouse, "database" ≡ "schema" dbt — pas de notion de schema séparée.
+    schema: DB_WH_ERP
+
+    freshness:
+      warn_after: {count: 12, period: hour}
+      error_after: {count: 24, period: hour}
+    loaded_at_field: _etl_loaded_at
+
+    tables:
+      - name: accounting_periods
+      - name: bank_accounts
+      - name: bank_reconciliations
+      - name: bank_transactions
+      - name: bom_headers
+      - name: bom_lines
+      - name: bom_versions
+      - name: brands
+      - name: budget_lines
+      - name: budgets
+      - name: categories
+      - name: chart_of_accounts
+      - name: component_categories
+      - name: component_stock
+      - name: component_stock_movements
+      - name: components
+      - name: cost_centers
+      - name: defect_reports
+      - name: departments
+      - name: employee_contracts
+      - name: employees
+      - name: fiscal_years
+      - name: inventory_count_adjustments
+      - name: inventory_count_lines
+      - name: inventory_counts
+      - name: journal_entries
+      - name: journal_entry_lines
+      - name: leave_types
+      - name: leaves
+      - name: pc_models
+      - name: positions
+      - name: product_compatibility
+      - name: product_images
+      - name: product_specifications
+      - name: product_tags
+      - name: products
+      - name: purchase_order_lines
+      - name: purchase_orders
+      - name: purchase_receipt_lines
+      - name: purchase_receipts
+      - name: purchase_returns
+      - name: quality_check_items
+      - name: quality_checks
+      - name: repair_order_lines
+      - name: repair_orders
+      - name: serial_numbers
+      - name: stock_alerts
+      - name: stock_levels
+      - name: supplier_contacts
+      - name: supplier_contracts
+      - name: supplier_evaluations
+      - name: supplier_product_refs
+      - name: suppliers
+      - name: tags
+      - name: timesheet_lines
+      - name: timesheets
+      - name: vendor_invoice_lines
+      - name: vendor_invoices
+      - name: warehouse_locations
+      - name: warehouses
+      - name: warranties
+      - name: work_order_lines
+      - name: work_order_step_logs
+      - name: work_order_steps
+      - name: work_orders
+      - name: alembic_version

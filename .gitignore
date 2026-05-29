@@ -1,5 +1,6 @@
 # dbt-specific
-dbt/jaffle_shop/logs/*
+dbt/warehouse/logs/*
+dbt_best_practices.md
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

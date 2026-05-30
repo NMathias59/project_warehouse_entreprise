@@ -18,17 +18,16 @@ jel as (
 )
 
 select
-    je.id as id_journal_entry,
-    je.posted_at,
+    je.id_journal_entry as id_journal_entry,
+    je.created_at,
     je.reference,
-    jel.id as journal_entry_line_id,
-    jel.account_id,
+    jel.id_journal_entry_line as journal_entry_line_id,
+    jel.account_number,
     jel.debit,
-    jel.credit,
-    jel.description
+    jel.credit
 from je
-left join jel on je.id = jel.journal_entry_id
+left join jel on je.id_journal_entry  = jel.journal_entry_id
 
 {% if is_incremental() %}
-where je.posted_at > (select coalesce(max(posted_at), '1970-01-01') from {{ this }})
+where je.created_at > (select coalesce(max(created_at), '1970-01-01') from {{ this }})
 {% endif %}

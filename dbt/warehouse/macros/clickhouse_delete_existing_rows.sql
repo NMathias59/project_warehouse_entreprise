@@ -47,7 +47,7 @@
 {% endif %}
 
 {# Construire la commande ALTER TABLE ... DELETE WHERE ... #}
-{% set sql = "ALTER TABLE IF EXISTS " ~ tgt_qualified ~
+{% set sql = "ALTER TABLE " ~ tgt_qualified ~
             " DELETE WHERE " ~ target_pk ~ " IN (SELECT " ~ source_pk ~
             " FROM " ~ src_qualified ~ " WHERE " ~ date_col ~
             " >= subtractDays(now(), " ~ days|string ~ "))" %}

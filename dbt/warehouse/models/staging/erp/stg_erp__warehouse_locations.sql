@@ -2,8 +2,8 @@
 
 select
 	cast(id as varchar)              as id_warehouse_location,
-	cast(bin as varchar)             as bin,
-	cast(code as varchar)            as code,
+	cast(coalesce(bin, '') as varchar)   as bin,
+	cast(coalesce(code, '') as varchar)  as code,
 	cast(rack as varchar)            as rack,
 	cast(aisle as varchar)           as aisle,
 	cast(level as varchar)           as level,

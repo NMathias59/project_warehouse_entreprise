@@ -1,0 +1,292 @@
+models:
+  - name: dim_erp__employees
+    description: "Dimension table for ERP employees"
+    tags: ["erp", "dimension"]
+    config:
+      materialized: "view"
+      schema: "erp_marts"
+      quoting:
+        identifier: true
+
+  - name: fact_erp__sales_summary
+    description: "Aggregated sales data for ERP"
+    tags: ["erp", "fact"]
+    config:
+      materialized: "table"
+      schema: "erp_marts"
+      partition_by: ["date"]
+      quoting:
+        identifier: true
+
+  - name: dim_supplier_contact
+    description: "Supplier contact information"
+    tags: ["erp", "dimension", "procurement"]
+    config:
+      materialized: "view"
+      schema: "erp_marts"
+      quoting:
+        identifier: true
+
+  - name: dim_supplier
+    description: "Supplier master data"
+    tags: ["erp", "dimension", "procurement"]
+    config:
+      materialized: "table"
+      schema: "erp_marts"
+      partition_by: ["supplier_id"]
+      quoting:
+        identifier: true
+
+  - name: fct_vendor_invoice
+    description: "ERP vendor invoice transactions"
+    tags: ["erp", "fact", "procurement"]
+    config:
+      materialized: "table"
+      schema: "erp_marts"
+      partition_by: ["invoice_date"]
+      quoting:
+        identifier: true
+
+  - name: fct_supplier_contracts
+    description: "Supplier contract details"
+    tags: ["erp", "fact", "procurement"]
+    config:
+      materialized: "table"
+      schema: "erp_marts"
+      partition_by: ["contract_start_date"]
+      quoting:
+        identifier: true
+
+  - name: fct_purchase_return
+    description: "Purchase return transactions"
+    tags: ["erp", "fact", "procurement"]
+    config:
+      materialized: "table"
+      schema: "erp_marts"
+      partition_by: ["return_date"]
+      quoting:
+        identifier: true
+
+  - name: fct_purchase_receipt
+    description: "Purchase receipt records"
+    tags: ["erp", "fact", "procurement"]
+    config:
+      materialized: "table"
+      schema: "erp_marts"
+      partition_by: ["receipt_date"]
+      quoting:
+        identifier: true
+
+  - name: fct_purchase_order_status
+    description: "Purchase order status tracking"
+    tags: ["erp", "fact", "procurement"]
+    config:
+      materialized: "table"
+      schema: "erp_marts"
+      partition_by: ["order_date"]
+      quoting:
+        identifier: true
+
+  - name: fct_purchase_order
+    description: "ERP purchase orders"
+    tags: ["erp", "fact", "procurement"]
+    config:
+      materialized: "table"
+      schema: "erp_marts"
+      partition_by: ["order_date"]
+      quoting:
+        identifier: true
+
+  - name: dim_warehouse_location
+    description: "Warehouse location details"
+    tags: ["erp", "dimension", "inventory"]
+    config:
+      materialized: "view"
+      schema: "erp_marts"
+      quoting:
+        identifier: true
+
+  - name: dim_warehouse
+    description: "Warehouse master data"
+    tags: ["erp", "dimension", "inventory"]
+    config:
+      materialized: "table"
+      schema: "erp_marts"
+      partition_by: ["warehouse_id"]
+      quoting:
+        identifier: true
+
+  - name: dim_serial_number
+    description: "Serial number tracking"
+    tags: ["erp", "dimension", "inventory"]
+    config:
+      materialized: "view"
+      schema: "erp_marts"
+      quoting:
+        identifier: true
+
+  - name: fct_stock_level
+    description: "Inventory stock levels"
+    tags: ["erp", "fact", "inventory"]
+    config:
+      materialized: "table"
+      schema: "erp_marts"
+      partition_by: ["stock_date"]
+      quoting:
+        identifier: true
+
+  - name: fct_serial_tracking
+    description: "Serial number tracking history"
+    tags: ["erp", "fact", "inventory"]
+    config:
+      materialized: "table"
+      schema: "erp_marts"
+      partition_by: ["tracking_date"]
+      quoting:
+        identifier: true
+
+  - name: fct_invotory_count
+    description: "Inventory count records"
+    tags: ["erp", "fact", "inventory"]
+    config:
+      materialized: "table"
+      schema: "erp_marts"
+      partition_by: ["count_date"]
+      quoting:
+        identifier: true
+
+  - name: fct_component_stock_movement
+    description: "Component stock movements"
+    tags: ["erp", "fact", "inventory"]
+    config:
+      materialized: "table"
+      schema: "erp_marts"
+      partition_by: ["movement_date"]
+      quoting:
+        identifier: true
+
+  - name: dim_position
+    description: "Employee position data"
+    tags: ["erp", "dimension", "hr"]
+    config:
+      materialized: "view"
+      schema: "erp_marts"
+      quoting:
+        identifier: true
+
+  - name: dim_employee
+    description: "Employee master data"
+    tags: ["erp", "dimension", "hr"]
+    config:
+      materialized: "table"
+      schema: "erp_marts"
+      partition_by: ["employee_id"]
+      quoting:
+        identifier: true
+
+  - name: fct_timesheets
+    description: "Employee timesheet records"
+    tags: ["erp", "fact", "hr"]
+    config:
+      materialized: "table"
+      schema: "erp_marts"
+      partition_by: ["date"]
+      quoting:
+        identifier: true
+
+  - name: fct_leaves
+    description: "Employee leave records"
+    tags: ["erp", "fact", "hr"]
+    config:
+      materialized: "table"
+      schema: "erp_marts"
+      partition_by: ["leave_date"]
+      quoting:
+        identifier: true
+
+  - name: fct_employee_cotracts
+    description: "Employee contract details"
+    tags: ["erp", "fact", "hr"]
+    config:
+      materialized: "table"
+      schema: "erp_marts"
+      partition_by: ["contract_start_date"]
+      quoting:
+        identifier: true
+
+  - name: dim_procurement_summary
+    description: "Central procurement summary model"
+    tags: ["erp", "summary", "procurement"]
+    config:
+      materialized: "table"
+      schema: "erp_marts"
+      depends_on:
+        - ref("fct_purchase_order")
+        - ref("dim_supplier")
+      quoting:
+        identifier: true
+
+  - name: dim_inventory_summary
+    description: "Central inventory summary model"
+    tags: ["erp", "summary", "inventory"]
+    config:
+      materialized: "table"
+      schema: "erp_marts"
+      depends_on:
+        - ref("fct_stock_level")
+        - ref("dim_warehouse")
+      quoting:
+        identifier: true
+
+  - name: dim_hr_summary
+    description: "Central HR summary model"
+    tags: ["erp", "summary", "hr"]
+    config:
+      materialized: "table"
+      schema: "erp_marts"
+      depends_on:
+        - ref("fct_timesheets")
+        - ref("dim_employee")
+      quoting:
+        identifier: true
+
+exposures:
+  - name: erp_employee_dimension
+    type: "table"
+    description: "ERP employee dimension table"
+    owner: "data_team"
+    maturity: "production"
+    tags: ["erp", "dimension"]
+    depends_on:
+      models:
+        - ref("dim_erp__employees")
+
+  - name: erp_sales_fact
+    type: "table"
+    description: "ERP sales summary fact table"
+    owner: "data_team"
+    maturity: "production"
+    tags: ["erp", "fact"]
+    depends_on:
+      models:
+        - ref("fact_erp__sales_summary")
+
+  - name: erp_inventory_fact
+    type: "table"
+    description: "ERP inventory summary fact table"
+    owner: "data_team"
+    maturity: "production"
+    tags: ["erp", "fact"]
+    depends_on:
+      models:
+        - ref("dim_inventory_summary")
+
+  - name: erp_hr_fact
+    type: "table"
+    description: "ERP HR summary fact table"
+    owner: "data_team"
+    maturity: "production"
+    tags: ["erp", "fact"]
+    depends_on:
+      models:
+        - ref("dim_hr_summary")

@@ -4,7 +4,7 @@ select
 	cast(id as varchar)                  as id_vendor_invoice,
 	cast(due_at as date)                 as due_at,
 	cast(status as varchar)              as status,
-	cast(paid_at as timestamp)           as paid_at,
+	if(paid_at IS NULL, NULL, cast(paid_at as timestamp)) as paid_at,
 	cast(currency as varchar)            as currency,
 	cast(total_ht as decimal(38,9))      as total_ht,
 	cast(issued_at as date)              as issued_at,

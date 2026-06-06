@@ -15,5 +15,5 @@ select
 from {{ ref('stg_erp__component_stock_movements') }}
 
 {% if is_incremental() %}
-where moved_at > (select coalesce(max(moved_at), '1970-01-01') from {{ this }})
+where moved_at > (select coalesce(max(t.created_at), '1970-01-01') from {{ this }} as t)
 {% endif %}

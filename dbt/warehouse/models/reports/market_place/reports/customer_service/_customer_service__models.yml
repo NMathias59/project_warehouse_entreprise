@@ -1,0 +1,31 @@
+version: 2
+
+models:
+
+  - name: rpt_mkt__customer_satisfaction
+    description: >
+      Score de satisfaction client combinant avis produits et tickets support.
+      Grain : un client par ligne (customer_id).
+      Usage BI : NPS proxy, escalade support, suivi satisfaction, churn prevention.
+    columns:
+      - name: customer_id
+        description: Clé primaire — identifiant du client.
+        data_tests:
+          - not_null
+          - unique
+      - name: avg_rating
+        description: Note moyenne donnée dans les avis (sur 5).
+      - name: tickets_count
+        description: Nombre total de tickets support ouverts.
+      - name: resolved_tickets_count
+        description: Nombre de tickets résolus.
+      - name: ticket_resolution_rate_pct
+        description: Taux de résolution tickets en pourcentage.
+      - name: avg_resolution_days
+        description: Délai moyen de résolution d'un ticket (jours).
+      - name: high_priority_tickets_count
+        description: Nombre de tickets haute priorité (high ou urgent).
+      - name: satisfaction_segment
+        description: >
+          Segment calculé : satisfied | satisfied_with_issues |
+          dissatisfied | at_risk | neutral.

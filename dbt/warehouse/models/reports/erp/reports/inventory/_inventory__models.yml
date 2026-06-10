@@ -1,0 +1,51 @@
+version: 2
+
+models:
+
+  - name: rpt_erp__inventory_stock_status
+    description: >
+      Etat du stock par produit et emplacement avec alertes seuils min/max.
+      Grain : un enregistrement de stock par ligne (stock_id = produit + entrepôt).
+      Usage BI : alerte rupture stock, taux de couverture, optimisation entrepôt.
+    columns:
+      - name: stock_id
+        description: Clé primaire — identifiant du niveau de stock.
+        data_tests:
+          - not_null
+          - unique
+      - name: product_id
+        description: Identifiant du composant / produit.
+      - name: component_name
+        description: Nom du composant (issu de dim_components).
+      - name: is_below_min
+        description: 1 si quantité < min_stock.
+      - name: is_out_of_stock
+        description: 1 si quantité = 0.
+      - name: is_above_max
+        description: 1 si quantité > max_stock.
+      - name: stock_coverage_pct
+        description: Pourcentage de couverture par rapport au min_stock.
+
+  - name: rpt_erp__component_movements
+    description: >
+      Historique des mouvements de stock de composants enrichi des détails composant et entrepôt.
+      Grain : un mouvement par ligne (id_stock_movement).
+      Usage BI : traçabilité flux, analyses entrées/sorties par période ou entrepôt.
+    columns:
+      - name: id_stock_movement
+        description: Clé primaire — identifiant du mouvement.
+        data_tests:
+          - not_null
+          - unique
+      - name: movement_type
+        description: "Type de mouvement : in (entrée) ou out (sortie)."
+      - name: signed_quantity
+        description: Quantité signée (négative pour out, positive pour in).
+      - name: component_name
+        description: Nom du composant (issu de dim_components).
+      - name: warehouse_name
+        description: Nom de l'entrepôt (issu de dim_warehouses).
+      - name: movement_date
+        description: Date du mouvement.
+      - name: movement_month
+        description: Mois du mouvement au format YYYYMM.

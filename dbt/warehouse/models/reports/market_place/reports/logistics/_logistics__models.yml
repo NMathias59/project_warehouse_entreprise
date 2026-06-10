@@ -1,0 +1,29 @@
+version: 2
+
+models:
+
+  - name: rpt_mkt__logistics_performance
+    description: >
+      Suivi des expéditions enrichi des données commande et métriques délai end-to-end.
+      Grain : une expédition par ligne (shipment_id).
+      Usage BI : performance transporteurs, délais livraison, SLA, taux de retour.
+    columns:
+      - name: shipment_id
+        description: Clé primaire — identifiant de l'expédition.
+        data_tests:
+          - not_null
+          - unique
+      - name: carrier_name
+        description: Nom du transporteur.
+      - name: fulfillment_days
+        description: Jours entre la commande et l'expédition.
+      - name: transit_days
+        description: Jours entre l'expédition et la livraison.
+      - name: total_delivery_days
+        description: Jours entre la commande et la livraison (end-to-end).
+      - name: is_delivered
+        description: 1 si le colis a été livré (shipment_delivered_at non null).
+      - name: is_returned
+        description: 1 si le statut est returned.
+      - name: shipment_month
+        description: Mois d'expédition au format YYYYMM.

@@ -1,0 +1,35 @@
+version: 2
+
+models:
+
+  - name: rpt_mkt__product_performance
+    description: >
+      Performance produit combinant ventes, stock disponible et avis clients.
+      Grain : un produit par ligne (product_id).
+      Usage BI : catalogue produit, alertes rupture, analyse catalogue, merchandising.
+    columns:
+      - name: product_id
+        description: Clé primaire — identifiant du produit.
+        data_tests:
+          - not_null
+          - unique
+      - name: total_sales_count
+        description: Nombre de lignes de commande pour ce produit.
+      - name: total_quantity_sold
+        description: Quantité totale vendue.
+      - name: total_revenue_ttc
+        description: Revenu total TTC généré par ce produit.
+      - name: avg_selling_price_ttc
+        description: Prix de vente moyen TTC.
+      - name: available_stock
+        description: Stock disponible (total - réservé).
+      - name: is_out_of_stock
+        description: 1 si stock disponible = 0 et produit actif.
+      - name: reviews_count
+        description: Nombre d'avis clients (hors supprimés).
+      - name: avg_rating
+        description: Note moyenne des avis (sur 5).
+      - name: positive_reviews_count
+        description: Nombre d'avis avec note >= 4.
+      - name: negative_reviews_count
+        description: Nombre d'avis avec note <= 2.

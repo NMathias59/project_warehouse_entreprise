@@ -83,6 +83,37 @@ models:
       # Override par mart si pertinent :
       #   {{ config(partition_by='toYYYYMM(order_date)') }}
 
+    # ---------- REPORTS ----------
+    # Couche reporting finale — large, dénormalisée, consommée directement par les outils BI.
+    # Combine plusieurs marts en un seul modèle analytique prêt à l'emploi.
+    # Structure miroir de marts/ : reports/[source]/core/[domain]/
+    # Chaque dossier domaine a son propre _[domain]__models.yml (§1.4 best practices).
+    reports:
+      +materialized: table
+      +tags: ["reports"]
+      +engine: "MergeTree()"
+      +order_by: "(tuple())"
+      erp:
+        core:
+          financial:
+            +tags: ["reports", "erp", "financial"]
+          hr:
+            +tags: ["reports", "erp", "hr"]
+          procurement:
+            +tags: ["reports", "erp", "procurement"]
+          inventory:
+            +tags: ["reports", "erp", "inventory"]
+      market_place:
+        core:
+          commerce:
+            +tags: ["reports", "market_place", "commerce"]
+          catalog:
+            +tags: ["reports", "market_place", "catalog"]
+          logistics:
+            +tags: ["reports", "market_place", "logistics"]
+          customer_service:
+            +tags: ["reports", "market_place", "customer_service"]
+
 # --- Seeds (CSV de référence statique) ---
 seeds:
   warehouse:

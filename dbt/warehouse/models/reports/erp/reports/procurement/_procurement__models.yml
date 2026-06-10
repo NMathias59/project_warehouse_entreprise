@@ -1,0 +1,29 @@
+version: 2
+
+models:
+
+  - name: rpt_erp__procurement_orders
+    description: >
+      Lignes de commandes fournisseur enrichies du suivi réception et des KPI délai.
+      Grain : une ligne de commande par ligne (id_purchase_order_line).
+      Usage BI : suivi achats, performance fournisseurs, taux de livraison à temps.
+    columns:
+      - name: id_purchase_order_line
+        description: Clé primaire — ligne de commande.
+        data_tests:
+          - not_null
+          - unique
+      - name: id_purchase_order
+        description: Identifiant de l'en-tête de commande.
+        data_tests:
+          - not_null
+      - name: receipt_status
+        description: "Etat calculé : received | pending | cancelled."
+      - name: is_on_time
+        description: 1 si première réception <= expected_at, 0 sinon, null si non applicable.
+      - name: days_to_receipt
+        description: Jours entre ordered_at et first_received_at.
+      - name: supplier_country
+        description: Pays du fournisseur (issu de dim_suppliers).
+      - name: ordered_month
+        description: Mois de commande au format YYYYMM.

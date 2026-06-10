@@ -1,0 +1,59 @@
+version: 2
+
+models:
+
+  - name: rpt_mkt__revenue_daily
+    description: >
+      Agrégation journalière du chiffre d'affaires, paiements et remboursements.
+      Grain : une ligne par jour (revenue_day).
+      Usage BI : dashboard revenus, tendances GMV, monitoring financier quotidien.
+    columns:
+      - name: revenue_day
+        description: Clé primaire — date du jour.
+        data_tests:
+          - not_null
+          - unique
+      - name: orders_count
+        description: Nombre de commandes distinctes passées ce jour.
+      - name: gross_revenue_ttc
+        description: Revenu brut TTC (somme des lignes de commande, avant remboursements).
+      - name: payments_collected_amount
+        description: Montant collecté via paiements complétés ce jour.
+      - name: refunds_amount
+        description: Montant total remboursé ce jour.
+      - name: net_revenue
+        description: Revenu net = payments_collected_amount - refunds_amount.
+      - name: avg_order_value_ttc
+        description: Panier moyen TTC du jour.
+      - name: unique_customers_count
+        description: Nombre de clients uniques ayant commandé ce jour.
+      - name: payment_failure_rate_pct
+        description: Taux d'échec paiement en pourcentage des commandes du jour.
+
+  - name: rpt_mkt__customer_ltv
+    description: >
+      Valeur vie client (LTV) par acheteur avec segmentation comportementale.
+      Grain : un client par ligne (customer_id).
+      Usage BI : segmentation marketing, rétention, cohortes, scoring client.
+    columns:
+      - name: customer_id
+        description: Clé primaire — identifiant du client.
+        data_tests:
+          - not_null
+          - unique
+      - name: orders_count
+        description: Nombre total de commandes passées.
+      - name: total_spent_ttc
+        description: Montant total dépensé TTC (avant remboursements).
+      - name: total_refunded_ttc
+        description: Montant total remboursé.
+      - name: net_ltv_ttc
+        description: LTV nette = total_spent_ttc - total_refunded_ttc.
+      - name: avg_order_value_ttc
+        description: Panier moyen TTC sur l'ensemble de la vie du client.
+      - name: customer_lifespan_days
+        description: Jours entre première et dernière commande.
+      - name: customer_segment
+        description: "Segment comportemental : prospect | one_time | occasional | loyal."
+      - name: distinct_products_ordered
+        description: Nombre de produits distincts commandés.

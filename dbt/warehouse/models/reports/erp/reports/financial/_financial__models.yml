@@ -1,0 +1,35 @@
+version: 2
+
+models:
+
+  - name: rpt_erp__journal_entries_enriched
+    description: >
+      Ecritures comptables enrichies avec le type de compte (passif, actif, charges…).
+      Grain : une ligne par écriture comptable (journal_entry_line_id).
+      Usage BI : grand livre, P&L, balance analytique.
+    columns:
+      - name: journal_entry_line_id
+        description: Clé primaire — identifiant de la ligne d'écriture.
+        data_tests:
+          - not_null
+          - unique
+      - name: id_journal_entry
+        description: Identifiant de l'en-tête de l'écriture.
+        data_tests:
+          - not_null
+      - name: account_number
+        description: Numéro de compte comptable.
+      - name: account_type
+        description: Type de compte (issu de dim_accounts).
+      - name: debit
+        description: Montant débit de la ligne.
+      - name: credit
+        description: Montant crédit de la ligne.
+      - name: net_amount
+        description: debit - credit (positif = dépense nette, négatif = produit net).
+      - name: entry_date
+        description: Date de l'écriture (toDate de created_at).
+      - name: entry_month
+        description: Mois au format YYYYMM.
+      - name: entry_year
+        description: Année de l'écriture.

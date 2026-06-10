@@ -1,0 +1,31 @@
+version: 2
+
+models:
+
+  - name: rpt_erp__hr_workforce
+    description: >
+      Snapshot RH complet par employé, enrichi des agrégats de congés et d'heures travaillées.
+      Grain : un employé par ligne.
+      Usage BI : tableau de bord RH, headcount, coûts salariaux, absentéisme.
+    columns:
+      - name: id_employee
+        description: Clé primaire — identifiant de l'employé.
+        data_tests:
+          - not_null
+          - unique
+      - name: department_name
+        description: Département de rattachement.
+      - name: position_title
+        description: Intitulé du poste.
+      - name: is_active
+        description: 1 si l'employé est encore en poste (left_at est null), 0 sinon.
+      - name: contract_type
+        description: Type de contrat actif le plus récent.
+      - name: salary
+        description: Salaire du contrat actif.
+      - name: total_approved_leave_days
+        description: Total jours de congés approuvés tous statuts confondus.
+      - name: total_hours_worked
+        description: Total heures travaillées déclarées sur toutes les feuilles de temps.
+      - name: last_timesheet_week
+        description: Date de début de la dernière semaine de feuille de temps soumise.

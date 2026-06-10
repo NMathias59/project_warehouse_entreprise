@@ -1,0 +1,129 @@
+version: 2
+
+models:
+  - name: dim_carriers
+    description: "Dimension des transporteurs — prestataires de livraison disponibles."
+    columns:
+      - name: carrier_id
+        description: "Clé primaire du transporteur."
+        tests:
+          - unique
+          - not_null
+      - name: carrier_name
+        description: "Nom du transporteur."
+        tests:
+          - not_null
+      - name: carrier_code
+        description: "Code interne du transporteur."
+      - name: carrier_is_active
+        description: "Indique si le transporteur est actif."
+      - name: carrier_tracking_url
+        description: "URL de suivi de colis du transporteur."
+      - name: carrier_created_at
+        description: "Date d'activation du transporteur."
+
+  - name: dim_shipping_methods
+    description: "Dimension des méthodes de livraison et leurs délais estimés."
+    columns:
+      - name: shipping_method_id
+        description: "Clé primaire de la méthode de livraison."
+        tests:
+          - unique
+          - not_null
+      - name: shipping_method_name
+        description: "Nom de la méthode de livraison."
+        tests:
+          - not_null
+      - name: shipping_method_code
+        description: "Code interne de la méthode."
+      - name: shipping_method_carrier_id
+        description: "Référence du transporteur associé (FK vers dim_carriers)."
+      - name: shipping_method_is_active
+        description: "Indique si la méthode est disponible."
+      - name: shipping_method_estimated_days_min
+        description: "Délai minimum de livraison estimé (jours ouvrés)."
+      - name: shipping_method_estimated_days_max
+        description: "Délai maximum de livraison estimé (jours ouvrés)."
+      - name: shipping_method_created_at
+        description: "Date de création de la méthode."
+
+  - name: dim_warehouses
+    description: "Dimension des entrepôts marketplace — sites de stockage et d'expédition."
+    columns:
+      - name: warehouse_id
+        description: "Clé primaire de l'entrepôt."
+        tests:
+          - unique
+          - not_null
+      - name: warehouse_name
+        description: "Nom de l'entrepôt."
+        tests:
+          - not_null
+      - name: warehouse_code
+        description: "Code interne de l'entrepôt."
+      - name: warehouse_is_active
+        description: "Indique si l'entrepôt est opérationnel."
+      - name: warehouse_created_at
+        description: "Date de mise en service."
+
+  - name: fct_shipments
+    description: >
+      Expéditions des commandes marketplace enrichies avec les données transporteur.
+      Modèle incrémental sur fenêtre glissante 7 jours (shipment_shipped_at).
+    columns:
+      - name: shipment_id
+        description: "Clé primaire de l'expédition."
+        tests:
+          - unique
+          - not_null
+      - name: shipment_order_id
+        description: "Référence de la commande expédiée."
+        tests:
+          - not_null
+      - name: shipment_carrier_id
+        description: "Référence du transporteur."
+      - name: carrier_name
+        description: "Nom du transporteur (dénormalisé depuis dim_carriers)."
+      - name: shipment_status
+        description: "Statut de l'expédition (pending, shipped, delivered, returned)."
+      - name: shipment_tracking_number
+        description: "Numéro de suivi fourni par le transporteur."
+      - name: shipment_shipped_at
+        description: "Date d'expédition."
+      - name: shipment_delivered_at
+        description: "Date de livraison confirmée (null si non encore livré)."
+      - name: shipment_created_at
+        description: "Date de création de l'expédition dans le système."
+
+  - name: fct_stock_levels
+    description: >
+      Niveaux de stock par produit et par entrepôt, enrichis avec les noms produit et entrepôt.
+      Grain : un enregistrement par couple (produit, entrepôt).
+    columns:
+      - name: stock_level_id
+        description: "Clé primaire du niveau de stock."
+        tests:
+          - unique
+          - not_null
+      - name: stock_level_product_id
+        description: "Référence du produit (FK vers dim_products)."
+        tests:
+          - not_null
+      - name: product_name
+        description: "Nom du produit (dénormalisé)."
+      - name: product_sku
+        description: "SKU du produit (dénormalisé)."
+      - name: stock_level_warehouse_id
+        description: "Référence de l'entrepôt (FK vers dim_warehouses)."
+        tests:
+          - not_null
+      - name: warehouse_name
+        description: "Nom de l'entrepôt (dénormalisé)."
+      - name: stock_level_quantity
+        description: "Quantité totale en stock."
+      - name: stock_level_reserved
+        description: "Quantité réservée par des commandes en attente."
+      - name: stock_level_available
+        description: "Quantité disponible à la vente (quantité - réservé)."
+      - name: stock_level_updated_at
+        description: "Horodatage de la dernière mise à jour du stock."

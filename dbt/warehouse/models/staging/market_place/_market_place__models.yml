@@ -1,0 +1,731 @@
+version: 2
+
+# Staging models — source marketplace (DB_WH_MKT).
+# Matérialisation : view (héritée de dbt_project.yml §staging).
+# Tests minimaux : unique + not_null sur la clé Airbyte CDC (_airbyte_raw_id),
+# not_null sur la clé métier (_id).
+
+models:
+  - name: stg_mkt__alembic_version
+    description: "Table de version Alembic — métadonnée technique de migration."
+    columns:
+      - name: alembic_version__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+
+  - name: stg_mkt__brands
+    description: "Marques du catalogue marketplace."
+    columns:
+      - name: brand__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: brand_id
+        description: "Identifiant métier de la marque (PK)."
+        tests:
+          - not_null
+
+  - name: stg_mkt__carriers
+    description: "Transporteurs / livreurs disponibles sur la marketplace."
+    columns:
+      - name: carrier__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: carrier_id
+        description: "Identifiant métier du transporteur (PK)."
+        tests:
+          - not_null
+
+  - name: stg_mkt__cart_items
+    description: "Articles présents dans les paniers clients."
+    columns:
+      - name: cart_item__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: cart_item_id
+        description: "Identifiant métier de la ligne de panier (PK)."
+        tests:
+          - not_null
+
+  - name: stg_mkt__carts
+    description: "Paniers d'achat (sessions de commande en cours)."
+    columns:
+      - name: cart__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: cart_id
+        description: "Identifiant métier du panier (PK)."
+        tests:
+          - not_null
+
+  - name: stg_mkt__categories
+    description: "Catégories produits et leur hiérarchie."
+    columns:
+      - name: categorie__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: category_id
+        description: "Identifiant métier de la catégorie (PK)."
+        tests:
+          - not_null
+
+  - name: stg_mkt__credit_notes
+    description: "Avoirs et ajustements de facturation."
+    columns:
+      - name: credit_note__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: credit_note_id
+        description: "Identifiant métier de l'avoir (PK)."
+        tests:
+          - not_null
+
+  - name: stg_mkt__customer_addresses
+    description: "Adresses de livraison et de facturation des clients."
+    columns:
+      - name: customer_addresse__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: customer_address_id
+        description: "Identifiant métier de l'adresse (PK)."
+        tests:
+          - not_null
+
+  - name: stg_mkt__customers
+    description: "Profils clients de la marketplace."
+    columns:
+      - name: customer__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: customer_id
+        description: "Identifiant métier du client (PK)."
+        tests:
+          - not_null
+
+  - name: stg_mkt__discount_code_usages
+    description: "Historique d'utilisation des codes promotionnels."
+    columns:
+      - name: discount_code_usage__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: discount_code_usage_id
+        description: "Identifiant métier de l'utilisation (PK)."
+        tests:
+          - not_null
+
+  - name: stg_mkt__discount_codes
+    description: "Codes de réduction et leurs règles d'application."
+    columns:
+      - name: discount_code__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: discount_code_id
+        description: "Identifiant métier du code promo (PK)."
+        tests:
+          - not_null
+
+  - name: stg_mkt__flash_sales
+    description: "Événements de ventes flash avec tarifs limités dans le temps."
+    columns:
+      - name: flash_sale__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: flash_sale_id
+        description: "Identifiant métier de la vente flash (PK)."
+        tests:
+          - not_null
+
+  - name: stg_mkt__invoices
+    description: "Factures émises pour les commandes."
+    columns:
+      - name: invoice__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: invoice_id
+        description: "Identifiant métier de la facture (PK)."
+        tests:
+          - not_null
+
+  - name: stg_mkt__loyalty_points
+    description: "Soldes de points de fidélité par client."
+    columns:
+      - name: loyalty_point__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: loyalty_point_id
+        description: "Identifiant métier du solde fidélité (PK)."
+        tests:
+          - not_null
+
+  - name: stg_mkt__loyalty_transactions
+    description: "Mouvements de points de fidélité (gains et dépenses)."
+    columns:
+      - name: loyalty_transaction__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: loyalty_transaction_id
+        description: "Identifiant métier de la transaction fidélité (PK)."
+        tests:
+          - not_null
+
+  - name: stg_mkt__newsletter_campaigns
+    description: "Campagnes emailing newsletter."
+    columns:
+      - name: newsletter_campaign__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: newsletter_campaign_id
+        description: "Identifiant métier de la campagne (PK)."
+        tests:
+          - not_null
+
+  - name: stg_mkt__newsletter_subscriptions
+    description: "Préférences d'abonnement à la newsletter des clients."
+    columns:
+      - name: newsletter_subscription__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: newsletter_subscription_id
+        description: "Identifiant métier de l'abonnement (PK)."
+        tests:
+          - not_null
+
+  - name: stg_mkt__orders
+    description: "Commandes principales — un enregistrement par commande."
+    columns:
+      - name: order__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: order_id
+        description: "Identifiant métier de la commande (PK)."
+        tests:
+          - not_null
+
+  - name: stg_mkt__order_lines
+    description: "Lignes de commande — un enregistrement par article commandé."
+    columns:
+      - name: order_line__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: order_line_id
+        description: "Identifiant métier de la ligne (PK)."
+        tests:
+          - not_null
+
+  - name: stg_mkt__order_status_history
+    description: "Historique des changements de statut de commande."
+    columns:
+      - name: order_status_history__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: order_status_history_id
+        description: "Identifiant métier de l'entrée historique (PK)."
+        tests:
+          - not_null
+
+  - name: stg_mkt__payments
+    description: "Transactions de paiement des commandes."
+    columns:
+      - name: payment__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: payment_id
+        description: "Identifiant métier du paiement (PK)."
+        tests:
+          - not_null
+
+  - name: stg_mkt__payment_events
+    description: "Événements du cycle de vie des paiements (webhooks, callbacks)."
+    columns:
+      - name: payment_event__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: payment_event_id
+        description: "Identifiant métier de l'événement de paiement (PK)."
+        tests:
+          - not_null
+
+  - name: stg_mkt__payment_methods
+    description: "Modes de paiement disponibles et configurés."
+    columns:
+      - name: payment_method__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: payment_method_id
+        description: "Identifiant métier du mode de paiement (PK)."
+        tests:
+          - not_null
+
+  - name: stg_mkt__pc_bundles
+    description: "Configurations PC prédéfinies vendues en bundle."
+    columns:
+      - name: pc_bundle__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: pc_bundle_id
+        description: "Identifiant métier du bundle PC (PK)."
+        tests:
+          - not_null
+
+  - name: stg_mkt__pc_bundle_lines
+    description: "Composants inclus dans les bundles PC."
+    columns:
+      - name: pc_bundle_line__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: pc_bundle_line_id
+        description: "Identifiant métier de la ligne de bundle (PK)."
+        tests:
+          - not_null
+
+  - name: stg_mkt__price_history
+    description: "Historique des prix des produits."
+    columns:
+      - name: price_history__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: price_history_id
+        description: "Identifiant métier de l'entrée historique de prix (PK)."
+        tests:
+          - not_null
+
+  - name: stg_mkt__products
+    description: "Catalogue produits de la marketplace."
+    columns:
+      - name: product__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: product_id
+        description: "Identifiant métier du produit (PK)."
+        tests:
+          - not_null
+
+  - name: stg_mkt__product_answers
+    description: "Réponses aux questions clients sur les produits."
+    columns:
+      - name: product_answer__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: product_answer_id
+        description: "Identifiant métier de la réponse (PK)."
+        tests:
+          - not_null
+
+  - name: stg_mkt__product_compatibility
+    description: "Relations de compatibilité entre produits."
+    columns:
+      - name: product_compatibility__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: product_compatibility_id
+        description: "Identifiant métier de la compatibilité (PK)."
+        tests:
+          - not_null
+
+  - name: stg_mkt__product_images
+    description: "Images et médias associés aux produits."
+    columns:
+      - name: product_image__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: product_image_id
+        description: "Identifiant métier de l'image produit (PK)."
+        tests:
+          - not_null
+
+  - name: stg_mkt__product_prices
+    description: "Prix courants et historiques par produit."
+    columns:
+      - name: product_price__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: product_price_id
+        description: "Identifiant métier du prix produit (PK)."
+        tests:
+          - not_null
+
+  - name: stg_mkt__product_questions
+    description: "Questions posées par les clients sur les produits."
+    columns:
+      - name: product_question__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: product_question_id
+        description: "Identifiant métier de la question (PK)."
+        tests:
+          - not_null
+
+  - name: stg_mkt__product_specifications
+    description: "Attributs techniques des produits (poids, dimensions, etc.)."
+    columns:
+      - name: product_specification__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: product_specification_id
+        description: "Identifiant métier de la spécification (PK)."
+        tests:
+          - not_null
+
+  - name: stg_mkt__product_tags
+    description: "Tags / étiquettes associées aux produits."
+    columns:
+      - name: product_tag__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: product_tag_id
+        description: "Identifiant métier du lien produit-tag (PK)."
+        tests:
+          - not_null
+
+  - name: stg_mkt__promotions
+    description: "Promotions et offres marketing actives."
+    columns:
+      - name: promotion__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: promotion_id
+        description: "Identifiant métier de la promotion (PK)."
+        tests:
+          - not_null
+
+  - name: stg_mkt__promotion_products
+    description: "Produits inclus dans les promotions."
+    columns:
+      - name: promotion_product__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: promotion_product_id
+        description: "Identifiant métier du lien promotion-produit (PK)."
+        tests:
+          - not_null
+
+  - name: stg_mkt__promotion_rules
+    description: "Règles de déclenchement des promotions (conditions d'éligibilité)."
+    columns:
+      - name: promotion_rule__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: promotion_rule_id
+        description: "Identifiant métier de la règle de promotion (PK)."
+        tests:
+          - not_null
+
+  - name: stg_mkt__refunds
+    description: "Remboursements traités sur les commandes."
+    columns:
+      - name: refund__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: refund_id
+        description: "Identifiant métier du remboursement (PK)."
+        tests:
+          - not_null
+
+  - name: stg_mkt__returns
+    description: "Retours produits initiés par les clients."
+    columns:
+      - name: return__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: return_id
+        description: "Identifiant métier du retour (PK)."
+        tests:
+          - not_null
+
+  - name: stg_mkt__return_lines
+    description: "Lignes de retour — articles retournés par commande."
+    columns:
+      - name: return_line__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: return_line_id
+        description: "Identifiant métier de la ligne de retour (PK)."
+        tests:
+          - not_null
+
+  - name: stg_mkt__return_status_history
+    description: "Historique des changements de statut des retours."
+    columns:
+      - name: return_status_history__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: return_status_history_id
+        description: "Identifiant métier de l'entrée historique (PK)."
+        tests:
+          - not_null
+
+  - name: stg_mkt__reviews
+    description: "Avis et évaluations produits par les clients."
+    columns:
+      - name: review__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: review_id
+        description: "Identifiant métier de l'avis (PK)."
+        tests:
+          - not_null
+
+  - name: stg_mkt__review_votes
+    description: "Votes d'utilité sur les avis produits."
+    columns:
+      - name: review_vote__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: review_vote_id
+        description: "Identifiant métier du vote (PK)."
+        tests:
+          - not_null
+
+  - name: stg_mkt__shipments
+    description: "Expéditions et suivi de livraison."
+    columns:
+      - name: shipment__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: shipment_id
+        description: "Identifiant métier de l'expédition (PK)."
+        tests:
+          - not_null
+
+  - name: stg_mkt__shipping_methods
+    description: "Modes de livraison disponibles."
+    columns:
+      - name: shipping_method__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: shipping_method_id
+        description: "Identifiant métier du mode de livraison (PK)."
+        tests:
+          - not_null
+
+  - name: stg_mkt__shipping_rates
+    description: "Tarifs d'expédition par méthode et zone géographique."
+    columns:
+      - name: shipping_rate__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: shipping_rate_id
+        description: "Identifiant métier du tarif d'expédition (PK)."
+        tests:
+          - not_null
+
+  - name: stg_mkt__shipping_zones
+    description: "Zones géographiques de livraison."
+    columns:
+      - name: shipping_zone__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: shipping_zone_id
+        description: "Identifiant métier de la zone de livraison (PK)."
+        tests:
+          - not_null
+
+  - name: stg_mkt__stock_levels
+    description: "Niveaux de stock disponibles en temps réel par produit."
+    columns:
+      - name: stock_level__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: stock_level_id
+        description: "Identifiant métier du niveau de stock (PK)."
+        tests:
+          - not_null
+
+  - name: stg_mkt__support_attachments
+    description: "Pièces jointes associées aux tickets de support."
+    columns:
+      - name: support_attachment__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: support_attachment_id
+        description: "Identifiant métier de la pièce jointe (PK)."
+        tests:
+          - not_null
+
+  - name: stg_mkt__support_messages
+    description: "Messages échangés dans les tickets de support."
+    columns:
+      - name: support_message__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: support_message_id
+        description: "Identifiant métier du message de support (PK)."
+        tests:
+          - not_null
+
+  - name: stg_mkt__support_tickets
+    description: "Tickets de support client ouverts sur la marketplace."
+    columns:
+      - name: support_ticket__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: support_ticket_id
+        description: "Identifiant métier du ticket (PK)."
+        tests:
+          - not_null
+
+  - name: stg_mkt__tags
+    description: "Tags génériques pour la classification des entités."
+    columns:
+      - name: tag__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: tag_id
+        description: "Identifiant métier du tag (PK)."
+        tests:
+          - not_null
+
+  - name: stg_mkt__tracking_events
+    description: "Événements de suivi de colis (scans, statuts transporteur)."
+    columns:
+      - name: tracking_event__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: tracking_event_id
+        description: "Identifiant métier de l'événement de suivi (PK)."
+        tests:
+          - not_null
+
+  - name: stg_mkt__warehouses
+    description: "Entrepôts utilisés pour le stockage et l'expédition."
+    columns:
+      - name: warehouse__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: warehouse_id
+        description: "Identifiant métier de l'entrepôt (PK)."
+        tests:
+          - not_null
+
+  - name: stg_mkt__wishlists
+    description: "Listes de souhaits des clients."
+    columns:
+      - name: wishlist__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: wishlist_id
+        description: "Identifiant métier de la liste de souhaits (PK)."
+        tests:
+          - not_null
+
+  - name: stg_mkt__wishlist_items
+    description: "Produits ajoutés dans les listes de souhaits."
+    columns:
+      - name: wishlist_item__airbyte_raw_id
+        description: "Identifiant unique Airbyte (CDC raw PK)."
+        tests:
+          - unique
+          - not_null
+      - name: wishlist_item_id
+        description: "Identifiant métier de l'article dans la liste (PK)."
+        tests:
+          - not_null

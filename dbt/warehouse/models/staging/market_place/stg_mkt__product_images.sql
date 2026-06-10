@@ -1,0 +1,24 @@
+﻿with source as (
+    select * from {{ source('marketplace', 'product_images') }}
+),
+
+renamed as (
+    select
+        _airbyte_raw_id as product_image__airbyte_raw_id,
+        _airbyte_extracted_at as product_image__airbyte_extracted_at,
+        _airbyte_meta as product_image__airbyte_meta,
+        _airbyte_generation_id as product_image__airbyte_generation_id,
+        id as product_image_id,
+        alt as product_image_alt,
+        url as product_image_url,
+        position as product_image_position,
+        created_at as product_image_created_at,
+        is_primary as product_image_is_primary,
+        product_id as product_image_product_id,
+        _ab_cdc_lsn as product_image__ab_cdc_lsn,
+        _ab_cdc_deleted_at as product_image__ab_cdc_deleted_at,
+        _ab_cdc_updated_at as product_image__ab_cdc_updated_at
+    from source
+)
+
+select * from renamed

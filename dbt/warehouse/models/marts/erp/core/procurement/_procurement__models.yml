@@ -1,0 +1,82 @@
+version: 2
+
+models:
+  - name: dim_suppliers
+    description: >
+      Dimension des fournisseurs — vue dénormalisée avec statistiques d'activité
+      (nombre de commandes, total HT).
+    columns:
+      - name: id_supplier
+        description: "Clé primaire du fournisseur."
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_supplier_contacts
+    description: "Dimension des contacts fournisseurs (interlocuteurs commerciaux)."
+    columns:
+      - name: id_supplier_contact
+        description: "Clé primaire du contact fournisseur."
+        tests:
+          - unique
+          - not_null
+
+  - name: fct_purchase_orders
+    description: >
+      Commandes d'achat — grain : une ligne par ligne de commande.
+      Modèle incrémental avec fenêtre glissante sur ordered_at.
+    columns:
+      - name: id_purchase_order_line
+        description: "Clé de la ligne de commande (grain du modèle)."
+        tests:
+          - unique
+          - not_null
+      - name: id_purchase_order
+        description: "Référence de la commande d'achat parente."
+        tests:
+          - not_null
+
+  - name: fct_purchase_order_status
+    description: "Agrégats de commandes d'achat par statut (nombre de commandes, total HT)."
+    columns:
+      - name: status
+        description: "Statut des commandes d'achat (clé du grain)."
+        tests:
+          - unique
+          - not_null
+
+  - name: fct_purchase_receipt
+    description: "Réceptions de commandes d'achat — livraisons entrantes en entrepôt."
+    columns:
+      - name: id_purchase_receipt
+        description: "Clé primaire de la réception."
+        tests:
+          - unique
+          - not_null
+
+  - name: fct_purchase_return
+    description: "Retours fournisseurs — marchandises renvoyées après réception."
+    columns:
+      - name: id_purchase_return
+        description: "Clé primaire du retour fournisseur."
+        tests:
+          - unique
+          - not_null
+
+  - name: fct_supplier_contracts
+    description: "Contrats fournisseurs — conditions cadre et engagements commerciaux."
+    columns:
+      - name: id_supplier_contract
+        description: "Clé primaire du contrat fournisseur."
+        tests:
+          - unique
+          - not_null
+
+  - name: fct_vendor_invoice
+    description: "Factures fournisseurs reçues et traitées dans l'ERP."
+    columns:
+      - name: id_vendor_invoice
+        description: "Clé primaire de la facture fournisseur."
+        tests:
+          - unique
+          - not_null

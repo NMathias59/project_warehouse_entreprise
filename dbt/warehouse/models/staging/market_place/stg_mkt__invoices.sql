@@ -1,9 +1,24 @@
-select
-    id as invoice_id,
-    number as invoice_number,
-    order_id as invoice_order_id,
-    issued_at as invoice_issued_at,
-    due_at as invoice_due_at,
-    total_ttc as invoice_total_ttc,
-    pdf_url as invoice_pdf_url
-from {{ source('marketplace', 'invoices') }}
+﻿with source as (
+    select * from {{ source('marketplace', 'invoices') }}
+),
+
+renamed as (
+    select
+        _airbyte_raw_id as invoice__airbyte_raw_id,
+        _airbyte_extracted_at as invoice__airbyte_extracted_at,
+        _airbyte_meta as invoice__airbyte_meta,
+        _airbyte_generation_id as invoice__airbyte_generation_id,
+        id as invoice_id,
+        due_at as invoice_due_at,
+        number as invoice_number,
+        pdf_url as invoice_pdf_url,
+        order_id as invoice_order_id,
+        issued_at as invoice_issued_at,
+        total_ttc as invoice_total_ttc,
+        _ab_cdc_lsn as invoice__ab_cdc_lsn,
+        _ab_cdc_deleted_at as invoice__ab_cdc_deleted_at,
+        _ab_cdc_updated_at as invoice__ab_cdc_updated_at
+    from source
+)
+
+select * from renamed

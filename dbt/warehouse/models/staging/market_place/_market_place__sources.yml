@@ -1,0 +1,64 @@
+﻿version: 2
+
+sources:
+  - name: marketplace
+    description: "Sources for marketplace data"
+    database: DB_WH_MKT
+    schema: DB_WH_MKT
+    tables:
+      - name: alembic_version
+      - name: brands
+      - name: carriers
+      - name: cart_items
+      - name: carts
+      - name: categories
+      - name: credit_notes
+      - name: customer_addresses
+      - name: customers
+      - name: discount_code_usages
+      - name: discount_codes
+      - name: flash_sales
+      - name: invoices
+      - name: loyalty_points
+      - name: loyalty_transactions
+      - name: newsletter_campaigns
+      - name: newsletter_subscriptions
+      - name: order_lines
+      - name: order_status_history
+      - name: orders
+      - name: payment_events
+      - name: payment_methods
+      - name: payments
+      - name: pc_bundle_lines
+      - name: pc_bundles
+      - name: price_history
+      - name: product_answers
+      - name: product_compatibility
+      - name: product_images
+      - name: product_prices
+      - name: product_questions
+      - name: product_specifications
+      - name: product_tags
+      - name: products
+      - name: promotion_products
+      - name: promotion_rules
+      - name: promotions
+      - name: refunds
+      - name: return_lines
+      - name: return_status_history
+      - name: returns
+      - name: review_votes
+      - name: reviews
+      - name: shipments
+      - name: shipping_methods
+      - name: shipping_rates
+      - name: shipping_zones
+      - name: stock_levels
+      - name: support_attachments
+      - name: support_messages
+      - name: support_tickets
+      - name: tags
+      - name: tracking_events
+      - name: warehouses
+      - name: wishlist_items
+      - name: wishlists

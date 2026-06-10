@@ -1,0 +1,71 @@
+version: 2
+
+models:
+  - name: dim_serial_numbers
+    description: "Dimension des numéros de série — traçabilité unitaire des équipements."
+    columns:
+      - name: id_serial_number
+        description: "Clé primaire du numéro de série."
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_warehouses
+    description: "Dimension des entrepôts — sites de stockage physiques."
+    columns:
+      - name: id_warehouse
+        description: "Clé primaire de l'entrepôt."
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_warehouse_locations
+    description: "Dimension des emplacements dans les entrepôts (allée, rack, bin)."
+    columns:
+      - name: id_warehouse_location
+        description: "Clé primaire de l'emplacement."
+        tests:
+          - unique
+          - not_null
+
+  - name: fct_component_stock_movement
+    description: "Mouvements de stock composant — entrées, sorties et transferts."
+    columns:
+      - name: id_component_stock_movement
+        description: "Clé primaire du mouvement de stock."
+        tests:
+          - unique
+          - not_null
+
+  - name: fct_inventory_counts
+    description: >
+      Comptages d'inventaire physique — grain : une ligne par ligne de comptage.
+      Inclut les écarts entre quantités comptées et attendues.
+    columns:
+      - name: id_inventory_count_line
+        description: "Clé de la ligne de comptage (grain du modèle)."
+        tests:
+          - unique
+          - not_null
+      - name: id_inventory_count
+        description: "Référence du comptage d'inventaire parent."
+        tests:
+          - not_null
+
+  - name: fct_serial_tracking
+    description: "Suivi de traçabilité des numéros de série dans les flux logistiques."
+    columns:
+      - name: id_serial_tracking
+        description: "Clé primaire de l'entrée de traçabilité."
+        tests:
+          - unique
+          - not_null
+
+  - name: fct_stock_level
+    description: "Niveaux de stock consolidés par produit et entrepôt."
+    columns:
+      - name: id_stock_level
+        description: "Clé primaire du niveau de stock."
+        tests:
+          - unique
+          - not_null

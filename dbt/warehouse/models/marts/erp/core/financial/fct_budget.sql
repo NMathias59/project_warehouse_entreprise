@@ -5,13 +5,26 @@ config(
 )
 }}
 
--- FCT Budget model for ERP, sourced from the budgets and budget lines. This model will be used in financial reporting and analysis to summarize budget information, including total amounts by budget and associated account numbers.
-
 with budget as (
-    select * from {{ ref('stg_erp__budgets') }}
+
+    select
+        id_budget,
+        label,
+        created_at,
+        is_active
+    from {{ ref('stg_erp__budgets') }}
+
 ),
+
 budget_line as (
-select * from {{ ref('stg_erp__budget_lines') }}
+
+    select
+        id_budget_line,
+        budget_id,
+        account_number,
+        amount
+    from {{ ref('stg_erp__budget_lines') }}
+
 )
 
 select

@@ -1,0 +1,210 @@
+version: 2
+
+models:
+  - name: dim_customers
+    description: >
+      Dimension clients enrichie avec l'activité d'achat agrégée.
+      Grain : un enregistrement par client.
+    columns:
+      - name: customer_id
+        description: "Clé primaire du client."
+        tests:
+          - unique
+          - not_null
+      - name: customer_first_name
+        description: "Prénom du client."
+      - name: customer_last_name
+        description: "Nom de famille du client."
+      - name: customer_phone
+        description: "Numéro de téléphone du client."
+      - name: customer_birthdate
+        description: "Date de naissance du client."
+      - name: total_orders
+        description: "Nombre total de commandes passées."
+      - name: first_order_at
+        description: "Date de la première commande."
+      - name: last_order_at
+        description: "Date de la dernière commande."
+      - name: customer_created_at
+        description: "Date de création du compte client."
+      - name: customer_deleted_at
+        description: "Date de suppression logique du compte."
+
+  - name: dim_discount_codes
+    description: "Dimension des codes de réduction — conditions et limites d'utilisation."
+    columns:
+      - name: discount_code_id
+        description: "Clé primaire du code promo."
+        tests:
+          - unique
+          - not_null
+      - name: discount_code_code
+        description: "Code promotionnel saisi par le client."
+        tests:
+          - not_null
+      - name: discount_code_type
+        description: "Type de remise (percentage, fixed_amount, free_shipping)."
+      - name: discount_code_value
+        description: "Valeur de la remise (pourcentage ou montant fixe)."
+      - name: discount_code_min_order
+        description: "Montant minimum de commande requis pour activer le code."
+      - name: discount_code_max_uses
+        description: "Nombre maximum d'utilisations autorisées (null = illimité)."
+      - name: discount_code_used_count
+        description: "Nombre d'utilisations actuelles du code."
+      - name: discount_code_is_active
+        description: "Indique si le code est actif."
+      - name: discount_code_expires_at
+        description: "Date d'expiration du code (null = sans expiration)."
+      - name: discount_code_created_at
+        description: "Date de création du code."
+
+  - name: dim_promotions
+    description: "Dimension des promotions et offres marketing avec leurs paramètres."
+    columns:
+      - name: promotion_id
+        description: "Clé primaire de la promotion."
+        tests:
+          - unique
+          - not_null
+      - name: promotion_name
+        description: "Nom de la promotion."
+        tests:
+          - not_null
+      - name: promotion_type
+        description: "Type de promotion (flash_sale, bundle, seasonal)."
+      - name: promotion_value
+        description: "Valeur de la remise promotionnelle."
+      - name: promotion_is_active
+        description: "Indique si la promotion est active."
+      - name: promotion_starts_at
+        description: "Date de début de la promotion."
+      - name: promotion_ends_at
+        description: "Date de fin de la promotion."
+      - name: promotion_created_at
+        description: "Date de création de la promotion."
+      - name: promotion_deleted_at
+        description: "Date de suppression logique."
+
+  - name: fct_orders
+    description: >
+      Commandes marketplace — grain : une ligne par article commandé.
+      Modèle incrémental sur fenêtre glissante 7 jours (order_ordered_at).
+      Contient les données de commande et de ligne agrégées.
+    columns:
+      - name: order_line_id
+        description: "Clé de grain — identifiant unique de la ligne de commande."
+        tests:
+          - unique
+          - not_null
+      - name: order_id
+        description: "Référence de la commande parente."
+        tests:
+          - not_null
+      - name: order_status
+        description: "Statut courant de la commande."
+      - name: order_currency
+        description: "Devise de la commande (ISO 4217)."
+      - name: order_reference
+        description: "Référence externe de la commande (numéro visible client)."
+      - name: order_customer_id
+        description: "Référence du client (FK vers dim_customers)."
+      - name: order_total_ttc
+        description: "Montant total TTC de la commande."
+      - name: order_subtotal_ttc
+        description: "Sous-total TTC hors remises et frais de port."
+      - name: order_discount_ttc
+        description: "Montant total des remises appliquées."
+      - name: order_shipping_ttc
+        description: "Frais de livraison TTC."
+      - name: order_line_product_id
+        description: "Référence du produit commandé (FK vers dim_products)."
+      - name: order_line_product_name
+        description: "Nom du produit au moment de la commande."
+      - name: order_line_product_sku
+        description: "SKU du produit au moment de la commande."
+      - name: order_line_quantity
+        description: "Quantité commandée."
+      - name: order_line_unit_price_ht
+        description: "Prix unitaire hors taxes."
+      - name: order_line_unit_price_ttc
+        description: "Prix unitaire TTC."
+      - name: order_line_vat_rate
+        description: "Taux de TVA appliqué."
+      - name: order_line_total_ttc
+        description: "Total TTC de la ligne (quantité × prix unitaire TTC)."
+      - name: order_ordered_at
+        description: "Date et heure de passation de la commande."
+      - name: order_line_created_at
+        description: "Date de création de la ligne de commande."
+
+  - name: fct_payments
+    description: >
+      Paiements des commandes marketplace.
+      Modèle incrémental sur fenêtre glissante 7 jours (payment_paid_at).
+    columns:
+      - name: payment_id
+        description: "Clé primaire du paiement."
+        tests:
+          - unique
+          - not_null
+      - name: payment_order_id
+        description: "Référence de la commande associée."
+        tests:
+          - not_null
+      - name: payment_amount
+        description: "Montant du paiement."
+      - name: payment_currency
+        description: "Devise du paiement (ISO 4217)."
+      - name: payment_status
+        description: "Statut du paiement (pending, completed, failed, refunded)."
+      - name: payment_gateway_ref
+        description: "Référence de transaction fournie par la passerelle de paiement."
+      - name: payment_payment_method_id
+        description: "Référence du mode de paiement utilisé."
+      - name: payment_paid_at
+        description: "Date et heure d'encaissement du paiement."
+      - name: payment_created_at
+        description: "Date de création de l'enregistrement de paiement."
+
+  - name: fct_refunds
+    description: "Remboursements traités sur les commandes marketplace."
+    columns:
+      - name: refund_id
+        description: "Clé primaire du remboursement."
+        tests:
+          - unique
+          - not_null
+      - name: refund_order_id
+        description: "Référence de la commande remboursée."
+        tests:
+          - not_null
+      - name: refund_amount
+        description: "Montant remboursé."
+      - name: refund_reason
+        description: "Motif du remboursement."
+      - name: refund_status
+        description: "Statut du remboursement (pending, processed, rejected)."
+      - name: refund_created_at
+        description: "Date de création de la demande de remboursement."
+
+  - name: fct_returns
+    description: "Retours produits initiés par les clients marketplace."
+    columns:
+      - name: return_id
+        description: "Clé primaire du retour."
+        tests:
+          - unique
+          - not_null
+      - name: return_order_id
+        description: "Référence de la commande concernée par le retour."
+        tests:
+          - not_null
+      - name: return_reason
+        description: "Motif du retour (défaut, erreur de commande, insatisfaction)."
+      - name: return_status
+        description: "Statut du retour (requested, approved, received, refunded)."
+      - name: return_requested_at
+        description: "Date de demande de retour."
+      - name: return_resolved_at
+        description: "Date de résolution du retour."

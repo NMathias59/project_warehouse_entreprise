@@ -1,0 +1,58 @@
+version: 2
+
+# Intermediate models — domaine marketplace.
+# Matérialisation : ephemeral (héritée de dbt_project.yml §intermediate).
+# Non exposés aux end users — usage interne aux marts marketplace uniquement.
+
+models:
+  - name: int_mkt__orders_joined_to_lines
+    description: >
+      Commandes jointes à leurs lignes et aux produits.
+      Grain : une ligne par ligne de commande.
+      Alimente les marts de performance commerciale.
+    columns:
+      - name: order_line_id
+        description: "Clé de grain — identifiant unique de la ligne de commande."
+        tests:
+          - unique
+          - not_null
+      - name: order_id
+        description: "Référence de la commande parente."
+        tests:
+          - not_null
+
+  - name: int_mkt__customers_aggregated_to_orders
+    description: >
+      Activité client agrégée à partir des commandes.
+      Grain : un enregistrement par client.
+      Calcule le nombre de commandes et les dates de première / dernière commande.
+    columns:
+      - name: customer_id
+        description: "Clé de grain — identifiant unique du client."
+        tests:
+          - unique
+          - not_null
+      - name: total_orders
+        description: "Nombre total de commandes passées par le client."
+      - name: first_order_at
+        description: "Date de la première commande du client."
+      - name: last_order_at
+        description: "Date de la dernière commande du client."
+
+  - name: int_mkt__products_aggregated_to_sales
+    description: >
+      Performance commerciale par produit agrégée à partir des lignes de commande.
+      Grain : un enregistrement par produit.
+      Calcule le nombre de ventes, la quantité vendue et le revenu total TTC.
+    columns:
+      - name: product_id
+        description: "Clé de grain — identifiant unique du produit."
+        tests:
+          - unique
+          - not_null
+      - name: total_sales_count
+        description: "Nombre de lignes de commande contenant ce produit."
+      - name: total_quantity_sold
+        description: "Quantité totale vendue."
+      - name: total_revenue_ttc
+        description: "Chiffre d'affaires total TTC généré par ce produit."

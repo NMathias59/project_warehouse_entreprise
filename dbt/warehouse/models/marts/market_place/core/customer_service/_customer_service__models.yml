@@ -1,0 +1,67 @@
+version: 2
+
+models:
+  - name: fct_reviews
+    description: >
+      Avis clients sur les produits, enrichis avec les informations produit.
+      Grain : un enregistrement par avis déposé.
+      Exclut les avis supprimés (soft delete via review_deleted_at).
+    columns:
+      - name: review_id
+        description: "Clé primaire de l'avis."
+        tests:
+          - unique
+          - not_null
+      - name: review_product_id
+        description: "Référence du produit évalué (FK vers dim_products)."
+        tests:
+          - not_null
+      - name: product_name
+        description: "Nom du produit (dénormalisé)."
+      - name: product_sku
+        description: "SKU du produit (dénormalisé)."
+      - name: review_customer_id
+        description: "Référence du client ayant déposé l'avis (FK vers dim_customers)."
+      - name: review_order_line_id
+        description: "Référence de la ligne de commande associée à l'avis."
+      - name: review_title
+        description: "Titre court de l'avis."
+      - name: review_body
+        description: "Corps de l'avis rédigé par le client."
+      - name: review_rating
+        description: "Note attribuée (1 à 5)."
+      - name: review_is_verified
+        description: "Indique si l'achat est vérifié (avis vérifié)."
+      - name: review_created_at
+        description: "Date de dépôt de l'avis."
+      - name: review_deleted_at
+        description: "Date de suppression logique de l'avis."
+
+  - name: fct_support_tickets
+    description: >
+      Tickets de support client — grain : un enregistrement par ticket.
+      Utilisé pour piloter la qualité de service et les délais de résolution.
+    columns:
+      - name: support_ticket_id
+        description: "Clé primaire du ticket de support."
+        tests:
+          - unique
+          - not_null
+      - name: support_ticket_customer_id
+        description: "Référence du client ayant ouvert le ticket (FK vers dim_customers)."
+        tests:
+          - not_null
+      - name: support_ticket_order_id
+        description: "Référence de la commande concernée (null si ticket générique)."
+      - name: support_ticket_subject
+        description: "Objet / titre du ticket."
+      - name: support_ticket_status
+        description: "Statut du ticket (open, in_progress, resolved, closed)."
+      - name: support_ticket_priority
+        description: "Priorité du ticket (low, medium, high, urgent)."
+      - name: support_ticket_created_at
+        description: "Date d'ouverture du ticket."
+      - name: support_ticket_resolved_at
+        description: "Date de résolution (null si non résolu)."
+      - name: support_ticket_deleted_at
+        description: "Date de suppression logique du ticket."

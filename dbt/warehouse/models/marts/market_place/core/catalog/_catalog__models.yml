@@ -1,0 +1,94 @@
+version: 2
+
+models:
+  - name: dim_brands
+    description: "Dimension des marques — référentiel complet des marques du catalogue marketplace."
+    columns:
+      - name: brand_id
+        description: "Clé primaire de la marque."
+        tests:
+          - unique
+          - not_null
+      - name: brand_name
+        description: "Nom de la marque."
+        tests:
+          - not_null
+      - name: brand_slug
+        description: "Identifiant URL-friendly de la marque."
+      - name: brand_country
+        description: "Pays d'origine de la marque."
+      - name: brand_logo_url
+        description: "URL du logo de la marque."
+      - name: brand_created_at
+        description: "Date de création de la marque."
+      - name: brand_deleted_at
+        description: "Date de suppression logique (soft delete)."
+
+  - name: dim_categories
+    description: "Dimension des catégories produits et leur hiérarchie."
+    columns:
+      - name: category_id
+        description: "Clé primaire de la catégorie."
+        tests:
+          - unique
+          - not_null
+      - name: category_name
+        description: "Nom de la catégorie."
+        tests:
+          - not_null
+      - name: category_slug
+        description: "Identifiant URL-friendly de la catégorie."
+      - name: category_description
+        description: "Description longue de la catégorie."
+      - name: category_parent_id
+        description: "Référence de la catégorie parente (null si catégorie racine)."
+      - name: category_created_at
+        description: "Date de création."
+      - name: category_deleted_at
+        description: "Date de suppression logique."
+
+  - name: dim_products
+    description: >
+      Dimension des produits enrichie avec stock disponible et performance commerciale.
+      Grain : un enregistrement par produit.
+      Consolide produits, niveaux de stock et métriques de vente.
+    columns:
+      - name: product_id
+        description: "Clé primaire du produit."
+        tests:
+          - unique
+          - not_null
+      - name: product_sku
+        description: "Référence SKU du produit."
+      - name: product_name
+        description: "Nom du produit."
+        tests:
+          - not_null
+      - name: product_slug
+        description: "Identifiant URL-friendly du produit."
+      - name: product_description
+        description: "Description longue du produit."
+      - name: product_brand_id
+        description: "Référence de la marque (FK vers dim_brands)."
+      - name: product_category_id
+        description: "Référence de la catégorie (FK vers dim_categories)."
+      - name: product_is_active
+        description: "Indique si le produit est actif et visible."
+      - name: product_weight_kg
+        description: "Poids du produit en kilogrammes."
+      - name: total_stock
+        description: "Stock total toutes entrepôts confondus."
+      - name: total_reserved
+        description: "Quantité réservée (commandes en cours)."
+      - name: available_stock
+        description: "Stock disponible à la vente (total - réservé)."
+      - name: total_sales_count
+        description: "Nombre de lignes de commande contenant ce produit."
+      - name: total_quantity_sold
+        description: "Quantité totale vendue."
+      - name: total_revenue_ttc
+        description: "Chiffre d'affaires total TTC généré par ce produit."
+      - name: product_created_at
+        description: "Date de création du produit."
+      - name: product_deleted_at
+        description: "Date de suppression logique."

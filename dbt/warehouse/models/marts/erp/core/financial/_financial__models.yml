@@ -1,0 +1,79 @@
+version: 2
+
+models:
+  - name: dim_accounts
+    description: "Dimension des comptes comptables — plan comptable de l'entreprise."
+    columns:
+      - name: id_account
+        description: "Clé primaire du compte comptable."
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_bank_accounts
+    description: "Dimension des comptes bancaires de l'entreprise."
+    columns:
+      - name: id_bank_account
+        description: "Clé primaire du compte bancaire."
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_budget_lines
+    description: "Dimension des lignes budgétaires — détail des allocations par compte."
+    columns:
+      - name: id_budget_line
+        description: "Clé primaire de la ligne budgétaire."
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_cost_centers
+    description: "Dimension des centres de coûts — unités organisationnelles budgétaires."
+    columns:
+      - name: id_cost_center
+        description: "Clé primaire du centre de coût."
+        tests:
+          - unique
+          - not_null
+
+  - name: fct_bank_reconciliations
+    description: "Rapprochements bancaires — correspondance entre transactions et écritures."
+    columns:
+      - name: id_bank_reconciliation
+        description: "Clé primaire du rapprochement bancaire."
+        tests:
+          - unique
+          - not_null
+
+  - name: fct_bank_transactions
+    description: "Transactions bancaires enregistrées dans le système ERP."
+    columns:
+      - name: id_bank_transaction
+        description: "Clé primaire de la transaction bancaire."
+        tests:
+          - unique
+          - not_null
+
+  - name: fct_budget
+    description: "Fait budgétaire — agrégation des budgets avec leurs lignes par exercice."
+    columns:
+      - name: id_budget
+        description: "Clé primaire du budget."
+        tests:
+          - not_null
+
+  - name: fct_journal_entries
+    description: >
+      Écritures comptables du journal — grain : une ligne par ligne d'écriture.
+      Modèle incrémental : fenêtre glissante de 7 jours.
+    columns:
+      - name: id_journal_entry
+        description: "Identifiant de l'écriture comptable parente."
+        tests:
+          - not_null
+      - name: journal_entry_line_id
+        description: "Clé de la ligne d'écriture (grain du modèle)."
+        tests:
+          - unique
+          - not_null

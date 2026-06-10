@@ -1,9 +1,13 @@
-with source as (
+﻿with source as (
     select * from {{ source('marketplace', 'orders') }}
 ),
 
 renamed as (
     select
+        _airbyte_raw_id as order__airbyte_raw_id,
+        _airbyte_extracted_at as order__airbyte_extracted_at,
+        _airbyte_meta as order__airbyte_meta,
+        _airbyte_generation_id as order__airbyte_generation_id,
         id as order_id,
         notes as order_notes,
         status as order_status,
@@ -13,15 +17,15 @@ renamed as (
         deleted_at as order_deleted_at,
         ordered_at as order_ordered_at,
         updated_at as order_updated_at,
+        _ab_cdc_lsn as order__ab_cdc_lsn,
         customer_id as order_customer_id,
         discount_ttc as order_discount_ttc,
         shipping_ttc as order_shipping_ttc,
         subtotal_ttc as order_subtotal_ttc,
         billing_address as order_billing_address,
         shipping_address as order_shipping_address,
-        _ab_cdc_lsn as order_cdc_lsn,
-        _ab_cdc_deleted_at as order_cdc_deleted_at,
-        _ab_cdc_updated_at as order_cdc_updated_at
+        _ab_cdc_deleted_at as order__ab_cdc_deleted_at,
+        _ab_cdc_updated_at as order__ab_cdc_updated_at
     from source
 )
 

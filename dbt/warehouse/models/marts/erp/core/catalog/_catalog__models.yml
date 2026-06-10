@@ -1,0 +1,73 @@
+version: 2
+
+models:
+  - name: dim_brands
+    description: "Dimension des marques — référentiel complet des marques du catalogue."
+    columns:
+      - name: id_brand
+        description: "Clé primaire de la marque."
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_categories
+    description: "Dimension des catégories produits et leur hiérarchie."
+    columns:
+      - name: id_category
+        description: "Clé primaire de la catégorie."
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_components
+    description: "Dimension des composants matériels (pièces, assemblages)."
+    columns:
+      - name: id_component
+        description: "Clé primaire du composant."
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_pc_models
+    description: "Dimension des modèles de PC assemblables ou vendus."
+    columns:
+      - name: id_pc_model
+        description: "Clé primaire du modèle PC."
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_products
+    description: "Dimension des produits du catalogue — un enregistrement par produit."
+    columns:
+      - name: id_product
+        description: "Clé primaire du produit."
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_product_compatibilities
+    description: "Relations de compatibilité entre composants et produits."
+    columns:
+      - name: id_product_compatibility
+        description: "Clé primaire de la relation de compatibilité."
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_product_specifications
+    description: "Attributs techniques des produits (poids, dimensions, specs)."
+    columns:
+      - name: id_product_specification
+        description: "Clé primaire de la spécification produit."
+        tests:
+          - unique
+          - not_null
+
+  - name: fct_component_stock_alerts
+    description: "Alertes de stock composant — composants sous le seuil minimal configuré."
+    columns:
+      - name: component_id
+        description: "Référence du composant en alerte."
+        tests:
+          - not_null

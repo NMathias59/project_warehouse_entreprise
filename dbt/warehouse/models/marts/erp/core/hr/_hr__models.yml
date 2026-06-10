@@ -1,0 +1,58 @@
+version: 2
+
+models:
+  - name: dim_departments
+    description: "Dimension des départements / services de l'entreprise."
+    columns:
+      - name: id_department
+        description: "Clé primaire du département."
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_employees
+    description: >
+      Dimension des employés — vue dénormalisée incluant contrat actif,
+      département et poste. Un enregistrement par employé.
+    columns:
+      - name: id_employee
+        description: "Clé primaire de l'employé."
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_positions
+    description: "Dimension des postes / intitulés de fonctions."
+    columns:
+      - name: id_position
+        description: "Clé primaire du poste."
+        tests:
+          - unique
+          - not_null
+
+  - name: fct_employee_contracts
+    description: "Statistiques contractuelles par employé (min/max/avg salaire, nombre de contrats)."
+    columns:
+      - name: employee_id
+        description: "Référence de l'employé (FK vers dim_employees)."
+        tests:
+          - unique
+          - not_null
+
+  - name: fct_leaves
+    description: "Congés et absences — un enregistrement par demande de congé."
+    columns:
+      - name: id_leave
+        description: "Clé primaire du congé."
+        tests:
+          - unique
+          - not_null
+
+  - name: fct_timesheets
+    description: "Feuilles de temps des employés — heures travaillées par projet/période."
+    columns:
+      - name: id_timesheet
+        description: "Clé primaire de la feuille de temps."
+        tests:
+          - unique
+          - not_null

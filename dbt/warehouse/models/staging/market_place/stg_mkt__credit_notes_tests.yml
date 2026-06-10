@@ -1,0 +1,18 @@
+version: 2
+
+models:
+  - name: stg_mkt__credit_notes
+    columns:
+      - name: credit_note_id
+        tests:
+          - unique
+          - not_null
+      - name: amount
+        tests:
+          - not_null
+      - name: order_id
+        tests:
+          - not_null
+      - name: issued_at
+        tests:
+          - not_null

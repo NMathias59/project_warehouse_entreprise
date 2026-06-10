@@ -1,0 +1,12 @@
+version: 2
+
+models:
+  - name: stg_mkt__payments
+    columns:
+      - name: payment_id
+        tests:
+          - unique
+          - not_null
+      - name: payment_order_id
+        tests:
+          - not_null

@@ -1,0 +1,12 @@
+version: 2
+
+models:
+  - name: stg_mkt__cart_items
+    columns:
+      - name: cart_item_id
+        tests:
+          - unique
+          - not_null
+      - name: cart_item_cart_id
+        tests:
+          - not_null

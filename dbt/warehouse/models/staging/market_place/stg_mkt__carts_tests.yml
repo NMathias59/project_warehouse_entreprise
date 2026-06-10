@@ -1,0 +1,12 @@
+version: 2
+
+models:
+  - name: stg_mkt__carts
+    columns:
+      - name: cart_id
+        tests:
+          - unique
+          - not_null
+      - name: cart_customer_id
+        # Removed not_null because carts can be anonymous (no customer_id)
+        tests: []

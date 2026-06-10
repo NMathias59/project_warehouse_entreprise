@@ -1,0 +1,18 @@
+version: 2
+
+models:
+  - name: stg_mkt__discount_codes
+    columns:
+      - name: discount_code_id
+        tests:
+          - unique
+          - not_null
+      - name: discount_code_code
+        tests:
+          - not_null
+      - name: discount_code_is_active
+        tests:
+          - not_null
+      - name: discount_code_used_count
+        tests:
+          - not_null

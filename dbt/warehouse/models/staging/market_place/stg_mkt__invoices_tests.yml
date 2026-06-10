@@ -1,0 +1,21 @@
+version: 2
+
+models:
+  - name: stg_mkt__invoices
+    columns:
+      - name: invoice_id
+        tests:
+          - unique
+          - not_null
+      - name: invoice_number
+        tests:
+          - not_null
+      - name: invoice_order_id
+        tests:
+          - not_null
+      - name: invoice_issued_at
+        tests:
+          - not_null
+      - name: invoice_total_ttc
+        tests:
+          - not_null

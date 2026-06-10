@@ -1,0 +1,12 @@
+version: 2
+
+models:
+  - name: stg_mkt__products
+    columns:
+      - name: product_id
+        tests:
+          - unique
+          - not_null
+      - name: product_sku
+        tests:
+          - not_null

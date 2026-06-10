@@ -1,0 +1,12 @@
+version: 2
+
+models:
+  - name: stg_mkt__customers
+    columns:
+      - name: customer_id
+        tests:
+          - unique
+          - not_null
+      - name: customer_first_name
+        tests:
+          - not_null

@@ -1,0 +1,41 @@
+version: 2
+
+models:
+  - name: rpt_crm__sales_rep_performance
+    description: >
+      Performance commerciale agrégée par commercial — une ligne par sales rep.
+      Combine métriques d'activité (appels, réunions, emails), pipeline (opps, win rate, CA),
+      gestion des tâches et couverture de comptes. Table principale pour les dashboards
+      performance commerciale et revues d'équipe.
+    columns:
+      - name: id_sales_rep
+        description: "PK — identifiant unique du commercial."
+        tests:
+          - unique
+          - not_null
+      - name: sales_rep_name
+        description: "Nom complet du commercial."
+      - name: territory
+        description: "Zone de vente assignée."
+      - name: is_active
+        description: "Commercial actif (true) ou ayant quitté l'équipe (false)."
+      - name: win_rate_pct
+        description: "Taux de closing en % (opps gagnées / total closes)."
+      - name: revenue_won
+        description: "Chiffre d'affaires total généré."
+      - name: pipeline_amount
+        description: "Valeur totale des opportunités ouvertes."
+      - name: task_completion_rate_pct
+        description: "Taux de complétion des tâches en %."
+      - name: nb_accounts
+        description: "Nombre de comptes dans le portefeuille."
+      - name: nb_active_accounts
+        description: "Nombre de comptes actifs."
+      - name: total_account_ltv
+        description: "LTV cumulée de tous les comptes du commercial."
+      - name: nb_activities_last_30d
+        description: "Nombre d'activités sur les 30 derniers jours."
+      - name: nb_calls_last_30d
+        description: "Nombre d'appels sur les 30 derniers jours."
+      - name: last_activity_at
+        description: "Date de la dernière activité enregistrée."

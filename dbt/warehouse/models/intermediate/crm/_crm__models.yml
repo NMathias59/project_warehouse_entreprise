@@ -1,0 +1,59 @@
+version: 2
+
+# Intermediate models CRM — ephemeral (aucun objet créé en base).
+# Pas de blocs WITH internes : ClickHouse ne supporte pas les WITH imbriqués.
+
+models:
+  - name: int_crm__opportunities_with_pipeline
+    description: >
+      Opportunités enrichies avec les métriques du pipeline (nombre de changements d'étape,
+      durée dans l'étape courante, âge total de l'opportunité). Calculé via jointure avec
+      stg_crm__pipeline_events.
+    columns:
+      - name: id_opportunity
+        description: "PK — identifiant unique de l'opportunité."
+        tests:
+          - unique
+          - not_null
+      - name: age_days
+        description: "Nombre de jours depuis la création de l'opportunité."
+      - name: nb_stage_changes
+        description: "Nombre total de changements d'étape."
+      - name: days_in_current_stage
+        description: "Nombre de jours depuis le dernier changement d'étape."
+
+  - name: int_crm__accounts_activity_stats
+    description: >
+      Agrégats par compte : nombre d'activités (par type), opportunités (ouvertes/gagnées/perdues),
+      revenus générés, montant en pipeline, dernière activité, tâches.
+    columns:
+      - name: id_account
+        description: "PK — identifiant unique du compte."
+        tests:
+          - unique
+          - not_null
+      - name: nb_activities
+        description: "Nombre total d'activités sur le compte."
+      - name: revenue_won
+        description: "Somme des montants des opportunités gagnées."
+      - name: pipeline_amount
+        description: "Somme des montants des opportunités ouvertes (ni won ni lost)."
+      - name: last_activity_at
+        description: "Date de la dernière activité enregistrée sur le compte."
+
+  - name: int_crm__sales_rep_stats
+    description: >
+      Performance agrégée par commercial : activités (appels, réunions, emails),
+      opportunités (ouvertes/gagnées/perdues), taux de closing, revenus, tâches.
+    columns:
+      - name: id_sales_rep
+        description: "PK — identifiant unique du commercial."
+        tests:
+          - unique
+          - not_null
+      - name: win_rate_pct
+        description: "Taux de closing = nb_opp_won / (nb_opp_won + nb_opp_lost) * 100."
+      - name: revenue_won
+        description: "Chiffre d'affaires généré (opportunités gagnées)."
+      - name: pipeline_amount
+        description: "Montant total des opportunités ouvertes."

@@ -1,0 +1,32 @@
+version: 2
+
+models:
+  - name: rpt_crm__pipeline_overview
+    description: >
+      Vue pipeline complète — une ligne par opportunité ouverte ou fermée,
+      enrichie avec les infos compte, commercial, métriques pipeline (âge, vélocité)
+      et activités associées. Table principale pour les dashboards pipeline de vente.
+    columns:
+      - name: id_opportunity
+        description: "PK — identifiant unique de l'opportunité."
+        tests:
+          - unique
+          - not_null
+      - name: stage
+        description: "Étape courante dans le pipeline."
+      - name: status
+        description: "Statut (open, won, lost)."
+      - name: amount_estimated
+        description: "Valeur estimée du deal."
+      - name: age_days
+        description: "Âge de l'opportunité en jours depuis sa création."
+      - name: days_in_current_stage
+        description: "Nombre de jours dans l'étape courante (indicateur de blocage)."
+      - name: account_name
+        description: "Nom du compte associé."
+      - name: sales_rep_name
+        description: "Nom complet du commercial responsable."
+      - name: nb_activities
+        description: "Nombre total d'activités sur cette opportunité."
+      - name: last_activity_at
+        description: "Date de la dernière activité sur l'opportunité."

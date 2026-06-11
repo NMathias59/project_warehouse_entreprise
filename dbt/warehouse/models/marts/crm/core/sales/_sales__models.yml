@@ -1,0 +1,130 @@
+version: 2
+
+models:
+  - name: dim_crm_accounts
+    description: "Dimension comptes CRM enrichie avec statistiques d'activité et d'opportunités. Exclut les comptes supprimés (deleted_at is null)."
+    columns:
+      - name: id_account
+        description: "Identifiant unique du compte (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: name
+        description: "Nom du compte."
+      - name: account_type
+        description: "Type de compte (client, prospect, partenaire…)."
+      - name: status
+        description: "Statut du compte."
+      - name: segment
+        description: "Segment commercial."
+      - name: owner_id
+        description: "FK vers dim_crm_sales_reps — commercial propriétaire."
+      - name: lifetime_value
+        description: "Valeur totale générée (LTV)."
+      - name: nb_activities
+        description: "Nombre total d'activités sur le compte."
+      - name: nb_opp_won
+        description: "Nombre d'opportunités gagnées."
+      - name: revenue_won
+        description: "Chiffre d'affaires total généré."
+      - name: pipeline_amount
+        description: "Montant des opportunités ouvertes."
+      - name: last_activity_at
+        description: "Date de la dernière activité."
+
+  - name: dim_crm_contacts
+    description: "Dimension contacts CRM — personnes physiques rattachées à un compte."
+    columns:
+      - name: id_contact
+        description: "Identifiant unique du contact (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: full_name
+        description: "Nom complet (prénom + nom)."
+      - name: is_primary
+        description: "Contact principal du compte."
+      - name: account_id
+        description: "FK vers dim_crm_accounts."
+
+  - name: dim_crm_sales_reps
+    description: "Dimension commerciaux enrichie avec métriques de performance agrégées."
+    columns:
+      - name: id_sales_rep
+        description: "Identifiant unique du commercial (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: full_name
+        description: "Nom complet (prénom + nom)."
+      - name: is_active
+        description: "Commercial actif ou ayant quitté l'équipe."
+      - name: win_rate_pct
+        description: "Taux de closing en % (opps gagnées / (gagnées + perdues))."
+      - name: revenue_won
+        description: "Chiffre d'affaires généré."
+      - name: pipeline_amount
+        description: "Montant des opportunités ouvertes."
+
+  - name: fct_crm_opportunities
+    description: "Fait opportunités commerciales — enrichi avec métriques pipeline (âge, changements d'étape). Incrémental sur updated_at."
+    columns:
+      - name: id_opportunity
+        description: "Identifiant unique de l'opportunité (PK)."
+        tests:
+          - not_null
+      - name: stage
+        description: "Étape courante dans le pipeline."
+      - name: status
+        description: "Statut (open, won, lost)."
+      - name: amount_estimated
+        description: "Montant estimé du deal."
+      - name: age_days
+        description: "Nombre de jours depuis la création."
+      - name: days_in_current_stage
+        description: "Nombre de jours dans l'étape courante."
+
+  - name: fct_crm_activities
+    description: "Fait activités commerciales (appels, emails, réunions, demos…). Incrémental sur occurred_at."
+    columns:
+      - name: id_activity
+        description: "Identifiant unique de l'activité (PK)."
+        tests:
+          - not_null
+      - name: activity_type
+        description: "Type d'activité (call, email, meeting, demo…)."
+      - name: direction
+        description: "inbound ou outbound."
+      - name: duration_minutes
+        description: "Durée en minutes."
+      - name: occurred_at
+        description: "Date et heure de l'activité."
+
+  - name: fct_crm_pipeline_events
+    description: "Historique des changements d'étape des opportunités. Incrémental sur occurred_at."
+    columns:
+      - name: id_pipeline_event
+        description: "Identifiant unique de l'événement (PK)."
+        tests:
+          - not_null
+      - name: stage_from
+        description: "Étape de départ."
+      - name: stage_to
+        description: "Étape d'arrivée."
+      - name: opportunity_id
+        description: "FK vers fct_crm_opportunities."
+
+  - name: fct_crm_tasks
+    description: "Fait tâches commerciales avec indicateurs de complétion et de respect des délais."
+    columns:
+      - name: id_task
+        description: "Identifiant unique de la tâche (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: is_completed
+        description: "1 si la tâche est terminée (status = done)."
+      - name: is_on_time
+        description: "1 si la tâche a été complétée avant la date limite."
+      - name: is_overdue
+        description: "1 si la tâche est en retard (due_at < now et non terminée)."

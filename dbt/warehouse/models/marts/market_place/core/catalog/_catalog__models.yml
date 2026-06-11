@@ -1,7 +1,7 @@
 version: 2
 
 models:
-  - name: dim_brands
+  - name: dim_mkt_brands
     description: "Dimension des marques — référentiel complet des marques du catalogue marketplace."
     columns:
       - name: brand_id
@@ -24,30 +24,30 @@ models:
       - name: brand_deleted_at
         description: "Date de suppression logique (soft delete)."
 
-  - name: dim_categories
+  - name: dim_mkt_categories
     description: "Dimension des catégories produits et leur hiérarchie."
     columns:
-      - name: category_id
+      - name: categorie_id
         description: "Clé primaire de la catégorie."
         tests:
           - unique
           - not_null
-      - name: category_name
+      - name: categorie_name
         description: "Nom de la catégorie."
         tests:
           - not_null
-      - name: category_slug
+      - name: categorie_slug
         description: "Identifiant URL-friendly de la catégorie."
-      - name: category_description
+      - name: categorie_description
         description: "Description longue de la catégorie."
-      - name: category_parent_id
+      - name: categorie_parent_id
         description: "Référence de la catégorie parente (null si catégorie racine)."
-      - name: category_created_at
+      - name: categorie_created_at
         description: "Date de création."
-      - name: category_deleted_at
+      - name: categorie_deleted_at
         description: "Date de suppression logique."
 
-  - name: dim_products
+  - name: dim_mkt_products
     description: >
       Dimension des produits enrichie avec stock disponible et performance commerciale.
       Grain : un enregistrement par produit.

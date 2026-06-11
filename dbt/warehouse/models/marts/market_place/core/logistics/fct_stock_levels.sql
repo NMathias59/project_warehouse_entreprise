@@ -2,7 +2,7 @@
     config(
         materialized='table',
         tags=['mart', 'market_place', 'logistics'],
-        order_by='(stock_level_product_id, stock_level_warehouse_id)'
+        order_by='(tuple())'
     )
 }}
 

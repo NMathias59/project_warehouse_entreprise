@@ -1,6 +1,6 @@
-# 🏭 Project Warehouse Entreprise — Data Platform ERP
+# 🏭 Project Warehouse Entreprise — Data Platform ERP + Marketplace
 
-> Pipeline de données complet d'un ERP vers un Data Warehouse ClickHouse — ingestion via **Airbyte** (self-hosted Docker), orchestration **Apache Airflow** (Astronomer Cosmos) et transformations **dbt**.
+> Pipeline de données complet d'un ERP **et d'une marketplace e-commerce** vers un Data Warehouse ClickHouse — ingestion via **Airbyte** (self-hosted Docker), orchestration **Apache Airflow** (Astronomer Cosmos) et transformations **dbt**.
 
 ---
 
@@ -15,6 +15,7 @@
    - [Couche Staging](#61-couche-staging)
    - [Couche Intermediate](#62-couche-intermediate)
    - [Couche Marts](#63-couche-marts)
+   - [Couche Reports](#64-couche-reports)
 7. [Commandes dbt courantes](#7-commandes-dbt-courantes)
 8. [Macros personnalisées](#8-macros-personnalisées)
 9. [Orchestration Airflow](#9-orchestration-airflow)
@@ -25,23 +26,35 @@
 
 ## 1. Vue d'ensemble
 
-Ce projet implémente un entrepôt de données analytique pour un système ERP. Il couvre :
+Ce projet implémente un entrepôt de données analytique pour **deux systèmes sources** : un ERP et une marketplace e-commerce.
+
+**Domaines ERP** (source `DB_WH_ERP`) :
 
 | Domaine métier      | Description                                         |
 |---------------------|-----------------------------------------------------|
 | 💰 **Finance**      | Budgets, rapprochements bancaires, journaux comptables, transactions |
 | 👤 **RH**           | Employés, contrats, congés, feuilles de temps        |
-| 📦 **Inventaire**   | Stock composants, alertes, mouvements               |
-| 🛒 **Achats**       | Bons de commande, fournisseurs, réceptions           |
-| 🏷️ **Catalogue**    | Produits, marques, catégories                        |
-| ⚙️ **Opérations**   | Ordres de fabrication, qualité (en cours)           |
+| 📦 **Inventaire**   | Stock composants, alertes, mouvements, n° de série, inventaires |
+| 🛒 **Achats**       | Bons de commande, fournisseurs, réceptions, retours, factures fournisseurs |
+| 🏷️ **Catalogue**    | Produits, marques, catégories, composants, modèles PC, BOM |
+| ⚙️ **Opérations**   | Ordres de fabrication, réparations, qualité (staging uniquement) |
+
+**Domaines Marketplace** (source `DB_WH_MKT`) :
+
+| Domaine métier         | Description                                       |
+|------------------------|---------------------------------------------------|
+| 🛍️ **Commerce**        | Commandes, paiements, remboursements, retours, clients, promotions, codes remise |
+| 🏷️ **Catalogue**       | Produits, marques, catégories, prix, bundles PC   |
+| 🚚 **Logistique**      | Expéditions, transporteurs, méthodes/zones de livraison, stock |
+| 🎧 **Service client**  | Tickets support, avis produits                    |
 
 **Stack technique :**
 
 ```
-ERP (PostgreSQL/autre)
-        │
-        ▼
+ERP (PostgreSQL)      Marketplace (PostgreSQL)
+        │                      │
+        └──────────┬───────────┘
+                   ▼
    Airbyte (self-hosted Docker)
    (ingestion CDC / full refresh)
         │
@@ -56,7 +69,7 @@ ERP (PostgreSQL/autre)
         ▼
   ClickHouse 25.x
    (Data Warehouse)
-   schema: DB_WH_ERP
+   schemas: DB_WH_ERP / DB_WH_MKT
 ```
 
 ---
@@ -79,10 +92,10 @@ ERP (PostgreSQL/autre)
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  SOURCE (ERP)                                               │
+│  SOURCES (ERP + Marketplace)                                │
 │  PostgreSQL / autre SGBDR                                   │
 └──────────────────────────┬──────────────────────────────────┘
-                           │  Airbyte Connector
+                           │  Airbyte Connectors
                            │  (full refresh ou CDC)
                            ▼
 ┌─────────────────────────────────────────────────────────────┐
@@ -90,7 +103,7 @@ ERP (PostgreSQL/autre)
 │  • UI : http://localhost:8000                               │
 │  • Connecteurs : Postgres Source → ClickHouse Destination   │
 │  • Sync mode : Full Refresh / Incremental (CDC)             │
-│  • Destination : tables raw dans DB_WH_ERP                  │
+│  • Destinations : tables raw dans DB_WH_ERP et DB_WH_MKT    │
 └──────────────────────────┬──────────────────────────────────┘
                            │  Tables raw ClickHouse
                            ▼
@@ -99,31 +112,33 @@ ERP (PostgreSQL/autre)
 │                                                             │
 │  staging/   → views    (nettoyage, cast, rename)            │
 │  intermediate/ → ephemeral (logique métier, CTEs)           │
-│  marts/     → tables   (MergeTree, prêt BI)                 │
+│  marts/.../core/    → tables (MergeTree, dims + facts)      │
+│  marts/.../reports/ → tables (dénormalisées, prêtes BI)     │
 └──────────────────────────┬──────────────────────────────────┘
                            │
                            ▼
 ┌─────────────────────────────────────────────────────────────┐
 │  DATA WAREHOUSE — ClickHouse 25.x                           │
-│  Schema : DB_WH_ERP                                         │
+│  Schemas : DB_WH_ERP / DB_WH_MKT                            │
 │  Consommé par : BI tools, dashboards, analyses              │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ### Schémas ClickHouse
 
-| Target dbt | Schéma ClickHouse | Usage                    |
-|------------|-------------------|--------------------------|
-| `erp`      | `DB_WH_ERP`       | Entrepôt ERP (principal) |
-| `mkt`      | `DB_WH_MKT`       | Entrepôt Marketing (futur) |
+| Target dbt | Schéma ClickHouse | Usage                       |
+|------------|-------------------|-----------------------------|
+| `erp`      | `DB_WH_ERP`       | Entrepôt ERP (par défaut)   |
+| `mkt`      | `DB_WH_MKT`       | Entrepôt Marketplace        |
 
 ### Matérialisations par couche
 
 ```
-staging/      → view        (léger, toujours frais, pas d'objet physique)
-intermediate/ → ephemeral   (inline CTE, pas d'objet créé en base)
-marts/        → table       (MergeTree, performant pour la BI)
-              → incremental (pour les grandes tables avec updates)
+staging/        → view        (léger, toujours frais, pas d'objet physique)
+intermediate/   → ephemeral   (inline CTE, pas d'objet créé en base)
+marts/.../core/ → table       (MergeTree, performant pour la BI)
+                → incremental (grandes tables de faits, stratégie append)
+marts/.../reports/ → table    (MergeTree, large/dénormalisé pour la BI)
 ```
 
 ---
@@ -161,26 +176,36 @@ project_warehouse_entreprise/
         │
         ├── models/
         │   ├── staging/
-        │   │   └── erp/            # ~65 vues de staging ERP
-        │   │       ├── _erp__sources.yml
-        │   │       ├── _erp__models.yml
-        │   │       ├── _erp__docs.md
-        │   │       └── stg_erp__*.sql
+        │   │   ├── erp/            # ~67 vues de staging ERP (stg_erp__*)
+        │   │   │   ├── _erp__sources.yml
+        │   │   │   └── _erp__models.yml
+        │   │   └── market_place/   # ~56 vues de staging Marketplace (stg_mkt__*)
+        │   │       ├── _market_place__sources.yml
+        │   │       └── _market_place__models.yml
         │   │
         │   ├── intermediate/
-        │   │   └── erp/            # 9 modèles ephemeral
-        │   │       ├── _erp__models.yml
-        │   │       └── int_erp__*.sql
+        │   │   ├── erp/            # 9 modèles ephemeral (int_erp__*)
+        │   │   └── market_place/   # 3 modèles ephemeral (int_mkt__*)
         │   │
         │   └── marts/
-        │       └── erp/
-        │           └── core/
-        │               ├── financial/   # Modèles financiers
-        │               ├── hr/          # Modèles RH
-        │               ├── inventory/   # Modèles inventaire
-        │               ├── catalog/     # Modèles catalogue produit
-        │               ├── operations/  # (en cours)
-        │               └── procurement/ # (en cours)
+        │       ├── erp/
+        │       │   ├── core/                # Dims + facts ERP
+        │       │   │   ├── catalog/         # Produits, marques, composants, PC models
+        │       │   │   ├── financial/       # Comptabilité, banques, budgets
+        │       │   │   ├── hr/              # Employés, contrats, congés, timesheets
+        │       │   │   ├── inventory/       # Stock, entrepôts, n° de série
+        │       │   │   └── procurement/     # Commandes achats, fournisseurs, factures
+        │       │   └── reports/             # Tables reporting dénormalisées (rpt_erp__*)
+        │       │       ├── financial/ ├── hr/ ├── inventory/ └── procurement/
+        │       │
+        │       └── market_place/
+        │           ├── core/                # Dims + facts Marketplace
+        │           │   ├── catalog/         # Produits, marques, catégories
+        │           │   ├── commerce/        # Commandes, paiements, clients, promos
+        │           │   ├── customer_service/ # Avis, tickets support
+        │           │   └── logistics/       # Expéditions, transporteurs, stock
+        │           └── reports/             # Tables reporting dénormalisées (rpt_mkt__*)
+        │               ├── catalog/ ├── commerce/ ├── customer_service/ └── logistics/
         │
         ├── seeds/                  # CSVs de référence statique
         └── target/                 # Artefacts compilés (gitignorés)
@@ -266,35 +291,17 @@ dbt build --project-dir 'C:\data_erp\project_warehouse_entreprise\dbt\warehouse'
 ### 6.1 Couche Staging
 
 **Matérialisation :** `view`
-**Localisation :** `models/staging/erp/`
-**Préfixe :** `stg_erp__`
+**Localisation :** `models/staging/erp/` et `models/staging/market_place/`
+**Préfixes :** `stg_erp__` (source `erp`) et `stg_mkt__` (source `marketplace`)
 
-Chaque modèle = un mapping 1-to-1 avec une table source ERP. Les transformations se limitent à :
+Chaque modèle = un mapping 1-to-1 avec une table source. Les transformations se limitent à :
 - Renommage et cast des colonnes
 - Gestion des NULLs (`coalesce(col, '')` pour les colonnes texte non-nullables ClickHouse)
 - Normalisation des types (dates, booléens, montants)
 
-**Modèles disponibles (sélection) :**
+**ERP — ~67 modèles** couvrant : comptabilité (journaux, plan comptable, exercices fiscaux, banques, budgets), RH (employés, contrats, congés, timesheets), achats (commandes, réceptions, retours, fournisseurs, factures fournisseurs), inventaire (stock, entrepôts, emplacements, n° de série, inventaires), catalogue (produits, marques, composants, BOM, modèles PC), production (ordres de fabrication, réparations, qualité, garanties).
 
-| Modèle                           | Description                        |
-|----------------------------------|------------------------------------|
-| `stg_erp__employees`             | Employés                           |
-| `stg_erp__employee_contracts`    | Contrats employés                  |
-| `stg_erp__departments`           | Départements                       |
-| `stg_erp__positions`             | Postes                             |
-| `stg_erp__leaves`                | Congés                             |
-| `stg_erp__timesheets`            | Feuilles de temps                  |
-| `stg_erp__budgets`               | Budgets                            |
-| `stg_erp__budget_lines`          | Lignes de budget                   |
-| `stg_erp__bank_transactions`     | Transactions bancaires             |
-| `stg_erp__bank_reconciliations`  | Rapprochements bancaires           |
-| `stg_erp__journal_entries`       | Écritures comptables               |
-| `stg_erp__purchase_orders`       | Bons de commande                   |
-| `stg_erp__suppliers`             | Fournisseurs                       |
-| `stg_erp__products`              | Produits                           |
-| `stg_erp__components`            | Composants                         |
-| `stg_erp__component_stock`       | Stock composants                   |
-| `stg_erp__work_orders`           | Ordres de fabrication              |
+**Marketplace — ~56 modèles** couvrant : commerce (commandes, lignes, paiements, remboursements, retours, factures, avoirs), clients (comptes, adresses, paniers, wishlists, fidélité, newsletters), catalogue (produits, prix, historique prix, bundles PC, Q&A produits), logistique (expéditions, tracking, transporteurs, zones/méthodes/tarifs de livraison, stock), promotions (promos, codes remise, flash sales), SAV (tickets, messages, avis, votes).
 
 > ℹ️ **Note ClickHouse :** certaines colonnes source peuvent être NULL. Les colonnes `String` (non-Nullable) dans ClickHouse nécessitent `coalesce(col, '')` avant le CAST pour éviter `CANNOT_INSERT_NULL_IN_ORDINARY_COLUMN`.
 
@@ -303,10 +310,12 @@ Chaque modèle = un mapping 1-to-1 avec une table source ERP. Les transformation
 ### 6.2 Couche Intermediate
 
 **Matérialisation :** `ephemeral` (CTEs inlinés, aucun objet créé en base ClickHouse)
-**Localisation :** `models/intermediate/erp/`
-**Préfixe :** `int_erp__`
+**Localisation :** `models/intermediate/erp/` et `models/intermediate/market_place/`
+**Préfixes :** `int_erp__` et `int_mkt__`
 
 > ⚠️ **Compatibilité ClickHouse :** les modèles `ephemeral` ne doivent **pas** contenir de blocs `WITH` internes. ClickHouse ne supporte pas les WITH imbriqués générés par l'inlining dbt. Utiliser des `ref()` directs avec JOINs.
+
+**ERP :**
 
 | Modèle                                  | Description                                             |
 |-----------------------------------------|---------------------------------------------------------|
@@ -320,49 +329,150 @@ Chaque modèle = un mapping 1-to-1 avec une table source ERP. Les transformation
 | `int_erp__purchase_order_status_stats`  | Stats commandes par statut                              |
 | `int_erp__supplier_stats`               | Stats achats par fournisseur                            |
 
+**Marketplace :**
+
+| Modèle                                   | Description                                  |
+|------------------------------------------|----------------------------------------------|
+| `int_mkt__orders_joined_to_lines`        | Commandes jointes à leurs lignes             |
+| `int_mkt__customers_aggregated_to_orders`| Agrégats commandes par client (LTV, volume)  |
+| `int_mkt__products_aggregated_to_sales`  | Agrégats ventes par produit                  |
+
 ---
 
 ### 6.3 Couche Marts
 
-**Matérialisation :** `table` (MergeTree) ou `incremental`
-**Localisation :** `models/marts/erp/core/`
+**Matérialisation :** `table` (MergeTree) ou `incremental` (stratégie `append`)
+**Localisation :** `models/marts/erp/core/` et `models/marts/market_place/core/`
 **Moteur ClickHouse :** `MergeTree()` (configuré globalement dans `dbt_project.yml`)
 
-#### 💰 Financial (`marts/erp/core/financial/`)
+#### ERP — 💰 Financial (`marts/erp/core/financial/`)
 
 | Modèle                     | Type        | Description                      |
 |----------------------------|-------------|----------------------------------|
-| `dim_account`              | table       | Dimension plan comptable         |
-| `dim_bank_account`         | table       | Dimension comptes bancaires      |
-| `dim_buget_line`           | table       | Dimension lignes budgétaires     |
-| `dim_cost_center`          | table       | Dimension centres de coût        |
+| `dim_accounts`             | table       | Dimension plan comptable         |
+| `dim_bank_accounts`        | table       | Dimension comptes bancaires      |
+| `dim_budget_lines`         | table       | Dimension lignes budgétaires     |
+| `dim_cost_centers`         | table       | Dimension centres de coût        |
 | `fct_budget`               | table       | Fait budgets + lignes            |
 | `fct_bank_transactions`    | incremental | Fait transactions bancaires      |
 | `fct_bank_reconciliations` | incremental | Fait rapprochements bancaires    |
-| `fct__journal_entries`     | incremental | Fait écritures comptables        |
+| `fct_journal_entries`      | incremental | Fait écritures comptables        |
 
-#### 👤 HR (`marts/erp/core/hr/`)
+#### ERP — 👤 HR (`marts/erp/core/hr/`)
 
-| Modèle                  | Type        | Description                           |
-|-------------------------|-------------|---------------------------------------|
-| `dim_employee`          | table       | Dimension employés (enrichie)         |
-| `dim_departement`       | table       | Dimension départements                |
-| `dim_position`          | table       | Dimension postes                      |
-| `fct_employee_cotracts` | table       | Fait contrats employés                |
-| `fct_leaves`            | incremental | Fait congés (fenêtre glissante 7j)    |
-| `fct_timesheets`        | incremental | Fait feuilles de temps                |
+| Modèle                   | Type        | Description                           |
+|--------------------------|-------------|---------------------------------------|
+| `dim_employees`          | table       | Dimension employés (enrichie)         |
+| `dim_departments`        | table       | Dimension départements                |
+| `dim_positions`          | table       | Dimension postes                      |
+| `fct_employee_contracts` | table       | Fait contrats employés                |
+| `fct_leaves`             | incremental | Fait congés (fenêtre glissante 7j)    |
+| `fct_timesheets`         | incremental | Fait feuilles de temps                |
 
-#### 📦 Inventory (`marts/erp/core/inventory/`)
+#### ERP — 📦 Inventory (`marts/erp/core/inventory/`)
 
-| Modèle               | Type  | Description       |
-|----------------------|-------|-------------------|
-| `fct_invotory_count` | table | Fait inventaires  |
+| Modèle                        | Type        | Description                          |
+|-------------------------------|-------------|--------------------------------------|
+| `dim_warehouses`              | table       | Dimension entrepôts                  |
+| `dim_warehouse_locations`     | table       | Dimension emplacements d'entrepôt    |
+| `dim_serial_numbers`          | table       | Dimension numéros de série           |
+| `fct_inventory_counts`        | table       | Fait inventaires physiques           |
+| `fct_stock_level`             | incremental | Fait niveaux de stock                |
+| `fct_component_stock_movement`| incremental | Fait mouvements de stock composants  |
+| `fct_serial_tracking`         | incremental | Fait traçabilité des n° de série     |
 
-#### 🏷️ Catalog (`marts/erp/core/catalog/`)
+#### ERP — 🏷️ Catalog (`marts/erp/core/catalog/`)
 
-| Modèle      | Type  | Description       |
-|-------------|-------|-------------------|
-| `dim_brand` | table | Dimension marques |
+| Modèle                          | Type  | Description                            |
+|---------------------------------|-------|----------------------------------------|
+| `dim_brands`                    | table | Dimension marques                      |
+| `dim_categories`                | table | Dimension catégories                   |
+| `dim_products`                  | table | Dimension produits                     |
+| `dim_components`                | table | Dimension composants                   |
+| `dim_pc_models`                 | table | Dimension modèles PC                   |
+| `dim_product_compatibilities`   | table | Compatibilités produit/composant       |
+| `dim_product_specifications`    | table | Spécifications produit                 |
+| `fct_component_stock_alerts`    | table | Fait alertes stock composants          |
+
+#### ERP — 🛒 Procurement (`marts/erp/core/procurement/`)
+
+| Modèle                      | Type        | Description                        |
+|-----------------------------|-------------|------------------------------------|
+| `dim_suppliers`             | table       | Dimension fournisseurs             |
+| `dim_supplier_contacts`     | table       | Dimension contacts fournisseurs    |
+| `fct_purchase_orders`       | incremental | Fait commandes d'achat             |
+| `fct_purchase_order_status` | table       | Fait statuts des commandes         |
+| `fct_purchase_receipt`      | incremental | Fait réceptions                    |
+| `fct_purchase_return`       | incremental | Fait retours fournisseurs          |
+| `fct_vendor_invoice`        | incremental | Fait factures fournisseurs         |
+| `fct_supplier_contracts`    | incremental | Fait contrats fournisseurs         |
+
+#### Marketplace — 🛍️ Commerce (`marts/market_place/core/commerce/`)
+
+| Modèle               | Type        | Description                          |
+|----------------------|-------------|--------------------------------------|
+| `dim_customers`      | table       | Dimension clients (enrichie LTV)     |
+| `dim_promotions`     | table       | Dimension promotions                 |
+| `dim_discount_codes` | table       | Dimension codes remise               |
+| `fct_orders`         | incremental | Fait commandes                       |
+| `fct_payments`       | incremental | Fait paiements                       |
+| `fct_refunds`        | table       | Fait remboursements                  |
+| `fct_returns`        | table       | Fait retours clients                 |
+
+#### Marketplace — 🏷️ Catalog (`marts/market_place/core/catalog/`)
+
+| Modèle               | Type  | Description                            |
+|----------------------|-------|----------------------------------------|
+| `dim_mkt_products`   | table | Dimension produits (enrichie ventes)   |
+| `dim_mkt_brands`     | table | Dimension marques                      |
+| `dim_mkt_categories` | table | Dimension catégories                   |
+
+#### Marketplace — 🚚 Logistics (`marts/market_place/core/logistics/`)
+
+| Modèle                 | Type        | Description                       |
+|------------------------|-------------|-----------------------------------|
+| `dim_carriers`         | table       | Dimension transporteurs           |
+| `dim_shipping_methods` | table       | Dimension méthodes de livraison   |
+| `dim_mkt_warehouses`   | table       | Dimension entrepôts marketplace   |
+| `fct_shipments`        | incremental | Fait expéditions                  |
+| `fct_stock_levels`     | table       | Fait niveaux de stock             |
+
+#### Marketplace — 🎧 Customer Service (`marts/market_place/core/customer_service/`)
+
+| Modèle                | Type  | Description           |
+|-----------------------|-------|-----------------------|
+| `fct_reviews`         | table | Fait avis produits    |
+| `fct_support_tickets` | table | Fait tickets support  |
+
+---
+
+### 6.4 Couche Reports
+
+**Matérialisation :** `table` (MergeTree)
+**Localisation :** `models/marts/erp/reports/` et `models/marts/market_place/reports/`
+**Préfixes :** `rpt_erp__` et `rpt_mkt__`
+
+Couche finale large et dénormalisée, consommée directement par les outils BI. Chaque report combine plusieurs marts en un seul modèle analytique prêt à l'emploi.
+
+**ERP :**
+
+| Modèle                              | Domaine     | Description                                  |
+|-------------------------------------|-------------|----------------------------------------------|
+| `rpt_erp__journal_entries_enriched` | financial   | Écritures comptables enrichies (comptes, centres de coût) |
+| `rpt_erp__hr_workforce`             | hr          | Vue effectifs : employés + contrats + congés + temps |
+| `rpt_erp__inventory_stock_status`   | inventory   | État du stock par entrepôt/emplacement       |
+| `rpt_erp__component_movements`      | inventory   | Mouvements de stock composants enrichis      |
+| `rpt_erp__procurement_orders`       | procurement | Commandes d'achat enrichies fournisseurs     |
+
+**Marketplace :**
+
+| Modèle                            | Domaine          | Description                              |
+|-----------------------------------|------------------|------------------------------------------|
+| `rpt_mkt__revenue_daily`          | commerce         | Chiffre d'affaires journalier            |
+| `rpt_mkt__customer_ltv`           | commerce         | Lifetime value par client                |
+| `rpt_mkt__product_performance`    | catalog          | Performance produit (ventes, avis)       |
+| `rpt_mkt__logistics_performance`  | logistics        | Performance livraison (délais, transporteurs) |
+| `rpt_mkt__customer_satisfaction`  | customer_service | Satisfaction client (avis, tickets)      |
 
 ---
 
@@ -381,7 +491,7 @@ dbt run --target erp
 dbt build --target erp
 
 # Run d'un modèle spécifique
-dbt run --select dim_employee --target erp
+dbt run --select dim_employees --target erp
 
 # Run d'un dossier complet
 dbt run --select path:models/marts/erp/core/financial --target erp
@@ -398,15 +508,15 @@ dbt run --select state:modified+ --target erp
 dbt test --target erp
 
 # Tests sur un modèle spécifique
-dbt test --select dim_employee --target erp
+dbt test --select dim_employees --target erp
 
 # --- Debug & Compilation ---
 
 # Compiler sans exécuter (vérifier le SQL généré)
-dbt compile --select dim_employee --target erp
+dbt compile --select dim_employees --target erp
 
 # Voir le SQL compilé
-type target\compiled\warehouse\models\marts\erp\core\hr\dim_employee.sql
+type target\compiled\warehouse\models\marts\erp\core\hr\dim_employees.sql
 
 # Vérifier la connexion
 dbt debug --target erp

@@ -4,7 +4,7 @@
         unique_key='order_line_id',
         incremental_strategy='append',
         tags=['mart', 'market_place', 'commerce'],
-        order_by='(order_ordered_at, order_id)',
+        order_by='(tuple())',
         pre_hook=[
             "{{ clickhouse_delete_existing_rows(ref('stg_mkt__orders'), 'order_id', 'order_id', 'order_ordered_at', 7) }}"
         ]
@@ -80,5 +80,5 @@ final as (
 select * from final
 
 {% if is_incremental() %}
-where order_ordered_at > (select coalesce(max(order_ordered_at), '1970-01-01') from {{ this }})
+where order_ordered_at > (select coalesce(max(order_ordered_at), toDateTime64('1970-01-01 00:00:00', 3)) from {{ this }})
 {% endif %}

@@ -1,8 +1,8 @@
 {{
-config(
-    materialized='table',
-    tags=['core','mart','dim','erp','financial']
-)
+    config(
+        materialized='table',
+        tags=['mart', 'erp', 'core', 'financial']
+    )
 }}
 select
     id_cost_center,

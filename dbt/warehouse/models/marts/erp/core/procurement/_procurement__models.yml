@@ -46,12 +46,18 @@ models:
           - not_null
 
   - name: fct_purchase_receipt
-    description: "Réceptions de commandes d'achat — livraisons entrantes en entrepôt."
+    description: >
+      Réceptions de commandes d'achat — grain : une ligne par ligne de réception.
+      Un enregistrement de réception (id_purchase_receipt) peut contenir plusieurs lignes.
     columns:
-      - name: id_purchase_receipt
-        description: "Clé primaire de la réception."
+      - name: purchase_receipt_line_id
+        description: "Clé de grain — identifiant unique de la ligne de réception."
         tests:
           - unique
+          - not_null
+      - name: id_purchase_receipt
+        description: "Référence de la réception parente."
+        tests:
           - not_null
 
   - name: fct_purchase_return

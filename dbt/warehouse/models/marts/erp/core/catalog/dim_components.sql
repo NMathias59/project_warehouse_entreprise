@@ -1,15 +1,45 @@
 {{ config(materialized='table', tags=['mart','erp','core','catalog']) }}
 
+with components as (
 
-select
-    component_id as id_component,
-    component_name,
-    unit,
-    is_active,
-    max_stock,
-    min_stock,
-    current_stock,
-    location_id,
-    stock_updated_at
+    select
+        id_components,
+        name,
+        unit,
+        is_active,
+        max_stock,
+        min_stock
+    from {{ ref('stg_erp__components') }}
 
-from {{ ref('int_erp__component_stock_status') }}
+),
+
+stock as (
+
+    select
+        component_id,
+        sum(quantity)    as current_stock,
+        max(location_id) as location_id,
+        max(updated_at)  as stock_updated_at
+    from {{ ref('stg_erp__component_stock') }}
+    group by component_id
+
+),
+
+final as (
+
+    select
+        components.id_components  as id_component,
+        components.name           as component_name,
+        components.unit,
+        components.is_active,
+        components.max_stock,
+        components.min_stock,
+        stock.current_stock,
+        stock.location_id,
+        stock.stock_updated_at
+    from components
+    left join stock on components.id_components = stock.component_id
+
+)
+
+select * from final

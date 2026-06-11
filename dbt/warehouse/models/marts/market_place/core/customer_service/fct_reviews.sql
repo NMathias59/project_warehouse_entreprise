@@ -2,7 +2,7 @@
     config(
         materialized='table',
         tags=['mart', 'market_place', 'customer_service'],
-        order_by='(review_created_at, review_id)'
+        order_by='(tuple())'
     )
 }}
 

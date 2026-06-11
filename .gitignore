@@ -1,6 +1,7 @@
 # dbt-specific
 dbt/warehouse/logs/*
 dbt_best_practices.md
+airflow_airbyte_dbt_best_practices.md
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

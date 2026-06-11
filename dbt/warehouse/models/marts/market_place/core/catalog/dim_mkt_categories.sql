@@ -2,20 +2,20 @@
     config(
         materialized='table',
         tags=['mart', 'market_place', 'catalog'],
-        order_by='(category_id)'
+        order_by='(categorie_id)'
     )
 }}
 
 with categories as (
 
     select
-        category_id,
-        category_name,
-        category_slug,
-        category_description,
-        category_parent_id,
-        category_created_at,
-        category_deleted_at
+        categorie_id,
+        categorie_name,
+        categorie_slug,
+        categorie_description,
+        categorie_parent_id,
+        categorie_created_at,
+        categorie_deleted_at
     from {{ ref('stg_mkt__categories') }}
 
 )

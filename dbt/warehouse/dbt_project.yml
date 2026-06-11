@@ -94,7 +94,7 @@ models:
       +engine: "MergeTree()"
       +order_by: "(tuple())"
       erp:
-        core:
+        reports:
           financial:
             +tags: ["reports", "erp", "financial"]
           hr:
@@ -104,7 +104,7 @@ models:
           inventory:
             +tags: ["reports", "erp", "inventory"]
       market_place:
-        core:
+        reports:
           commerce:
             +tags: ["reports", "market_place", "commerce"]
           catalog:

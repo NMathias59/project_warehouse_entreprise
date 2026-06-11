@@ -49,10 +49,16 @@ models:
           - not_null
 
   - name: fct_timesheets
-    description: "Feuilles de temps des employés — heures travaillées par projet/période."
+    description: >
+      Feuilles de temps des employés — grain : une ligne par ligne de feuille de temps (jour).
+      Une feuille (id_timesheet) peut contenir plusieurs lignes journalières.
     columns:
-      - name: id_timesheet
-        description: "Clé primaire de la feuille de temps."
+      - name: id_timesheet_line
+        description: "Clé de grain — identifiant unique de la ligne journalière."
         tests:
           - unique
+          - not_null
+      - name: id_timesheet
+        description: "Référence de la feuille de temps parente."
+        tests:
           - not_null

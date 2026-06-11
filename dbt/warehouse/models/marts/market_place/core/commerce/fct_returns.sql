@@ -2,7 +2,7 @@
     config(
         materialized='table',
         tags=['mart', 'market_place', 'commerce'],
-        order_by='(return_requested_at, return_id)'
+        order_by='(tuple())'
     )
 }}
 

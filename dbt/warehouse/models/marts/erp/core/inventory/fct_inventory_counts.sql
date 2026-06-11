@@ -1,10 +1,34 @@
-{{ config(materialized='table', tags=['mart','erp','core','invotory']) }}
+{{
+    config(
+        materialized='table',
+        tags=['mart', 'erp', 'core', 'inventory']
+    )
+}}
 
 with ic as (
-    select * from {{ ref('stg_erp__inventory_counts') }}
+
+    select
+        id_inventory_count,
+        started_at,
+        warehouse_id,
+        created_at
+    from {{ ref('stg_erp__inventory_counts') }}
+
 ),
+
 icl as (
-    select * from {{ ref('stg_erp__inventory_count_lines') }}
+
+    select
+        id_inventory_count_line,
+        inventory_count_id,
+        component_id,
+        counted_qty,
+        expected_qty,
+        variance,
+        counted_at,
+        location_id
+    from {{ ref('stg_erp__inventory_count_lines') }}
+
 )
 
 select

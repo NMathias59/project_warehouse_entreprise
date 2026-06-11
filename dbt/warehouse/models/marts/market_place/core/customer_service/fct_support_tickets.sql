@@ -2,7 +2,7 @@
     config(
         materialized='table',
         tags=['mart', 'market_place', 'customer_service'],
-        order_by='(support_ticket_created_at, support_ticket_id)'
+        order_by='(tuple())'
     )
 }}
 

@@ -4,7 +4,7 @@
         unique_key='shipment_id',
         incremental_strategy='append',
         tags=['mart', 'market_place', 'logistics'],
-        order_by='(shipment_shipped_at, shipment_id)',
+        order_by='(tuple())',
         pre_hook=[
             "{{ clickhouse_delete_existing_rows(ref('stg_mkt__shipments'), 'shipment_id', 'shipment_id', 'shipment_shipped_at', 7) }}"
         ]
@@ -55,5 +55,5 @@ final as (
 select * from final
 
 {% if is_incremental() %}
-where shipment_shipped_at > (select coalesce(max(shipment_shipped_at), '1970-01-01') from {{ this }})
+where shipment_shipped_at > (select coalesce(max(shipment_shipped_at), toDateTime64('1970-01-01 00:00:00', 3)) from {{ this }})
 {% endif %}

@@ -75,7 +75,7 @@ models:
         tests:
           - unique
           - not_null
-      - name: category_id
+      - name: categorie_id
         description: "Identifiant métier de la catégorie (PK)."
         tests:
           - not_null
@@ -101,7 +101,7 @@ models:
         tests:
           - unique
           - not_null
-      - name: customer_address_id
+      - name: customer_addresse_id
         description: "Identifiant métier de l'adresse (PK)."
         tests:
           - not_null

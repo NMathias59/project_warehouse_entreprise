@@ -47,7 +47,7 @@ models:
       - name: shipping_method_created_at
         description: "Date de création de la méthode."
 
-  - name: dim_warehouses
+  - name: dim_mkt_warehouses
     description: "Dimension des entrepôts marketplace — sites de stockage et d'expédition."
     columns:
       - name: warehouse_id

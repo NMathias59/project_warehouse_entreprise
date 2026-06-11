@@ -9,17 +9,31 @@ with sl as (
 ),
 cs as (
     select * from {{ ref('stg_erp__component_stock') }}
+),
+joined as (
+    select
+        coalesce(sl.id_stock_level, cs.id_component_stock) as stock_id,
+        coalesce(sl.product_id, cs.component_id)           as product_id,
+        coalesce(sl.warehouse_id, cs.location_id)          as location_id,
+        coalesce(sl.quantity, cs.quantity)                 as quantity,
+        coalesce(sl.updated_at, cs.updated_at)             as updated_at
+    from sl
+    full outer join cs on sl.product_id = cs.component_id and sl.warehouse_id = cs.location_id
+),
+deduped as (
+    select
+        stock_id,
+        product_id,
+        location_id,
+        quantity,
+        updated_at,
+        row_number() over (partition by stock_id order by updated_at desc) as rn
+    from joined
 )
-
-select
-    coalesce(sl.id_stock_level, cs.id_component_stock) as stock_id,
-    coalesce(sl.product_id, cs.component_id) as product_id,
-    coalesce(sl.warehouse_id, cs.location_id) as location_id,
-    coalesce(sl.quantity, cs.quantity) as quantity,
-    coalesce(sl.updated_at, cs.updated_at) as updated_at
-from sl
-full outer join cs on sl.product_id = cs.component_id and sl.warehouse_id = cs.location_id
+select stock_id, product_id, location_id, quantity, updated_at
+from deduped
+where rn = 1
 
 {% if is_incremental() %}
-where coalesce(sl.updated_at, cs.updated_at) > (select coalesce(max(updated_at), '1970-01-01') from {{ this }})
+and updated_at > (select coalesce(max(updated_at), toDate('1970-01-01')) from {{ this }})
 {% endif %}

@@ -11,10 +11,25 @@
 }}
 
 with je as (
-    select * from {{ ref('stg_erp__journal_entries') }}
+
+    select
+        id_journal_entry,
+        created_at,
+        reference
+    from {{ ref('stg_erp__journal_entries') }}
+
 ),
+
 jel as (
-    select * from {{ ref('stg_erp__journal_entry_lines') }}
+
+    select
+        id_journal_entry_line,
+        journal_entry_id,
+        account_number,
+        debit,
+        credit
+    from {{ ref('stg_erp__journal_entry_lines') }}
+
 )
 
 select

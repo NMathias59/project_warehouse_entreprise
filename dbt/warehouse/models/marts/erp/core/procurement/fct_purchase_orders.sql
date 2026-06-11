@@ -1,11 +1,15 @@
-{{ config(
-    materialized='incremental',
-    unique_key='id_purchase_order',
-    incremental_strategy='append',
-    on_schema_change='sync_all_columns',
-    tags=['mart','erp','core'],
-    pre_hook=[ clickhouse_delete_existing_rows(ref('stg_erp__purchase_orders'), 'id_purchase_order', 'ordered_at', 7) ]
-) }}
+{{
+    config(
+        materialized='incremental',
+        unique_key='id_purchase_order',
+        incremental_strategy='append',
+        on_schema_change='sync_all_columns',
+        tags=['mart', 'erp', 'core', 'procurement'],
+        pre_hook=[
+            "{{ clickhouse_delete_existing_rows(ref('stg_erp__purchase_orders'), 'id_purchase_order', 'id_purchase_order', 'ordered_at', 7) }}"
+        ]
+    )
+}}
 
 {# clickhouse detected: 'merge' strategy may not be supported by the ClickHouse adapter.
    Using 'append' as a compatible incremental strategy. If updates must be applied, the pre_hook

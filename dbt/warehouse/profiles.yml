@@ -36,5 +36,77 @@ warehouse:
       verify: false
       connect_timeout: 10
 
-  # target par défaut (erp, mkt ou crm)
+    bi_logistique:
+      type: clickhouse
+      host: host.docker.internal
+      port: 8123
+      driver: http
+      user: admin
+      password: password123
+      schema: "DB_WH_BI_LOGISTIQUE"
+      secure: false
+      verify: false
+      connect_timeout: 10
+
+    bi_marketing:
+      type: clickhouse
+      host: host.docker.internal
+      port: 8123
+      driver: http
+      user: admin
+      password: password123
+      schema: "DB_WH_BI_MARKETING"
+      secure: false
+      verify: false
+      connect_timeout: 10
+
+    bi_production:
+      type: clickhouse
+      host: host.docker.internal
+      port: 8123
+      driver: http
+      user: admin
+      password: password123
+      schema: "DB_WH_BI_PRODUCTION"
+      secure: false
+      verify: false
+      connect_timeout: 10
+
+    bi_finance:
+      type: clickhouse
+      host: host.docker.internal
+      port: 8123
+      driver: http
+      user: admin
+      password: password123
+      schema: "DB_WH_BI_FINANCE"
+      secure: false
+      verify: false
+      connect_timeout: 10
+
+    bi_rh:
+      type: clickhouse
+      host: host.docker.internal
+      port: 8123
+      driver: http
+      user: admin
+      password: password123
+      schema: "DB_WH_BI_RH"
+      secure: false
+      verify: false
+      connect_timeout: 10
+
+    bi_sav:
+      type: clickhouse
+      host: host.docker.internal
+      port: 8123
+      driver: http
+      user: admin
+      password: password123
+      schema: "DB_WH_BI_SAV"
+      secure: false
+      verify: false
+      connect_timeout: 10
+
+  # targets disponibles : erp, mkt, crm, bi_logistique, bi_marketing, bi_production, bi_finance, bi_rh, bi_sav
   target: erp

@@ -10,8 +10,8 @@ select
     cast(coalesce(owner_id, '')          as varchar)   as owner_id,
     cast(coalesce(account_id, '')        as varchar)   as account_id,
     cast(coalesce(opportunity_id, '')    as varchar)   as opportunity_id,
-    cast(due_at                          as timestamp) as due_at,
-    cast(completed_at                    as timestamp) as completed_at,
+    toDateTimeOrNull(toString(due_at))                 as due_at,
+    toDateTimeOrNull(toString(completed_at))           as completed_at,
     cast(created_at                      as timestamp) as created_at,
     cast(_airbyte_extracted_at           as timestamp) as _etl_loaded_at
 from {{ source('crm', 'tasks') }}

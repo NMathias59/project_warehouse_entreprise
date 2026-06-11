@@ -1,6 +1,6 @@
-# 🏭 Project Warehouse Entreprise — Data Platform ERP + Marketplace
+# 🏭 Project Warehouse Entreprise — Data Platform ERP + Marketplace + CRM
 
-> Pipeline de données complet d'un ERP **et d'une marketplace e-commerce** vers un Data Warehouse ClickHouse — ingestion via **Airbyte** (self-hosted Docker), orchestration **Apache Airflow** (Astronomer Cosmos) et transformations **dbt**.
+> Pipeline de données complet d'un ERP, d'une marketplace e-commerce **et d'un CRM** vers un Data Warehouse ClickHouse — ingestion via **Airbyte** (self-hosted Docker), orchestration **Apache Airflow** (Astronomer Cosmos) et transformations **dbt**.
 
 ---
 
@@ -26,7 +26,7 @@
 
 ## 1. Vue d'ensemble
 
-Ce projet implémente un entrepôt de données analytique pour **deux systèmes sources** : un ERP et une marketplace e-commerce.
+Ce projet implémente un entrepôt de données analytique pour **trois systèmes sources** : un ERP, une marketplace e-commerce et un CRM.
 
 **Domaines ERP** (source `DB_WH_ERP`) :
 
@@ -48,28 +48,39 @@ Ce projet implémente un entrepôt de données analytique pour **deux systèmes 
 | 🚚 **Logistique**      | Expéditions, transporteurs, méthodes/zones de livraison, stock |
 | 🎧 **Service client**  | Tickets support, avis produits                    |
 
+**Domaines CRM** (source `DB_WH_CRM`) :
+
+| Domaine métier       | Description                                              |
+|----------------------|----------------------------------------------------------|
+| 🏢 **Comptes**       | Comptes clients/prospects, LTV, segmentation, portefeuille |
+| 👥 **Contacts**      | Contacts rattachés aux comptes, liens cross-domaine       |
+| 💼 **Ventes**        | Opportunités, pipeline, probabilité, montant estimé       |
+| 📞 **Activités**     | Appels, emails, réunions, demos — historique commercial   |
+| 📋 **Tâches**        | Tâches assignées, suivi délais, complétion               |
+| 📊 **Pipeline**      | Historique des changements d'étape, vélocité de vente    |
+
 **Stack technique :**
 
 ```
-ERP (PostgreSQL)      Marketplace (PostgreSQL)
-        │                      │
-        └──────────┬───────────┘
-                   ▼
-   Airbyte (self-hosted Docker)
-   (ingestion CDC / full refresh)
-        │
-        ▼ tables raw dans ClickHouse
-   Apache Airflow  ──────────────  Astronomer Cosmos
-   (orchestration)                  (DAG dbt natif)
-        │
-        ▼
-     dbt Core 1.11.2
-   (transformations)
-        │
-        ▼
-  ClickHouse 25.x
-   (Data Warehouse)
-   schemas: DB_WH_ERP / DB_WH_MKT
+ERP (PostgreSQL)   Marketplace (PostgreSQL)   CRM (PostgreSQL)
+        │                   │                       │
+        └───────────────────┼───────────────────────┘
+                            ▼
+          Airbyte (self-hosted Docker)
+          (ingestion CDC / full refresh)
+                            │
+                            ▼ tables raw dans ClickHouse
+          Apache Airflow  ──────────────  Astronomer Cosmos
+          (orchestration)                  (DAG dbt natif)
+                            │
+                            ▼
+                       dbt Core 1.11.2
+                       (transformations)
+                            │
+                            ▼
+                    ClickHouse 25.x
+                    (Data Warehouse)
+          schemas: DB_WH_ERP / DB_WH_MKT / DB_WH_CRM
 ```
 
 ---
@@ -103,7 +114,7 @@ ERP (PostgreSQL)      Marketplace (PostgreSQL)
 │  • UI : http://localhost:8000                               │
 │  • Connecteurs : Postgres Source → ClickHouse Destination   │
 │  • Sync mode : Full Refresh / Incremental (CDC)             │
-│  • Destinations : tables raw dans DB_WH_ERP et DB_WH_MKT    │
+│  • Destinations : DB_WH_ERP, DB_WH_MKT et DB_WH_CRM          │
 └──────────────────────────┬──────────────────────────────────┘
                            │  Tables raw ClickHouse
                            ▼
@@ -119,7 +130,7 @@ ERP (PostgreSQL)      Marketplace (PostgreSQL)
                            ▼
 ┌─────────────────────────────────────────────────────────────┐
 │  DATA WAREHOUSE — ClickHouse 25.x                           │
-│  Schemas : DB_WH_ERP / DB_WH_MKT                            │
+│  Schemas : DB_WH_ERP / DB_WH_MKT / DB_WH_CRM                │
 │  Consommé par : BI tools, dashboards, analyses              │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -130,6 +141,7 @@ ERP (PostgreSQL)      Marketplace (PostgreSQL)
 |------------|-------------------|-----------------------------|
 | `erp`      | `DB_WH_ERP`       | Entrepôt ERP (par défaut)   |
 | `mkt`      | `DB_WH_MKT`       | Entrepôt Marketplace        |
+| `crm`      | `DB_WH_CRM`       | Entrepôt CRM                |
 
 ### Matérialisations par couche
 
@@ -179,13 +191,18 @@ project_warehouse_entreprise/
         │   │   ├── erp/            # ~67 vues de staging ERP (stg_erp__*)
         │   │   │   ├── _erp__sources.yml
         │   │   │   └── _erp__models.yml
-        │   │   └── market_place/   # ~56 vues de staging Marketplace (stg_mkt__*)
-        │   │       ├── _market_place__sources.yml
-        │   │       └── _market_place__models.yml
+        │   │   ├── market_place/   # ~56 vues de staging Marketplace (stg_mkt__*)
+        │   │   │   ├── _market_place__sources.yml
+        │   │   │   └── _market_place__models.yml
+        │   │   └── crm/            # 7 vues de staging CRM (stg_crm__*)
+        │   │       ├── _crm__sources.yml
+        │   │       ├── _crm__models.yml
+        │   │       └── _crm__docs.md
         │   │
         │   ├── intermediate/
         │   │   ├── erp/            # 9 modèles ephemeral (int_erp__*)
-        │   │   └── market_place/   # 3 modèles ephemeral (int_mkt__*)
+        │   │   ├── market_place/   # 3 modèles ephemeral (int_mkt__*)
+        │   │   └── crm/            # 3 modèles ephemeral (int_crm__*)
         │   │
         │   └── marts/
         │       ├── erp/
@@ -198,14 +215,21 @@ project_warehouse_entreprise/
         │       │   └── reports/             # Tables reporting dénormalisées (rpt_erp__*)
         │       │       ├── financial/ ├── hr/ ├── inventory/ └── procurement/
         │       │
-        │       └── market_place/
-        │           ├── core/                # Dims + facts Marketplace
-        │           │   ├── catalog/         # Produits, marques, catégories
-        │           │   ├── commerce/        # Commandes, paiements, clients, promos
-        │           │   ├── customer_service/ # Avis, tickets support
-        │           │   └── logistics/       # Expéditions, transporteurs, stock
-        │           └── reports/             # Tables reporting dénormalisées (rpt_mkt__*)
-        │               ├── catalog/ ├── commerce/ ├── customer_service/ └── logistics/
+        │       ├── market_place/
+        │       │   ├── core/                # Dims + facts Marketplace
+        │       │   │   ├── catalog/         # Produits, marques, catégories
+        │       │   │   ├── commerce/        # Commandes, paiements, clients, promos
+        │       │   │   ├── customer_service/ # Avis, tickets support
+        │       │   │   └── logistics/       # Expéditions, transporteurs, stock
+        │       │   └── reports/             # Tables reporting dénormalisées (rpt_mkt__*)
+        │       │       ├── catalog/ ├── commerce/ ├── customer_service/ └── logistics/
+        │       │
+        │       └── crm/
+        │           ├── core/
+        │           │   └── sales/           # Comptes, contacts, reps, opps, activités
+        │           └── reports/             # Tables reporting dénormalisées (rpt_crm__*)
+        │               ├── pipeline/        # Vue pipeline par opportunité
+        │               └── sales/           # Performance par commercial
         │
         ├── seeds/                  # CSVs de référence statique
         └── target/                 # Artefacts compilés (gitignorés)
@@ -248,6 +272,7 @@ Set-Location airbyte
   |-------------------|--------------------------|------------------------|
   | ERP               | PostgreSQL ERP           | Database : `DB_WH_ERP` |
   | Marketplace       | PostgreSQL Marketplace   | Database : `DB_WH_MKT` |
+  | CRM               | PostgreSQL CRM           | Database : `DB_WH_CRM` |
 
   Paramètres communs de la destination ClickHouse :
   - Host : `host.docker.internal` (ou l'IP de ton ClickHouse)
@@ -314,6 +339,8 @@ Chaque modèle = un mapping 1-to-1 avec une table source. Les transformations se
 
 **Marketplace — ~56 modèles** couvrant : commerce (commandes, lignes, paiements, remboursements, retours, factures, avoirs), clients (comptes, adresses, paniers, wishlists, fidélité, newsletters), catalogue (produits, prix, historique prix, bundles PC, Q&A produits), logistique (expéditions, tracking, transporteurs, zones/méthodes/tarifs de livraison, stock), promotions (promos, codes remise, flash sales), SAV (tickets, messages, avis, votes).
 
+**CRM — 7 modèles** couvrant : comptes (`accounts`), contacts, commerciaux (`sales_reps`), opportunités, activités commerciales, événements pipeline et tâches.
+
 > ℹ️ **Note ClickHouse :** certaines colonnes source peuvent être NULL. Les colonnes `String` (non-Nullable) dans ClickHouse nécessitent `coalesce(col, '')` avant le CAST pour éviter `CANNOT_INSERT_NULL_IN_ORDINARY_COLUMN`.
 
 ---
@@ -321,8 +348,8 @@ Chaque modèle = un mapping 1-to-1 avec une table source. Les transformations se
 ### 6.2 Couche Intermediate
 
 **Matérialisation :** `ephemeral` (CTEs inlinés, aucun objet créé en base ClickHouse)
-**Localisation :** `models/intermediate/erp/` et `models/intermediate/market_place/`
-**Préfixes :** `int_erp__` et `int_mkt__`
+**Localisation :** `models/intermediate/erp/`, `models/intermediate/market_place/` et `models/intermediate/crm/`
+**Préfixes :** `int_erp__`, `int_mkt__` et `int_crm__`
 
 > ⚠️ **Compatibilité ClickHouse :** les modèles `ephemeral` ne doivent **pas** contenir de blocs `WITH` internes. ClickHouse ne supporte pas les WITH imbriqués générés par l'inlining dbt. Utiliser des `ref()` directs avec JOINs.
 
@@ -348,12 +375,20 @@ Chaque modèle = un mapping 1-to-1 avec une table source. Les transformations se
 | `int_mkt__customers_aggregated_to_orders`| Agrégats commandes par client (LTV, volume)  |
 | `int_mkt__products_aggregated_to_sales`  | Agrégats ventes par produit                  |
 
+**CRM :**
+
+| Modèle                                    | Description                                              |
+|-------------------------------------------|----------------------------------------------------------|
+| `int_crm__opportunities_with_pipeline`    | Opportunités enrichies avec vélocité pipeline (âge, nb changements d'étape, jours dans l'étape courante) |
+| `int_crm__accounts_activity_stats`        | Agrégats activités/opps/revenus par compte               |
+| `int_crm__sales_rep_stats`                | Performance agrégée par commercial (win rate, CA, tâches)|
+
 ---
 
 ### 6.3 Couche Marts
 
 **Matérialisation :** `table` (MergeTree) ou `incremental` (stratégie `append`)
-**Localisation :** `models/marts/erp/core/` et `models/marts/market_place/core/`
+**Localisation :** `models/marts/erp/core/`, `models/marts/market_place/core/` et `models/marts/crm/core/`
 **Moteur ClickHouse :** `MergeTree()` (configuré globalement dans `dbt_project.yml`)
 
 #### ERP — 💰 Financial (`marts/erp/core/financial/`)
@@ -455,13 +490,25 @@ Chaque modèle = un mapping 1-to-1 avec une table source. Les transformations se
 | `fct_reviews`         | table | Fait avis produits    |
 | `fct_support_tickets` | table | Fait tickets support  |
 
+#### CRM — 💼 Sales (`marts/crm/core/sales/`)
+
+| Modèle                    | Type        | Description                                              |
+|---------------------------|-------------|----------------------------------------------------------|
+| `dim_crm_accounts`        | table       | Dimension comptes (enrichie activités + opps + revenus)  |
+| `dim_crm_contacts`        | table       | Dimension contacts (full_name, lien cross-domaine)       |
+| `dim_crm_sales_reps`      | table       | Dimension commerciaux (enrichie win rate, CA, pipeline)  |
+| `fct_crm_opportunities`   | incremental | Fait opportunités (vélocité pipeline, incr. sur updated_at, fenêtre 30j) |
+| `fct_crm_activities`      | incremental | Fait activités commerciales (incr. sur occurred_at, 7j)  |
+| `fct_crm_pipeline_events` | incremental | Historique changements d'étape (incr. sur occurred_at, 7j)|
+| `fct_crm_tasks`           | table       | Fait tâches (flags is_completed, is_on_time, is_overdue) |
+
 ---
 
 ### 6.4 Couche Reports
 
 **Matérialisation :** `table` (MergeTree)
-**Localisation :** `models/marts/erp/reports/` et `models/marts/market_place/reports/`
-**Préfixes :** `rpt_erp__` et `rpt_mkt__`
+**Localisation :** `models/marts/erp/reports/`, `models/marts/market_place/reports/` et `models/marts/crm/reports/`
+**Préfixes :** `rpt_erp__`, `rpt_mkt__` et `rpt_crm__`
 
 Couche finale large et dénormalisée, consommée directement par les outils BI. Chaque report combine plusieurs marts en un seul modèle analytique prêt à l'emploi.
 
@@ -485,6 +532,13 @@ Couche finale large et dénormalisée, consommée directement par les outils BI.
 | `rpt_mkt__logistics_performance`  | logistics        | Performance livraison (délais, transporteurs) |
 | `rpt_mkt__customer_satisfaction`  | customer_service | Satisfaction client (avis, tickets)      |
 
+**CRM :**
+
+| Modèle                              | Domaine  | Description                                                      |
+|-------------------------------------|----------|------------------------------------------------------------------|
+| `rpt_crm__pipeline_overview`        | pipeline | Vue pipeline complète : opportunités enrichies compte + commercial + activités |
+| `rpt_crm__sales_rep_performance`    | sales    | Performance par commercial : activités, win rate, CA, portefeuille, tendance 30j |
+
 ---
 
 ## 7. Commandes dbt courantes
@@ -501,11 +555,17 @@ dbt run --target erp
 # Run complet Marketplace
 dbt run --target mkt
 
+# Run complet CRM
+dbt run --target crm
+
 # Build complet (run + tests) — ERP
 dbt build --target erp
 
 # Build complet (run + tests) — Marketplace
 dbt build --target mkt
+
+# Build complet (run + tests) — CRM
+dbt build --target crm
 
 # Run d'un modèle spécifique (ERP)
 dbt run --select dim_employees --target erp
@@ -513,17 +573,23 @@ dbt run --select dim_employees --target erp
 # Run d'un modèle spécifique (Marketplace)
 dbt run --select fct_orders --target mkt
 
+# Run d'un modèle spécifique (CRM)
+dbt run --select fct_crm_opportunities --target crm
+
 # Run d'un dossier complet
 dbt run --select path:models/marts/erp/core/financial --target erp
 dbt run --select path:models/marts/market_place/core/commerce --target mkt
+dbt run --select path:models/marts/crm/core/sales --target crm
 
 # Run uniquement la couche reports
 dbt run --select tag:reports --target erp
 dbt run --select tag:reports --target mkt
+dbt run --select tag:reports --target crm
 
 # Run avec full-refresh (rebuild incrémentaux depuis zéro)
 dbt run --full-refresh --select fct_leaves --target erp
 dbt run --full-refresh --select fct_orders --target mkt
+dbt run --full-refresh --select fct_crm_opportunities --target crm
 
 # Run des modèles modifiés + leurs dépendants
 dbt run --select state:modified+ --target erp
@@ -533,24 +599,28 @@ dbt run --select state:modified+ --target erp
 # Lancer tous les tests
 dbt test --target erp
 dbt test --target mkt
+dbt test --target crm
 
 # Tests sur un modèle spécifique
 dbt test --select dim_employees --target erp
 dbt test --select fct_orders --target mkt
+dbt test --select dim_crm_accounts --target crm
 
 # --- Debug & Compilation ---
 
 # Compiler sans exécuter (vérifier le SQL généré)
 dbt compile --select dim_employees --target erp
 dbt compile --select fct_orders --target mkt
+dbt compile --select fct_crm_opportunities --target crm
 
 # Vérifier les connexions
 dbt debug --target erp
 dbt debug --target mkt
+dbt debug --target crm
 
 # --- Documentation ---
 
-# Générer la documentation (couvre les deux sources)
+# Générer la documentation (couvre les trois sources)
 dbt docs generate --target erp
 
 # Lancer le serveur de doc (http://localhost:8080)
@@ -669,13 +739,14 @@ Ce projet suit les recommandations dbt documentées dans `dbt_best_practices.md`
 ### ❌ Airbyte : tables non visibles dans ClickHouse après sync
 
 - Vérifier que le sync a bien terminé (statut `Succeeded` dans l'UI Airbyte)
-- Vérifier que le **schema** de destination correspond au bon schéma (`DB_WH_ERP` pour l'ERP, `DB_WH_MKT` pour la marketplace)
+- Vérifier que le **schema** de destination correspond au bon schéma (`DB_WH_ERP`, `DB_WH_MKT` ou `DB_WH_CRM`)
 - Airbyte crée parfois les tables dans un namespace différent : inspecter avec :
   ```sql
   SHOW TABLES FROM DB_WH_ERP;
   SHOW TABLES FROM DB_WH_MKT;
+  SHOW TABLES FROM DB_WH_CRM;
   ```
-- Si Basic Normalization est activée dans Airbyte, des tables `<entity>` normalisées sont créées à côté des `_airbyte_raw_<entity>`. Les sources dbt dans `_erp__sources.yml` et `_market_place__sources.yml` doivent pointer sur les bonnes tables.
+- Si Basic Normalization est activée dans Airbyte, des tables `<entity>` normalisées sont créées à côté des `_airbyte_raw_<entity>`. Les sources dbt dans `_erp__sources.yml`, `_market_place__sources.yml` et `_crm__sources.yml` doivent pointer sur les bonnes tables.
 
 ### ❌ Airbyte : erreur de connexion ClickHouse destination
 

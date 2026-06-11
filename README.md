@@ -242,17 +242,23 @@ Set-Location airbyte
 ```
 
 - **UI Airbyte :** http://localhost:8000 (user: `airbyte` / pass: `password`)
-- **Configurer la Source :** ton SGBDR ERP (ex. PostgreSQL connector)
-- **Configurer la Destination :** ClickHouse connector
+- **Configurer deux connexions** (une par source) :
+
+  | Connexion         | Source                   | Destination ClickHouse |
+  |-------------------|--------------------------|------------------------|
+  | ERP               | PostgreSQL ERP           | Database : `DB_WH_ERP` |
+  | Marketplace       | PostgreSQL Marketplace   | Database : `DB_WH_MKT` |
+
+  Paramètres communs de la destination ClickHouse :
   - Host : `host.docker.internal` (ou l'IP de ton ClickHouse)
   - Port : `8123`
-  - Database : `DB_WH_ERP`
   - Username / Password : selon ton `profiles.yml`
+
 - **Sync mode recommandé :**
   - `Full Refresh | Overwrite` pour les petites tables de référence
   - `Incremental | Append` ou CDC pour les grandes tables transactionnelles
 
-> ℹ️ Les tables créées par Airbyte dans ClickHouse seront préfixées `_airbyte_raw_` par défaut (selon la version). Les modèles `stg_erp__*` de dbt pointent sur les tables **normalisées** créées par Airbyte (Basic Normalization désactivée = raw uniquement, les stagings dbt font la normalisation).
+> ℹ️ Les tables créées par Airbyte dans ClickHouse seront préfixées `_airbyte_raw_` par défaut (selon la version). Les modèles `stg_erp__*` et `stg_mkt__*` de dbt pointent sur les tables **normalisées** créées par Airbyte (Basic Normalization désactivée = raw uniquement, les stagings dbt font la normalisation).
 
 ---
 
@@ -272,16 +278,21 @@ Set-Location 'C:\data_erp\project_warehouse_entreprise\dbt\warehouse'
 dbt deps
 ```
 
-### 5.3 Vérifier la connexion ClickHouse
+### 5.3 Vérifier les connexions ClickHouse
 
 ```powershell
 dbt debug --project-dir 'C:\data_erp\project_warehouse_entreprise\dbt\warehouse' --target erp
+dbt debug --project-dir 'C:\data_erp\project_warehouse_entreprise\dbt\warehouse' --target mkt
 ```
 
 ### 5.4 Lancer un build complet
 
 ```powershell
+# ERP (target par défaut)
 dbt build --project-dir 'C:\data_erp\project_warehouse_entreprise\dbt\warehouse' --target erp
+
+# Marketplace
+dbt build --project-dir 'C:\data_erp\project_warehouse_entreprise\dbt\warehouse' --target mkt
 ```
 
 ---
@@ -484,20 +495,35 @@ Set-Location 'C:\data_erp\project_warehouse_entreprise\dbt\warehouse'
 
 # --- Build & Run ---
 
-# Run complet (tous les modèles)
+# Run complet ERP
 dbt run --target erp
 
-# Build complet (run + tests)
+# Run complet Marketplace
+dbt run --target mkt
+
+# Build complet (run + tests) — ERP
 dbt build --target erp
 
-# Run d'un modèle spécifique
+# Build complet (run + tests) — Marketplace
+dbt build --target mkt
+
+# Run d'un modèle spécifique (ERP)
 dbt run --select dim_employees --target erp
+
+# Run d'un modèle spécifique (Marketplace)
+dbt run --select fct_orders --target mkt
 
 # Run d'un dossier complet
 dbt run --select path:models/marts/erp/core/financial --target erp
+dbt run --select path:models/marts/market_place/core/commerce --target mkt
+
+# Run uniquement la couche reports
+dbt run --select tag:reports --target erp
+dbt run --select tag:reports --target mkt
 
 # Run avec full-refresh (rebuild incrémentaux depuis zéro)
 dbt run --full-refresh --select fct_leaves --target erp
+dbt run --full-refresh --select fct_orders --target mkt
 
 # Run des modèles modifiés + leurs dépendants
 dbt run --select state:modified+ --target erp
@@ -506,24 +532,25 @@ dbt run --select state:modified+ --target erp
 
 # Lancer tous les tests
 dbt test --target erp
+dbt test --target mkt
 
 # Tests sur un modèle spécifique
 dbt test --select dim_employees --target erp
+dbt test --select fct_orders --target mkt
 
 # --- Debug & Compilation ---
 
 # Compiler sans exécuter (vérifier le SQL généré)
 dbt compile --select dim_employees --target erp
+dbt compile --select fct_orders --target mkt
 
-# Voir le SQL compilé
-type target\compiled\warehouse\models\marts\erp\core\hr\dim_employees.sql
-
-# Vérifier la connexion
+# Vérifier les connexions
 dbt debug --target erp
+dbt debug --target mkt
 
 # --- Documentation ---
 
-# Générer la documentation
+# Générer la documentation (couvre les deux sources)
 dbt docs generate --target erp
 
 # Lancer le serveur de doc (http://localhost:8080)
@@ -609,20 +636,21 @@ services:
 
 Ce projet suit les recommandations dbt documentées dans `dbt_best_practices.md` :
 
-| Pratique                                    | Statut |
-|---------------------------------------------|--------|
-| Ingestion via Airbyte (self-hosted)         | ✅     |
-| `source()` pointe sur les tables Airbyte    | ✅     |
-| Nommage `stg_[source]__[entity]s`           | ✅     |
-| `source()` uniquement dans les stagings     | ✅     |
-| Staging matérialisé en `view`               | ✅     |
-| Intermediate en `ephemeral`                 | ✅     |
-| Marts en `table` / `incremental`            | ✅     |
-| Tests `unique` + `not_null` sur les PKs     | ✅     |
-| Fichiers YAML par dossier source            | ✅     |
-| `query-comment` pour traçabilité ClickHouse | ✅     |
-| `on_schema_change: append_new_columns`      | ✅     |
-| `send_anonymous_usage_stats: false`         | ✅     |
+| Pratique                                              | Statut |
+|-------------------------------------------------------|--------|
+| Ingestion via Airbyte (self-hosted, ERP + Marketplace)| ✅     |
+| `source()` pointe sur les tables Airbyte              | ✅     |
+| Nommage `stg_[source]__[entity]s`                     | ✅     |
+| `source()` uniquement dans les stagings               | ✅     |
+| Staging matérialisé en `view`                         | ✅     |
+| Intermediate en `ephemeral`                           | ✅     |
+| Marts en `table` / `incremental`                      | ✅     |
+| Couche reports dénormalisée pour la BI                | ✅     |
+| Tests `unique` + `not_null` sur les PKs               | ✅     |
+| Fichiers YAML par dossier domaine                     | ✅     |
+| `query-comment` pour traçabilité ClickHouse           | ✅     |
+| `on_schema_change: append_new_columns`                | ✅     |
+| `send_anonymous_usage_stats: false`                   | ✅     |
 
 **Convention de nommage des colonnes :**
 
@@ -641,12 +669,13 @@ Ce projet suit les recommandations dbt documentées dans `dbt_best_practices.md`
 ### ❌ Airbyte : tables non visibles dans ClickHouse après sync
 
 - Vérifier que le sync a bien terminé (statut `Succeeded` dans l'UI Airbyte)
-- Vérifier que le **schema** de destination correspond bien à `DB_WH_ERP`
+- Vérifier que le **schema** de destination correspond au bon schéma (`DB_WH_ERP` pour l'ERP, `DB_WH_MKT` pour la marketplace)
 - Airbyte crée parfois les tables dans un namespace différent : inspecter avec :
   ```sql
   SHOW TABLES FROM DB_WH_ERP;
+  SHOW TABLES FROM DB_WH_MKT;
   ```
-- Si Basic Normalization est activée dans Airbyte, des tables `<entity>` normalisées sont créées à côté des `_airbyte_raw_<entity>`. Les sources dbt dans `_erp__sources.yml` doivent pointer sur les bonnes tables.
+- Si Basic Normalization est activée dans Airbyte, des tables `<entity>` normalisées sont créées à côté des `_airbyte_raw_<entity>`. Les sources dbt dans `_erp__sources.yml` et `_market_place__sources.yml` doivent pointer sur les bonnes tables.
 
 ### ❌ Airbyte : erreur de connexion ClickHouse destination
 

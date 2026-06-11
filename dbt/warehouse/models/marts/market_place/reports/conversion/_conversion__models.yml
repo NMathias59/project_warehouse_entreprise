@@ -1,0 +1,37 @@
+version: 2
+
+models:
+
+  - name: rpt_mkt__cart_funnel
+    description: >
+      Funnel panier quotidien — une ligne par jour.
+      Mesure le volume de paniers créés, le taux de conversion (paniers non-vides vs commandes passées)
+      et le taux d'abandon (paniers expirés avec articles vs paniers non-vides).
+      Basé sur int_mkt__carts_with_items (agrégation cart_items) croisé avec les commandes du jour.
+      Usage BI : optimisation UX checkout, alertes abandons, mesure d'impact A/B tests.
+    columns:
+      - name: cart_date
+        description: "PK — date de création des paniers."
+        tests:
+          - unique
+          - not_null
+      - name: carts_created
+        description: "Nombre total de paniers créés ce jour."
+      - name: carts_non_empty
+        description: "Paniers avec au moins un article."
+      - name: carts_logged_in
+        description: "Paniers associés à un compte client identifié."
+      - name: carts_empty
+        description: "Paniers sans article."
+      - name: abandoned_carts
+        description: "Paniers expirés avec articles (proxy pour les paniers abandonnés)."
+      - name: avg_cart_value_ttc
+        description: "Valeur moyenne des paniers TTC."
+      - name: avg_items_per_cart
+        description: "Nombre moyen d'articles par panier."
+      - name: orders_placed
+        description: "Nombre de commandes passées ce jour."
+      - name: cart_conversion_rate_pct
+        description: "Taux de conversion en % (orders / carts_non_empty)."
+      - name: cart_abandonment_rate_pct
+        description: "Taux d'abandon en % (abandoned_carts / carts_non_empty)."

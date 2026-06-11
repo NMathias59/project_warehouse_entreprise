@@ -27,3 +27,32 @@ models:
         description: 1 si le statut est returned.
       - name: shipment_month
         description: Mois d'expédition au format YYYYMM.
+
+  - name: rpt_mkt__carrier_performance
+    description: >
+      Performance par transporteur — une ligne par carrier.
+      Combine les métriques d'expédition (taux de livraison, délai moyen, retours)
+      avec les événements de tracking (couverture tracking, taux d'exceptions).
+      Usage BI : évaluation et comparaison des transporteurs, pilotage SLA livraison.
+    columns:
+      - name: shipment_carrier_id
+        description: "PK — identifiant du transporteur."
+        tests:
+          - unique
+          - not_null
+      - name: carrier_name
+        description: "Nom du transporteur."
+      - name: total_shipments
+        description: "Nombre total d'expéditions confiées à ce transporteur."
+      - name: delivered_count
+        description: "Nombre d'expéditions livrées."
+      - name: delivery_rate_pct
+        description: "Taux de livraison en % (delivered / total)."
+      - name: return_rate_pct
+        description: "Taux de retour en % (returned / total)."
+      - name: avg_transit_days
+        description: "Délai moyen de transit en jours (shipped → delivered)."
+      - name: tracking_coverage_pct
+        description: "% d'expéditions avec au moins un événement de tracking."
+      - name: exception_rate_pct
+        description: "% d'événements de tracking de type exception (incidents)."

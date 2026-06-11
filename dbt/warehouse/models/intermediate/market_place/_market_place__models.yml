@@ -39,6 +39,23 @@ models:
       - name: last_order_at
         description: "Date de la dernière commande du client."
 
+  - name: int_mkt__carts_with_items
+    description: >
+      Paniers enrichis avec l'agrégation de leurs articles.
+      Grain : un enregistrement par panier.
+      Calcule le nombre d'articles, la quantité totale et la valeur estimée TTC.
+      Alimente rpt_mkt__cart_funnel.
+    columns:
+      - name: cart_id
+        description: "Clé de grain — identifiant unique du panier."
+        tests:
+          - unique
+          - not_null
+      - name: estimated_cart_value_ttc
+        description: "Valeur totale estimée du panier TTC (quantité × prix unitaire TTC)."
+      - name: nb_items
+        description: "Nombre de lignes articles dans le panier."
+
   - name: int_mkt__products_aggregated_to_sales
     description: >
       Performance commerciale par produit agrégée à partir des lignes de commande.

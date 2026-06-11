@@ -1,0 +1,116 @@
+version: 2
+
+models:
+
+  - name: rpt_mkt__newsletter_performance
+    description: >
+      Performance des campagnes email — une ligne par campagne.
+      KPIs : taux d'ouverture, taux de clic, click-to-open rate.
+      Enrichi du nombre total d'abonnés actifs en snapshot courant.
+      Usage BI : suivi email marketing, benchmark campagnes, évolution liste.
+    columns:
+      - name: campaign_id
+        description: "PK — identifiant de la campagne newsletter."
+        tests:
+          - unique
+          - not_null
+      - name: subject
+        description: "Objet de l'email."
+      - name: sent_date
+        description: "Date d'envoi de la campagne."
+      - name: sent_to_count
+        description: "Nombre de destinataires."
+      - name: opened_count
+        description: "Nombre d'ouvertures."
+      - name: clicked_count
+        description: "Nombre de clics."
+      - name: active_subscribers
+        description: "Abonnés actifs au moment du snapshot (toute la liste, pas par campagne)."
+      - name: open_rate_pct
+        description: "Taux d'ouverture en % (opened / sent_to)."
+      - name: click_rate_pct
+        description: "Taux de clic en % (clicked / sent_to)."
+      - name: click_to_open_rate_pct
+        description: "Taux de clic parmi les ouvertures (clicked / opened)."
+
+  - name: rpt_mkt__discount_code_performance
+    description: >
+      Performance des codes de réduction — une ligne par code promo.
+      Combine les métadonnées du code (type, valeur, limite d'usage) avec les
+      statistiques d'utilisation réelles (nb utilisations, CA impacté, remise accordée).
+      Usage BI : pilotage des promotions, détection des codes sous/sur-utilisés, ROI promo.
+    columns:
+      - name: discount_code_id
+        description: "PK — identifiant du code de réduction."
+        tests:
+          - unique
+          - not_null
+      - name: code
+        description: "Code alphanumérique saisi par le client."
+      - name: discount_type
+        description: "Type de réduction (percentage, fixed_amount)."
+      - name: discount_value
+        description: "Valeur de la réduction (% ou montant fixe)."
+      - name: actual_uses
+        description: "Nombre réel d'utilisations du code."
+      - name: usage_rate_pct
+        description: "Taux d'utilisation en % (actual_uses / max_uses). Null si max_uses illimité."
+      - name: total_discount_granted
+        description: "Total des remises accordées via ce code."
+      - name: revenue_with_code
+        description: "CA TTC généré sur les commandes ayant utilisé ce code."
+      - name: orders_with_code
+        description: "Nombre de commandes distinctes ayant utilisé ce code."
+
+  - name: rpt_mkt__loyalty_program
+    description: >
+      Programme de fidélité par client — une ligne par client inscrit au programme.
+      Combine le solde courant de points, l'historique des transactions (earn/redeem)
+      et les données client. Exclut les clients sans compte fidélité.
+      Usage BI : segmentation fidélité, taux de rachat, valeur du programme.
+    columns:
+      - name: customer_id
+        description: "PK — identifiant unique du client."
+        tests:
+          - unique
+          - not_null
+      - name: current_balance
+        description: "Solde courant de points fidélité."
+      - name: total_points_earned
+        description: "Total de points gagnés (toutes transactions earn)."
+      - name: total_points_redeemed
+        description: "Total de points dépensés (toutes transactions redeem)."
+      - name: redemption_rate_pct
+        description: "Taux de rachat en % (redeemed / earned)."
+      - name: avg_points_per_order
+        description: "Points gagnés en moyenne par commande passée."
+      - name: last_transaction_at
+        description: "Date de la dernière transaction fidélité."
+
+  - name: rpt_mkt__flash_sales_performance
+    description: >
+      Performance des ventes flash — une ligne par flash sale.
+      Métriques : taux d'écoulement (sell-through), CA estimé, durée, statut courant.
+      Usage BI : pilotage des opérations flash, analyse du stock écoulé vs alloué.
+    columns:
+      - name: flash_sale_id
+        description: "PK — identifiant de la vente flash."
+        tests:
+          - unique
+          - not_null
+      - name: flash_sale_name
+        description: "Nom de l'opération flash."
+      - name: product_name
+        description: "Nom du produit concerné."
+      - name: sale_status
+        description: "Statut courant : upcoming / active / ended."
+      - name: stock_allocated
+        description: "Stock alloué à la vente flash."
+      - name: stock_remaining
+        description: "Stock restant (alloué - vendu)."
+      - name: sell_through_rate_pct
+        description: "Taux d'écoulement en % (sold / allocated)."
+      - name: estimated_revenue_ttc
+        description: "CA TTC estimé (stock_sold × price_flash_ttc)."
+      - name: duration_hours
+        description: "Durée de la vente flash en heures."

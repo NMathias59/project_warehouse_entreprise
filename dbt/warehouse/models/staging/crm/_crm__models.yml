@@ -1,0 +1,245 @@
+version: 2
+
+# Staging models pour la source CRM (DB_WH_CRM).
+# Convention : stg_crm__<table>.sql — 1-to-1 avec la table source.
+# Matérialisation : view (héritée de dbt_project.yml).
+
+models:
+  - name: stg_crm__accounts
+    description: "{{ doc('stg_crm__accounts') }}"
+    columns:
+      - name: id_account
+        description: "Identifiant unique du compte CRM (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: name
+        description: "Nom du compte."
+      - name: account_type
+        description: "Type de compte (ex. client, prospect, partenaire)."
+      - name: status
+        description: "Statut du compte (ex. active, inactive, churned)."
+      - name: segment
+        description: "Segment commercial du compte."
+      - name: email
+        description: "Adresse email principale du compte."
+      - name: phone
+        description: "Numéro de téléphone du compte."
+      - name: website
+        description: "URL du site web du compte."
+      - name: city
+        description: "Ville du compte."
+      - name: country_code
+        description: "Code pays ISO du compte."
+      - name: external_ref
+        description: "Référence externe (identifiant dans un système tiers)."
+      - name: source_customer_id
+        description: "Lien vers l'identifiant client dans la Marketplace (DB_WH_MKT)."
+      - name: source_supplier_code
+        description: "Lien vers le code fournisseur dans l'ERP (DB_WH_ERP)."
+      - name: source_user_id
+        description: "Lien vers l'identifiant utilisateur dans le système source."
+      - name: owner_id
+        description: "Identifiant du commercial propriétaire du compte."
+      - name: total_orders
+        description: "Nombre total de commandes passées."
+      - name: loyalty_balance
+        description: "Solde de points de fidélité."
+      - name: lifetime_value
+        description: "Valeur totale générée par le compte (LTV)."
+      - name: last_order_at
+        description: "Date de la dernière commande."
+      - name: created_at
+        description: "Date de création du compte."
+      - name: updated_at
+        description: "Date de dernière mise à jour."
+      - name: deleted_at
+        description: "Date de suppression logique (soft delete)."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_crm__contacts
+    description: "{{ doc('stg_crm__contacts') }}"
+    columns:
+      - name: id_contact
+        description: "Identifiant unique du contact (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: first_name
+        description: "Prénom du contact."
+      - name: last_name
+        description: "Nom de famille du contact."
+      - name: email
+        description: "Adresse email du contact."
+      - name: phone
+        description: "Numéro de téléphone du contact."
+      - name: role
+        description: "Rôle ou fonction du contact dans son organisation."
+      - name: is_primary
+        description: "Indique si ce contact est le contact principal du compte."
+      - name: account_id
+        description: "FK vers stg_crm__accounts."
+      - name: source_customer_id
+        description: "Lien vers l'identifiant client dans la Marketplace."
+      - name: source_supplier_id
+        description: "Lien vers l'identifiant fournisseur dans l'ERP."
+      - name: created_at
+        description: "Date de création du contact."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_crm__sales_reps
+    description: "{{ doc('stg_crm__sales_reps') }}"
+    columns:
+      - name: id_sales_rep
+        description: "Identifiant unique du commercial (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: code
+        description: "Code court du commercial."
+      - name: first_name
+        description: "Prénom du commercial."
+      - name: last_name
+        description: "Nom de famille du commercial."
+      - name: email
+        description: "Adresse email du commercial."
+      - name: territory
+        description: "Territoire de vente assigné."
+      - name: is_active
+        description: "Indique si le commercial est actif."
+      - name: created_at
+        description: "Date de création du profil commercial."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_crm__opportunities
+    description: "{{ doc('stg_crm__opportunities') }}"
+    columns:
+      - name: id_opportunity
+        description: "Identifiant unique de l'opportunité (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: title
+        description: "Titre / libellé de l'opportunité."
+      - name: stage
+        description: "Étape courante dans le pipeline de vente."
+      - name: status
+        description: "Statut de l'opportunité (ex. open, won, lost)."
+      - name: origin
+        description: "Origine / canal de l'opportunité (ex. inbound, outbound)."
+      - name: notes
+        description: "Notes libres sur l'opportunité."
+      - name: account_id
+        description: "FK vers stg_crm__accounts."
+      - name: owner_id
+        description: "FK vers stg_crm__sales_reps (commercial responsable)."
+      - name: source_order_id
+        description: "Lien vers l'identifiant commande dans la Marketplace."
+      - name: probability
+        description: "Probabilité de closing en pourcentage (0-100)."
+      - name: amount_estimated
+        description: "Montant estimé de l'opportunité."
+      - name: expected_close_at
+        description: "Date de closing prévue."
+      - name: created_at
+        description: "Date de création de l'opportunité."
+      - name: updated_at
+        description: "Date de dernière mise à jour."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_crm__activities
+    description: "{{ doc('stg_crm__activities') }}"
+    columns:
+      - name: id_activity
+        description: "Identifiant unique de l'activité (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: activity_type
+        description: "Type d'activité (ex. call, email, meeting, demo)."
+      - name: subject
+        description: "Objet / titre de l'activité."
+      - name: body
+        description: "Contenu ou description de l'activité."
+      - name: outcome
+        description: "Résultat de l'activité (ex. interested, no_answer, follow_up)."
+      - name: direction
+        description: "Sens de l'activité : inbound ou outbound."
+      - name: owner_id
+        description: "FK vers stg_crm__sales_reps (commercial auteur)."
+      - name: account_id
+        description: "FK vers stg_crm__accounts."
+      - name: contact_id
+        description: "FK vers stg_crm__contacts."
+      - name: opportunity_id
+        description: "FK vers stg_crm__opportunities (optionnel)."
+      - name: duration_minutes
+        description: "Durée de l'activité en minutes."
+      - name: occurred_at
+        description: "Date et heure à laquelle l'activité a eu lieu."
+      - name: created_at
+        description: "Date de création de l'enregistrement."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_crm__pipeline_events
+    description: "{{ doc('stg_crm__pipeline_events') }}"
+    columns:
+      - name: id_pipeline_event
+        description: "Identifiant unique de l'événement pipeline (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: stage_from
+        description: "Étape de départ avant le changement."
+      - name: stage_to
+        description: "Étape d'arrivée après le changement."
+      - name: notes
+        description: "Notes associées au changement d'étape."
+      - name: owner_id
+        description: "FK vers stg_crm__sales_reps (auteur du changement)."
+      - name: opportunity_id
+        description: "FK vers stg_crm__opportunities."
+      - name: occurred_at
+        description: "Date et heure du changement d'étape."
+      - name: created_at
+        description: "Date de création de l'enregistrement."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_crm__tasks
+    description: "{{ doc('stg_crm__tasks') }}"
+    columns:
+      - name: id_task
+        description: "Identifiant unique de la tâche (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: title
+        description: "Titre de la tâche."
+      - name: task_type
+        description: "Type de tâche (ex. call_back, send_proposal, follow_up)."
+      - name: status
+        description: "Statut de la tâche (ex. open, done, cancelled)."
+      - name: priority
+        description: "Priorité de la tâche (ex. low, medium, high)."
+      - name: notes
+        description: "Notes libres sur la tâche."
+      - name: owner_id
+        description: "FK vers stg_crm__sales_reps (commercial assigné)."
+      - name: account_id
+        description: "FK vers stg_crm__accounts."
+      - name: opportunity_id
+        description: "FK vers stg_crm__opportunities (optionnel)."
+      - name: due_at
+        description: "Date et heure limite pour compléter la tâche."
+      - name: completed_at
+        description: "Date et heure de complétion effective."
+      - name: created_at
+        description: "Date de création de la tâche."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."

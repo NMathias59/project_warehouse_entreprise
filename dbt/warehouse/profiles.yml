@@ -24,5 +24,17 @@ warehouse:
       verify: false
       connect_timeout: 10
 
-  # target par défaut (erp ou mkt)
+    crm:
+      type: clickhouse
+      host: host.docker.internal
+      port: 8123
+      driver: http
+      user: admin
+      password: password123 # à sécuriser en production !
+      schema: "DB_WH_CRM"
+      secure: false
+      verify: false
+      connect_timeout: 10
+
+  # target par défaut (erp, mkt ou crm)
   target: erp

@@ -113,6 +113,12 @@ models:
             +tags: ["reports", "market_place", "logistics"]
           customer_service:
             +tags: ["reports", "market_place", "customer_service"]
+      crm:
+        reports:
+          sales:
+            +tags: ["reports", "crm", "sales"]
+          pipeline:
+            +tags: ["reports", "crm", "pipeline"]
 
 # --- Seeds (CSV de référence statique) ---
 seeds:

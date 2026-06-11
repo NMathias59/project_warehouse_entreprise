@@ -1,0 +1,65 @@
+version: 2
+
+models:
+
+  - name: fct_work_orders
+    description: >
+      Ordres de fabrication enrichis avec les lignes de consommation de composants.
+      Grain : un OF par ligne. Calcule durée réelle, statut de livraison (on_time / late / overdue)
+      et taux de consommation matière. Alimente BI_PRODUCTION.
+    columns:
+      - name: id_work_order
+        description: "PK — identifiant unique de l'OF."
+        tests:
+          - unique
+          - not_null
+      - name: status
+        description: "Statut courant (draft, in_progress, done, cancelled)."
+      - name: delivery_status
+        description: "Statut de livraison calculé : on_time / completed_late / overdue / autre statut."
+      - name: duration_hours
+        description: "Durée réelle en heures (started_at → completed_at). Null si non terminé."
+      - name: nb_components
+        description: "Nombre de lignes composants dans l'OF."
+      - name: total_qty_components_consumed
+        description: "Quantité totale de composants consommés."
+
+  - name: dim_bom
+    description: >
+      Nomenclature (Bill of Materials) par modèle PC — une ligne par en-tête de BOM.
+      Grain : un BOM header. Agrège le nombre de composants et la quantité totale.
+      Alimente bi_prod__bom_vs_stock pour l'analyse stock vs besoins de production.
+    columns:
+      - name: id_bom_header
+        description: "PK — identifiant de la nomenclature."
+        tests:
+          - unique
+          - not_null
+      - name: pc_model_id
+        description: "Modèle PC auquel cette nomenclature appartient."
+      - name: is_current
+        description: "True si cette version est la version active du BOM."
+      - name: nb_components
+        description: "Nombre de lignes composants dans cette nomenclature."
+      - name: total_qty_components
+        description: "Quantité totale de composants nécessaires (somme des quantités par ligne)."
+
+  - name: fct_quality_checks
+    description: >
+      Contrôles qualité par OF — une ligne par contrôle.
+      Agrège les items de contrôle (pass/fail) pour calculer le pass_rate.
+      Alimente bi_prod__quality_overview.
+    columns:
+      - name: id_quality_check
+        description: "PK — identifiant du contrôle qualité."
+        tests:
+          - unique
+          - not_null
+      - name: work_order_id
+        description: "OF associé au contrôle."
+      - name: overall_result
+        description: "Résultat global du contrôle (pass / fail)."
+      - name: pass_rate_pct
+        description: "Taux de réussite en % des items de contrôle individuels."
+      - name: nb_failed
+        description: "Nombre d'items en échec."

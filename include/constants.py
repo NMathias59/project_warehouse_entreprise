@@ -49,10 +49,8 @@ DBT_SELECT_BI_FINANCE     = "path:models/marts/BI_FINANCE"
 DBT_SELECT_BI_RH          = "path:models/marts/BI_RH"
 DBT_SELECT_BI_SAV         = "path:models/marts/BI_SAV"
 
-# ── Airflow Connection ID vers Airbyte ────────────────────────────────────────
-# Créer dans Airflow UI → Admin → Connections :
-#   conn_id   : airbyte_default
-#   conn_type : HTTP
-#   host      : host.docker.internal
-#   port      : 8006
-AIRBYTE_CONN_ID = "airbyte_default"
+# ── URL Config API Airbyte OSS ────────────────────────────────────────────────
+# Airbyte OSS expose la Config API sur /api/v1/ (pas la Cloud API).
+# Le provider apache-airflow-providers-airbyte >= 3.4 n'est pas compatible OSS ;
+# on appelle l'API directement via requests (voir _run_airbyte_sync dans le DAG).
+AIRBYTE_API_URL = "http://host.docker.internal:8006/api/v1"

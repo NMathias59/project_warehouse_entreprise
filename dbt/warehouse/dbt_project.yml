@@ -53,6 +53,12 @@ models:
       +materialized: view
       +tags: ["staging"]
       # `source()` autorisé uniquement ici (best practices §1.1).
+      erp:
+        +schema: DB_WH_ERP
+      market_place:
+        +schema: DB_WH_MKT
+      crm:
+        +schema: DB_WH_CRM
 
     # ---------- INTERMEDIATE ----------
     # Molécules : transformations intermédiaires non exposées aux end users.
@@ -82,6 +88,38 @@ models:
       # est utile uniquement pour les grosses tables temporelles (>100M lignes).
       # Override par mart si pertinent :
       #   {{ config(partition_by='toYYYYMM(order_date)') }}
+
+      # ---------- Schémas par domaine ----------
+      # generate_schema_name.sql utilise le custom_schema_name tel quel (pas de suffixe).
+      # Chaque domaine matérialise dans son propre schéma ClickHouse.
+      erp:
+        +schema: DB_WH_ERP
+      market_place:
+        +schema: DB_WH_MKT
+      crm:
+        +schema: DB_WH_CRM
+
+      # ---------- BI Datamarts ----------
+      # Couche cross-domaines : combinent ERP + MKT + CRM via ref().
+      # Chaque dossier = un schéma ClickHouse dédié pour l'isolation BI tools.
+      BI_LOGISTIQUE:
+        +schema: DB_WH_BI_LOGISTIQUE
+        +tags: ["bi", "logistique"]
+      BI_MARKETING:
+        +schema: DB_WH_BI_MARKETING
+        +tags: ["bi", "marketing"]
+      BI_PRODUCTION:
+        +schema: DB_WH_BI_PRODUCTION
+        +tags: ["bi", "production"]
+      BI_FINANCE:
+        +schema: DB_WH_BI_FINANCE
+        +tags: ["bi", "finance"]
+      BI_RH:
+        +schema: DB_WH_BI_RH
+        +tags: ["bi", "rh"]
+      BI_SAV:
+        +schema: DB_WH_BI_SAV
+        +tags: ["bi", "sav"]
 
     # ---------- REPORTS ----------
     # Couche reporting finale — large, dénormalisée, consommée directement par les outils BI.
@@ -113,6 +151,10 @@ models:
             +tags: ["reports", "market_place", "logistics"]
           customer_service:
             +tags: ["reports", "market_place", "customer_service"]
+          marketing:
+            +tags: ["reports", "market_place", "marketing"]
+          conversion:
+            +tags: ["reports", "market_place", "conversion"]
       crm:
         reports:
           sales:

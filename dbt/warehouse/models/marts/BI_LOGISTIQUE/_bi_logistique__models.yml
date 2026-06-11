@@ -1,0 +1,140 @@
+version: 2
+
+models:
+
+  - name: bi_log__stock_overview
+    description: >
+      Vue stock consolidée cross-domaines — une ligne par article par entrepôt.
+      Union du stock ERP (composants, dim_components) et du stock MKT (produits finis, fct_stock_levels).
+      Le champ `domaine` (ERP / MKT) permet de filtrer par source.
+      Usage BI : tableau de bord stock global, alertes rupture, comparaison ERP vs MKT.
+    columns:
+      - name: domaine
+        description: "Source du stock : ERP (composants) ou MKT (produits finis)."
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['ERP', 'MKT']
+      - name: product_id
+        description: "Identifiant du produit/composant (PK relative au domaine)."
+      - name: product_name
+        description: "Nom du produit ou du composant."
+      - name: quantity
+        description: "Quantité en stock."
+      - name: available
+        description: "Quantité disponible (quantity - reserved)."
+      - name: is_below_min
+        description: "1 si le stock est en dessous du seuil minimum (ERP uniquement)."
+
+  - name: bi_log__supply_chain
+    description: >
+      Vue chaîne d'approvisionnement — une ligne par ligne de commande fournisseur (ERP).
+      Enrichit les POs avec le stock courant du composant commandé.
+      Permet de voir en un coup d'oeil : commandes en cours, retards, stock disponible vs commandé.
+      Usage BI : suivi des achats, gestion des retards fournisseurs, anticipation ruptures.
+    columns:
+      - name: id_purchase_order
+        description: "Identifiant de la commande fournisseur."
+      - name: id_purchase_order_line
+        description: "PK — identifiant de la ligne de commande."
+        tests:
+          - unique
+          - not_null
+      - name: po_status
+        description: "Statut de la commande (draft, confirmed, received, cancelled)."
+      - name: lead_time_days
+        description: "Délai fournisseur en jours (ordered_at → expected_at)."
+      - name: is_late
+        description: "1 si la commande est en retard (expected_at dépassé, non reçue)."
+      - name: component_below_min
+        description: "1 si le stock du composant est sous le seuil minimum."
+      - name: stock_covers_n_orders
+        description: "Nombre de commandes équivalentes couvertes par le stock actuel."
+
+  - name: bi_log__carrier_kpis
+    description: >
+      KPIs transporteurs par mois — une ligne par transporteur et par mois.
+      Agrège les métriques de livraison depuis rpt_mkt__logistics_performance.
+      Usage BI : benchmark mensuel des transporteurs, suivi SLA, détection dégradations.
+    columns:
+      - name: carrier_name
+        description: "Nom du transporteur."
+        tests:
+          - not_null
+      - name: shipment_month
+        description: "Mois au format YYYYMM."
+        tests:
+          - not_null
+      - name: total_shipments
+        description: "Nombre total d'expéditions ce mois."
+      - name: delivery_rate_pct
+        description: "Taux de livraison en % ce mois."
+      - name: avg_transit_days
+        description: "Délai de transit moyen en jours ce mois."
+
+  - name: bi_log__shortage_coverage
+    description: >
+      Couverture des pénuries actives — une ligne par composant bloquant dans un BOM courant.
+      Croise les composants is_blocking=1 (bi_prod__bom_vs_stock) avec les POs en cours
+      pour ce composant. Indique si un PO couvre déjà la pénurie et quel est le délai attendu.
+      Usage BI : alertes approvisionnement urgentes, coordination production–achats.
+    columns:
+      - name: component_id
+        description: "Identifiant du composant en pénurie."
+        tests:
+          - not_null
+      - name: shortage_qty
+        description: "Quantité manquante pour produire 1 unité."
+      - name: qty_on_order
+        description: "Quantité commandée en cours (POs non reçus/annulés)."
+      - name: earliest_expected_at
+        description: "Date de réception la plus proche parmi les POs en cours."
+      - name: is_covered_by_po
+        description: "1 si la quantité commandée en cours couvre la pénurie totale."
+      - name: residual_shortage_qty
+        description: "Pénurie résiduelle après prise en compte des POs en cours."
+
+  - name: bi_log__reception_performance
+    description: >
+      Performance de réception fournisseur — une ligne par ligne de PO.
+      Croise les commandes fournisseurs (fct_purchase_orders) avec les réceptions effectives
+      (fct_purchase_receipt) : taux de remplissage, qualité, délai vs engagement.
+      Usage BI : scorecard fournisseur, analyse des retards de livraison, taux de défaut.
+    columns:
+      - name: id_purchase_order
+        description: "PK — identifiant de la commande fournisseur."
+        tests:
+          - not_null
+      - name: qty_ordered
+        description: "Quantité commandée."
+      - name: qty_received
+        description: "Quantité effectivement reçue (toutes réceptions cumulées)."
+      - name: fill_rate_pct
+        description: "Taux de remplissage en % (qty_received / qty_ordered × 100)."
+      - name: reception_delay_days
+        description: "Délai entre expected_at et la première réception (positif = en retard)."
+      - name: is_late_reception
+        description: "1 si la première réception est postérieure à expected_at."
+
+  - name: bi_log__stock_rotation
+    description: >
+      Rotation et vieillissement du stock ERP par composant actif.
+      Croise le stock courant (dim_components) avec les mouvements d'inventaire
+      (fct_inventory_counts) et les réceptions fournisseurs (fct_purchase_receipt).
+      Usage BI : détection stock mort, calcul turnover ratio, priorisation comptage physique.
+    columns:
+      - name: component_id
+        description: "PK — identifiant du composant."
+        tests:
+          - unique
+          - not_null
+      - name: current_stock
+        description: "Stock actuel du composant."
+      - name: stock_turnover_ratio
+        description: "Ratio total_qty_received / avg_counted_qty. Null si données insuffisantes."
+      - name: is_never_counted
+        description: "1 si aucun inventaire physique n'a jamais été enregistré pour ce composant."
+      - name: is_slow_moving
+        description: "1 si la dernière réception remonte à plus de 180 jours."
+      - name: is_depleted
+        description: "1 si le stock est à 0 mais que des réceptions historiques existent."

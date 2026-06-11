@@ -1,0 +1,45 @@
+version: 2
+
+models:
+
+  - name: bi_sav__repair_performance
+    description: >
+      Performance SAV — une ligne par ordre de réparation.
+      Enrichit fct_repair_orders avec le modèle PC d'origine (via numéro de série + OF)
+      et calcule les buckets de résolution (quick / standard / slow / critical).
+      Usage BI : pilotage SAV, SLA réparation, analyse récurrences par modèle.
+    columns:
+      - name: id_repair_order
+        description: "PK — identifiant de l'ordre de réparation."
+        tests:
+          - unique
+          - not_null
+      - name: resolution_days
+        description: "Jours entre réception et résolution. Null si non résolu."
+      - name: resolution_bucket
+        description: "Bucket de résolution : open / quick_0_3d / standard_4_7d / slow_8_14d / critical_14d_plus."
+      - name: is_stalled
+        description: "1 si l'OAV est ouvert depuis plus de 7 jours sans résolution."
+      - name: pc_model_name
+        description: "Modèle PC concerné (tracé via numéro de série → OF de fabrication)."
+
+  - name: bi_sav__warranty_overview
+    description: >
+      Vue garanties composants — une ligne par garantie.
+      Calcule la date d'expiration, le statut (active / expiring_30d / expiring_90d / expired)
+      et les jours restants. Enrichi avec fournisseur et nom du composant.
+      Usage BI : suivi garanties fournisseurs, anticipation renouvellements, gestion risques.
+    columns:
+      - name: id_warranty
+        description: "PK — identifiant de la garantie."
+        tests:
+          - unique
+          - not_null
+      - name: warranty_expires_at
+        description: "Date d'expiration calculée (warranty_start + duration_months)."
+      - name: warranty_status
+        description: "Statut : active / expiring_30d / expiring_90d / expired."
+      - name: days_until_expiry
+        description: "Jours avant expiration (négatif si déjà expirée)."
+      - name: is_active
+        description: "1 si la garantie est encore valide."

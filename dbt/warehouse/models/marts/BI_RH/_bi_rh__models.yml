@@ -1,0 +1,62 @@
+version: 2
+
+models:
+
+  - name: bi_rh__workforce_overview
+    description: >
+      Vue effectifs — une ligne par employé (actifs et partis).
+      Combine dim_employees (contrat, département, poste) avec des métriques calculées :
+      ancienneté en mois/années, bande de séniorité, statut actif/parti.
+      Usage BI : headcount, turnover, pyramide des âges, coût salarial par département.
+    columns:
+      - name: id_employee
+        description: "PK — identifiant unique de l'employé."
+        tests:
+          - unique
+          - not_null
+      - name: is_active
+        description: "1 si l'employé est toujours en poste (left_at is null)."
+      - name: tenure_months
+        description: "Ancienneté en mois depuis hired_at."
+      - name: seniority_band
+        description: "Bande de séniorité : onboarding / junior / experienced / senior / departed."
+
+  - name: bi_rh__timesheet_summary
+    description: >
+      Pointage hebdomadaire par employé — une ligne par (semaine, employé).
+      Agrège les lignes de fct_timesheets par type d'heure (regular, overtime, remote, training).
+      Calcule les taux d'heures supplémentaires et de télétravail.
+      Usage BI : suivi charge de travail, heures sup, télétravail, conformité RH.
+    columns:
+      - name: employee_id
+        description: "Identifiant de l'employé."
+      - name: week_start
+        description: "Début de la semaine (lundi)."
+      - name: total_hours
+        description: "Total d'heures déclarées cette semaine."
+      - name: overtime_hours
+        description: "Heures supplémentaires."
+      - name: remote_hours
+        description: "Heures en télétravail."
+      - name: overtime_rate_pct
+        description: "% d'heures sup sur le total."
+
+  - name: bi_rh__leave_management
+    description: >
+      Gestion des congés — une ligne par demande d'absence.
+      Combine fct_leaves (statut, dates) + dim_employees (département, poste) + leave_types (libellé).
+      Usage BI : suivi des absences, analyse par type/département, taux d'approbation.
+    columns:
+      - name: id_leave
+        description: "PK — identifiant de la demande de congé."
+        tests:
+          - unique
+          - not_null
+      - name: leave_type_name
+        description: "Libellé du type de congé (CP, RTT, maladie, etc.)."
+      - name: duration_days
+        description: "Durée du congé en jours calendaires (ends_at - starts_at + 1)."
+      - name: is_future
+        description: "1 si le congé commence dans le futur."
+      - name: is_ongoing
+        description: "1 si le congé est en cours aujourd'hui."

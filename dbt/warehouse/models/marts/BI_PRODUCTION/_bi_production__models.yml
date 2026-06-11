@@ -1,0 +1,141 @@
+version: 2
+
+models:
+
+  - name: bi_prod__work_order_performance
+    description: >
+      Performance de production par mois et par modèle PC — une ligne par (mois, pc_model).
+      Agrège les OFs depuis fct_work_orders : taux de complétion, ponctualité,
+      durée moyenne et taux de consommation matière.
+      Usage BI : pilotage production, analyse capacité, détection goulots d'étranglement.
+    columns:
+      - name: planned_month
+        description: "Mois planifié au format YYYYMM."
+        tests:
+          - not_null
+      - name: pc_model_id
+        description: "Identifiant du modèle PC."
+      - name: completion_rate_pct
+        description: "Taux de complétion des OFs en % (done / total)."
+      - name: on_time_rate_pct
+        description: "Taux de livraison à temps en % (on_time / done)."
+      - name: avg_duration_hours
+        description: "Durée moyenne de fabrication en heures."
+      - name: avg_component_consumption_rate_pct
+        description: "Taux moyen de consommation matière (consumed / planned × 100)."
+
+  - name: bi_prod__quality_overview
+    description: >
+      Vue qualité par contrôle — une ligne par quality_check, enrichie des rapports de défauts.
+      Combine fct_quality_checks (pass rate) + stg_erp__defect_reports (nb défauts, résolution).
+      Usage BI : suivi qualité, alertes non-conformités, taux de résolution des défauts.
+    columns:
+      - name: id_quality_check
+        description: "PK — identifiant du contrôle qualité."
+        tests:
+          - unique
+          - not_null
+      - name: pass_rate_pct
+        description: "Taux de réussite des points de contrôle."
+      - name: nb_defect_reports
+        description: "Nombre de rapports de défauts sur l'OF associé."
+      - name: nb_defects_unresolved
+        description: "Défauts non encore résolus."
+      - name: defect_resolution_rate_pct
+        description: "Taux de résolution des défauts en %."
+
+  - name: bi_prod__bom_vs_stock
+    description: >
+      Analyse nomenclature vs stock disponible — une ligne par composant de BOM actif.
+      Pour chaque composant requis dans un BOM courant (is_current=true), compare
+      la quantité requise par unité avec le stock disponible.
+      Calcule : unités producibles, blocages, pénuries.
+      Usage BI : planification production, anticipation commandes fournisseurs, alertes blocage.
+    columns:
+      - name: id_bom_line
+        description: "PK — identifiant de la ligne de nomenclature."
+        tests:
+          - unique
+          - not_null
+      - name: qty_required_per_unit
+        description: "Quantité de ce composant nécessaire pour fabriquer 1 unité du modèle."
+      - name: current_stock
+        description: "Stock actuel du composant."
+      - name: producible_units
+        description: "Nombre d'unités producibles avec le stock courant."
+      - name: is_blocking
+        description: "1 si le stock est insuffisant pour produire même 1 unité."
+      - name: shortage_qty
+        description: "Quantité manquante pour produire 1 unité (0 si stock suffisant)."
+      - name: stock_coverage_ratio
+        description: "Ratio stock / quantité requise par unité."
+
+  - name: bi_prod__serial_tracking
+    description: >
+      Cycle de vie des numéros de série — une ligne par numéro de série produit.
+      Enrichit stg_erp__serial_numbers avec l'OF associé et calcule le délai
+      produit→expédié, le statut de cycle de vie et les flags is_shipped/is_in_stock.
+      Usage BI : traçabilité produit, suivi expéditions, stock de produits finis.
+    columns:
+      - name: id_serial_number
+        description: "PK — identifiant du numéro de série."
+        tests:
+          - unique
+          - not_null
+      - name: lifecycle_status
+        description: "Statut de vie : pending / produced / shipped / in_repair."
+      - name: days_produced_to_shipped
+        description: "Délai en jours entre production et expédition (null si non applicable)."
+      - name: is_in_stock
+        description: "1 si le numéro de série est produit mais pas encore expédié."
+
+  - name: bi_prod__operator_performance
+    description: >
+      Performance qualité par opérateur et par mois — une ligne par (opérateur, mois).
+      Agrège les contrôles qualité (fct_quality_checks) et les rapports de défauts
+      (stg_erp__defect_reports) pour chaque opérateur.
+      Usage BI : suivi performance individuelle, détection opérateurs à former, tendances qualité.
+    columns:
+      - name: operator
+        description: "Identifiant ou nom de l'opérateur."
+        tests:
+          - not_null
+      - name: check_month
+        description: "Mois au format YYYYMM."
+        tests:
+          - not_null
+      - name: total_checks
+        description: "Nombre total de contrôles qualité réalisés ce mois."
+      - name: pass_rate_pct
+        description: "Taux de contrôles passés en % (checks_passed / total_checks × 100)."
+      - name: avg_item_pass_rate_pct
+        description: "Moyenne des taux de réussite par point de contrôle."
+      - name: total_defect_reports
+        description: "Nombre total de rapports de défauts sur les OFs contrôlés."
+      - name: defect_resolution_rate_pct
+        description: "Taux de résolution des défauts en % (null si aucun défaut)."
+
+  - name: bi_prod__production_forecast
+    description: >
+      Prévision de couverture matière pour les OFs planifiés — une ligne par OF en cours ou planifié.
+      Croise les work orders (status pending/in_progress) avec le BOM actif (bi_prod__bom_vs_stock)
+      pour calculer la disponibilité des composants et identifier les OFs à risque.
+      Usage BI : planification lancement OF, alertes blocage prévisionnelles, coordination achats.
+    columns:
+      - name: id_work_order
+        description: "PK — identifiant de l'ordre de fabrication."
+        tests:
+          - unique
+          - not_null
+      - name: days_until_planned
+        description: "Nombre de jours avant la date planifiée (négatif si déjà dépassé)."
+      - name: nb_components_required
+        description: "Nombre de composants distincts requis par le BOM."
+      - name: nb_components_short
+        description: "Nombre de composants dont le stock est insuffisant pour cet OF."
+      - name: is_fully_coverable
+        description: "1 si tous les composants sont disponibles en stock pour lancer l'OF."
+      - name: total_projected_shortage
+        description: "Quantité totale manquante (somme de tous les composants en déficit)."
+      - name: blocking_components
+        description: "Liste des noms de composants bloquants (Array de String)."

@@ -1,0 +1,66 @@
+version: 2
+
+models:
+
+  - name: bi_fin__cash_flow
+    description: >
+      Flux de trésorerie quotidien par compte bancaire — une ligne par (jour, compte).
+      Agrège les transactions bancaires ERP : entrées, sorties, solde de clôture, taux de rapprochement.
+      Usage BI : suivi trésorerie, détection anomalies, tableau de bord CFO.
+    columns:
+      - name: txn_date
+        description: "PK partielle — date de la ligne (toDate de transaction_date)."
+        tests:
+          - not_null
+      - name: bank_account_id
+        description: "PK partielle — identifiant du compte bancaire."
+        tests:
+          - not_null
+      - name: net_cash_flow
+        description: "Flux net du jour (inflows - outflows)."
+      - name: closing_balance
+        description: "Solde de clôture du compte ce jour."
+      - name: reconciliation_rate_pct
+        description: "% de transactions réconciliées ce jour."
+
+  - name: bi_fin__vendor_invoice_aging
+    description: >
+      Aging des factures fournisseurs — une ligne par facture.
+      Calcule les jours de retard, le bucket d'aging (current / overdue 0-30j / 31-60j / 61-90j / 90j+)
+      et enrichit avec le nom du fournisseur.
+      Usage BI : gestion des paiements fournisseurs, suivi des retards, cash management.
+    columns:
+      - name: id_vendor_invoice
+        description: "PK — identifiant de la facture fournisseur."
+        tests:
+          - unique
+          - not_null
+      - name: aging_bucket
+        description: "Bucket d'aging : paid / current / overdue_0_30d / overdue_31_60d / overdue_61_90d / overdue_90d_plus."
+      - name: days_overdue
+        description: "Jours de retard (négatif = payé en avance, 0 = dans les délais, positif = retard)."
+      - name: is_past_due
+        description: "1 si la facture est impayée et date limite dépassée."
+
+  - name: bi_fin__budget_vs_actual
+    description: >
+      Budget vs réalisé par compte comptable — une ligne par compte.
+      Compare le budget (fct_budget) au réalisé (fct_journal_entries).
+      Calcule variance, taux d'exécution et statut budgétaire.
+      Usage BI : pilotage budgétaire, alertes dépassements, reporting finance.
+    columns:
+      - name: account_number
+        description: "PK — numéro de compte comptable."
+        tests:
+          - unique
+          - not_null
+      - name: budgeted_amount
+        description: "Montant budgétisé pour ce compte — somme de toutes les lignes budget (0 si pas de budget)."
+      - name: actual_net
+        description: "Réalisé net (debit - credit) depuis les écritures comptables."
+      - name: variance
+        description: "Écart budget vs réalisé (positif = sous budget)."
+      - name: execution_rate_pct
+        description: "Taux d'exécution budgétaire en %."
+      - name: budget_status
+        description: "Statut : no_budget / over_budget / on_track / in_progress / under_utilized."

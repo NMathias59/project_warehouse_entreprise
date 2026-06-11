@@ -1,0 +1,162 @@
+version: 2
+
+models:
+
+  - name: bi_mkt__customer_360
+    description: >
+      Vue client 360° cross-domaines — une ligne par client MKT.
+      Combine : profil acheteur (MKT), programme fidélité (MKT), compte CRM (CRM).
+      La jointure CRM se fait via dim_crm_accounts.source_customer_id → dim_customers.customer_id.
+      Usage BI : segmentation client, ciblage campagnes, scoring fidélité, coordination sales/marketing.
+    columns:
+      - name: customer_id
+        description: "PK — identifiant unique du client (source MKT)."
+        tests:
+          - unique
+          - not_null
+      - name: customer_segment
+        description: "Segment calculé : prospect / new / regular / loyal."
+      - name: loyalty_balance
+        description: "Solde courant de points fidélité (0 si non inscrit)."
+      - name: has_crm_account
+        description: "1 si le client a un compte CRM associé."
+      - name: is_in_loyalty_program
+        description: "1 si le client est inscrit au programme fidélité."
+      - name: is_active_last_90d
+        description: "1 si le client a commandé dans les 90 derniers jours."
+      - name: crm_pipeline_amount
+        description: "Valeur des opportunités CRM ouvertes liées à ce client."
+
+  - name: bi_mkt__revenue_pipeline
+    description: >
+      Vue revenus consolidés par jour — une ligne par date.
+      Combine le CA confirmé MKT (commandes non annulées) et le pipeline CRM (opps créées + deals gagnés).
+      Usage BI : tableau de bord revenu unifié, forecast sales, comparaison performance MKT vs CRM.
+    columns:
+      - name: revenue_date
+        description: "PK — date de la ligne."
+        tests:
+          - unique
+          - not_null
+      - name: mkt_revenue_ttc
+        description: "CA TTC des commandes MKT confirmées ce jour."
+      - name: crm_pipeline_added
+        description: "Valeur des nouvelles opportunités CRM créées ce jour."
+      - name: crm_revenue_won
+        description: "CA CRM des deals gagnés ce jour."
+      - name: total_revenue_combined
+        description: "CA total (mkt_revenue_ttc + crm_revenue_won). Attention : double-comptage possible si un deal CRM correspond à une commande MKT."
+
+  - name: bi_mkt__campaign_performance
+    description: >
+      Vue performances marketing unifiée — une ligne par campagne, tous canaux confondus.
+      Union de : newsletter, codes promo (discount_codes), ventes flash (flash_sales).
+      Le champ `campaign_type` distingue la nature de chaque ligne.
+      Usage BI : comparaison cross-canal, ROI par type de campagne, calendrier marketing.
+    columns:
+      - name: campaign_type
+        description: "Type de campagne : newsletter / discount_code / flash_sale."
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['newsletter', 'discount_code', 'flash_sale']
+      - name: campaign_id
+        description: "Identifiant de la campagne (PK relative au campaign_type)."
+      - name: campaign_name
+        description: "Nom ou objet de la campagne."
+      - name: audience_size
+        description: "Taille de l'audience (destinataires newsletter / utilisations code / stock alloué)."
+      - name: revenue_generated
+        description: "CA généré directement par cette campagne."
+      - name: discount_granted
+        description: "Montant de remises accordées (codes promo uniquement)."
+
+  - name: bi_mkt__wishlist_insights
+    description: >
+      Analyse wishlist par produit — une ligne par produit présent dans au moins une wishlist.
+      Croise les wishlists actives avec les ventes pour calculer le taux de conversion wishlist→achat.
+      Usage BI : détection produits désirés mais non achetés, ciblage promotions, gestion catalogue.
+    columns:
+      - name: product_id
+        description: "PK — identifiant du produit."
+        tests:
+          - unique
+          - not_null
+      - name: wishlist_count
+        description: "Nombre de fois que ce produit apparaît dans des wishlists actives."
+      - name: unique_customers
+        description: "Nombre de clients distincts ayant mis ce produit en wishlist."
+      - name: wishlist_to_sale_rate_pct
+        description: "Taux de conversion wishlist → vente en % (total_sales / wishlist_count × 100)."
+      - name: is_desired_but_unsold
+        description: "1 si le produit est wishlisted mais n'a jamais été vendu."
+
+  - name: bi_mkt__churn_risk
+    description: >
+      Scoring de risque de churn par client — une ligne par client actif.
+      Calcule le nombre de jours depuis la dernière commande, attribue un statut
+      (active / at_risk / churning / churned / never_ordered) et un score numérique (0-3).
+      Usage BI : ciblage campagnes de réactivation, priorisation account managers CRM.
+    columns:
+      - name: customer_id
+        description: "PK — identifiant du client."
+        tests:
+          - unique
+          - not_null
+      - name: churn_status
+        description: "Statut churn : never_ordered / active / at_risk / churning / churned."
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['never_ordered', 'active', 'at_risk', 'churning', 'churned']
+      - name: churn_score
+        description: "Score de churn de 0 (actif) à 3 (churné ou jamais commandé)."
+      - name: days_since_last_order
+        description: "Jours écoulés depuis la dernière commande (null si jamais commandé)."
+      - name: crm_open_pipeline
+        description: "Valeur du pipeline CRM ouvert associé à ce client."
+
+  - name: bi_mkt__cohort_retention
+    description: >
+      Analyse de rétention par cohorte mensuelle — une ligne par (cohorte, mois_depuis_acquisition).
+      Groupe les clients par mois d'inscription et mesure le % de chaque cohorte
+      ayant commandé à M+1, M+3, M+6, M+12, etc.
+      Usage BI : mesure de la rétention client, comparaison cohortes, impact des actions marketing.
+    columns:
+      - name: acquisition_month
+        description: "Mois d'acquisition de la cohorte au format YYYYMM."
+        tests:
+          - not_null
+      - name: cohort_size
+        description: "Nombre de clients dans la cohorte."
+      - name: months_since_acquisition
+        description: "Nombre de mois depuis l'acquisition (0 = mois de l'inscription)."
+      - name: active_customers
+        description: "Nombre de clients de la cohorte ayant passé au moins une commande ce mois."
+      - name: retention_rate_pct
+        description: "Taux de rétention en % (active_customers / cohort_size × 100)."
+
+  - name: bi_mkt__product_affinity
+    description: >
+      Matrice d'affinité produits — une ligne par paire de produits achetés ensemble.
+      Calcule pour chaque paire (A, B) le nombre de commandes les contenant simultanément,
+      les taux d'affinité individuels et l'indice Jaccard de similarité.
+      Usage BI : recommandations cross-sell, bundles, placement en rayon, moteur de suggestion.
+    columns:
+      - name: product_a_id
+        description: "Identifiant du premier produit de la paire (alphabétiquement inférieur)."
+        tests:
+          - not_null
+      - name: product_b_id
+        description: "Identifiant du second produit de la paire."
+        tests:
+          - not_null
+      - name: co_purchase_count
+        description: "Nombre de commandes contenant simultanément les produits A et B."
+      - name: affinity_rate_a_pct
+        description: "% des commandes de A qui contiennent aussi B."
+      - name: affinity_rate_b_pct
+        description: "% des commandes de B qui contiennent aussi A."
+      - name: jaccard_similarity_pct
+        description: "Similarité Jaccard en % : co_purchase / (orders_A + orders_B - co_purchase) × 100."

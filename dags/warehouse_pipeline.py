@@ -21,30 +21,30 @@ Séquence :
   Dépendance cross-BI : bi_log__shortage_coverage ref() bi_prod__bom_vs_stock
   → BI_LOGISTIQUE ne peut démarrer qu'après test_bi_production.
 
-Configuration requise avant le premier run :
-    Airflow UI → Admin → Connections → créer :
-      conn_id   : airbyte_default
-      conn_type : HTTP
-      host      : host.docker.internal
-      port      : 8006
+Configuration requise (Airflow UI → Admin → Variables) :
+    airbyte_connection_id_erp   → UUID connexion ERP dans Airbyte
+    airbyte_connection_id_crm   → UUID connexion CRM dans Airbyte
+    airbyte_connection_id_mkt   → UUID connexion MKT dans Airbyte
 
-    Airflow UI → Admin → Variables → créer :
-      airbyte_connection_id_erp   → UUID connexion ERP  dans Airbyte
-      airbyte_connection_id_crm   → UUID connexion CRM  dans Airbyte
-      airbyte_connection_id_mkt   → UUID connexion MKT  dans Airbyte
+    Si Airbyte OSS requiert une authentification HTTP basic :
+    airbyte_username  → (défaut : airbyte)
+    airbyte_password  → (défaut : password)
 """
 
 from __future__ import annotations
 
+import time
 from datetime import datetime, timedelta
+
+import requests
 
 from airflow.decorators import dag
 from airflow.models import Variable
 from airflow.operators.bash import BashOperator
-from airflow.providers.airbyte.operators.airbyte import AirbyteTriggerSyncOperator
+from airflow.operators.python import PythonOperator
 
 from include.constants import (
-    AIRBYTE_CONN_ID,
+    AIRBYTE_API_URL,
     DBT_BIN,
     DBT_SELECT_BI_FINANCE,
     DBT_SELECT_BI_LOGISTIQUE,
@@ -58,11 +58,6 @@ from include.constants import (
     WAREHOUSE_DIR,
 )
 
-# ─── Airflow Variables ────────────────────────────────────────────────────────
-_CONN_ERP = Variable.get("airbyte_connection_id_erp", default_var="<ERP_UUID>")
-_CONN_CRM = Variable.get("airbyte_connection_id_crm", default_var="<CRM_UUID>")
-_CONN_MKT = Variable.get("airbyte_connection_id_mkt", default_var="<MKT_UUID>")
-
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -74,14 +69,49 @@ def _dbt(verb: str, select: str) -> str:
     )
 
 
-def _airbyte_sync(task_id: str, connection_id: str) -> AirbyteTriggerSyncOperator:
-    return AirbyteTriggerSyncOperator(
+def _run_airbyte_sync(connection_id: str, timeout: int = 3600) -> None:
+    """Déclenche une sync Airbyte OSS et attend sa complétion (Config API v1)."""
+    username = Variable.get("airbyte_username", default_var="airbyte")
+    password = Variable.get("airbyte_password", default_var="password")
+    auth = (username, password)
+
+    resp = requests.post(
+        f"{AIRBYTE_API_URL}/connections/sync",
+        json={"connectionId": connection_id},
+        auth=auth,
+        timeout=30,
+    )
+    # 403 → auth requise mais mauvaises credentiels ; 401 → idem
+    resp.raise_for_status()
+    job_id = resp.json()["job"]["id"]
+
+    deadline = time.monotonic() + timeout
+    terminal = {"succeeded", "failed", "cancelled", "incomplete"}
+    while time.monotonic() < deadline:
+        time.sleep(15)
+        status_resp = requests.post(
+            f"{AIRBYTE_API_URL}/jobs/get",
+            json={"id": job_id},
+            auth=auth,
+            timeout=30,
+        )
+        status_resp.raise_for_status()
+        status = status_resp.json()["job"]["status"]
+        if status == "succeeded":
+            return
+        if status in terminal:
+            raise RuntimeError(f"Airbyte sync {connection_id} terminée en erreur : {status}")
+
+    raise TimeoutError(f"Airbyte sync {connection_id} n'a pas abouti en {timeout}s")
+
+
+def _airbyte_sync(task_id: str, connection_id_var: str) -> PythonOperator:
+    return PythonOperator(
         task_id=task_id,
-        airbyte_conn_id=AIRBYTE_CONN_ID,
-        connection_id=connection_id,
-        asynchronous=False,
-        timeout=3600,
-        wait_seconds=15,
+        python_callable=_run_airbyte_sync,
+        op_kwargs={
+            "connection_id": Variable.get(connection_id_var, default_var=f"<{connection_id_var}>"),
+        },
     )
 
 
@@ -106,7 +136,7 @@ def _dbt_domain(
 
 # ─── DAG ──────────────────────────────────────────────────────────────────────
 
-default_args = {
+default_args: dict = {
     "owner":            "data-team",
     "retries":          2,
     "retry_delay":      timedelta(minutes=10),
@@ -128,15 +158,15 @@ def warehouse_pipeline() -> None:
 
     # ── Phase 1+2 : Sync Airbyte → dbt warehouse (3 pipelines parallèles) ────
 
-    sync_erp = _airbyte_sync("airbyte_sync_erp", _CONN_ERP)
+    sync_erp = _airbyte_sync("airbyte_sync_erp", "airbyte_connection_id_erp")
     run_erp, test_erp = _dbt_domain("erp", DBT_SELECT_ERP)
     sync_erp >> run_erp
 
-    sync_crm = _airbyte_sync("airbyte_sync_crm", _CONN_CRM)
+    sync_crm = _airbyte_sync("airbyte_sync_crm", "airbyte_connection_id_crm")
     run_crm, test_crm = _dbt_domain("crm", DBT_SELECT_CRM)
     sync_crm >> run_crm
 
-    sync_mkt = _airbyte_sync("airbyte_sync_mkt", _CONN_MKT)
+    sync_mkt = _airbyte_sync("airbyte_sync_mkt", "airbyte_connection_id_mkt")
     run_mkt, test_mkt = _dbt_domain("mkt", DBT_SELECT_MKT)
     sync_mkt >> run_mkt
 

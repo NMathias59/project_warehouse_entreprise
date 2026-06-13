@@ -45,6 +45,8 @@ from airflow.sdk import Variable
 
 from include.constants import (
     AIRBYTE_API_URL,
+    AIRBYTE_PASSWORD,
+    AIRBYTE_USERNAME,
     DBT_BIN,
     DBT_SELECT_BI_FINANCE,
     DBT_SELECT_BI_LOGISTIQUE,
@@ -70,10 +72,7 @@ def _dbt(verb: str, select: str) -> str:
 
 
 def _get_airbyte_auth() -> tuple[str, str]:
-    """Retourne les credentials HTTP Basic Auth pour Airbyte OSS."""
-    username = Variable.get("airbyte_username", default_var="airbyte")
-    password = Variable.get("airbyte_password", default_var="password")
-    return (username, password)
+    return (AIRBYTE_USERNAME, AIRBYTE_PASSWORD)
 
 
 def _get_running_job_id(connection_id: str, auth: tuple[str, str]) -> str | None:

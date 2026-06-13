@@ -49,10 +49,9 @@ DBT_SELECT_BI_FINANCE     = "path:models/marts/BI_FINANCE"
 DBT_SELECT_BI_RH          = "path:models/marts/BI_RH"
 DBT_SELECT_BI_SAV         = "path:models/marts/BI_SAV"
 
-# ── URL + Auth Airbyte OSS ────────────────────────────────────────────────────
-# Airbyte OSS sur Docker — API public/v1 avec HTTP Basic Auth.
-# Le provider apache-airflow-providers-airbyte n'est pas compatible OSS ;
-# on appelle l'API directement via requests (voir _run_airbyte_sync dans le DAG).
-AIRBYTE_API_URL      = "http://host.docker.internal:8000"
-AIRBYTE_USERNAME     = "airbyte"
-AIRBYTE_PASSWORD     = "password"
+# ── URL + Auth Airbyte OSS (abctl / Kubernetes) ───────────────────────────────
+# Airbyte OSS déployé via abctl — authentification OAuth2 Client Credentials.
+# Credentials récupérables via : abctl local credentials
+AIRBYTE_API_URL       = "http://host.docker.internal:8000"
+AIRBYTE_CLIENT_ID     = "cb05f7b3-a347-4cb0-b3bb-341778533b66"
+AIRBYTE_CLIENT_SECRET = "XKvkV0XVPtoMf92AryFTIEolqV89NhnT"

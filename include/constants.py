@@ -1,6 +1,8 @@
 "Contains constants used in the DAGs"
 
+import os
 from pathlib import Path
+
 from cosmos import ExecutionConfig
 
 # ── dbt / Warehouse ───────────────────────────────────────────────────────────
@@ -50,13 +52,12 @@ DBT_SELECT_BI_RH          = "path:models/marts/BI_RH"
 DBT_SELECT_BI_SAV         = "path:models/marts/BI_SAV"
 
 # ── URL + Auth Airbyte OSS (abctl / Kubernetes) ───────────────────────────────
-# Airbyte OSS déployé via abctl — authentification OAuth2 Client Credentials.
-# Credentials récupérables via : abctl local credentials
+# Credentials et UUIDs chargés depuis .env (voir .env.example).
 AIRBYTE_API_URL       = "http://host.docker.internal:8000"
-AIRBYTE_CLIENT_ID     = "cb05f7b3-a347-4cb0-b3bb-341778533b66"
-AIRBYTE_CLIENT_SECRET = "XKvkV0XVPtoMf92AryFTIEolqV89NhnT"
+AIRBYTE_CLIENT_ID     = os.environ["AIRBYTE_CLIENT_ID"]
+AIRBYTE_CLIENT_SECRET = os.environ["AIRBYTE_CLIENT_SECRET"]
 
-# ── UUIDs des connexions Airbyte (récupérés via API public/v1/connections) ────
-AIRBYTE_CONN_ERP = "37be348b-2886-4d21-a06c-03e6d2b562c2"
-AIRBYTE_CONN_CRM = "627926e2-3d2f-4670-b31c-272ab9258057"
-AIRBYTE_CONN_MKT = "46747ce3-b17c-44e8-a11b-f2bb105b0556"
+# ── UUIDs des connexions Airbyte ──────────────────────────────────────────────
+AIRBYTE_CONN_ERP = os.environ["AIRBYTE_CONN_ERP"]
+AIRBYTE_CONN_CRM = os.environ["AIRBYTE_CONN_CRM"]
+AIRBYTE_CONN_MKT = os.environ["AIRBYTE_CONN_MKT"]

@@ -108,8 +108,7 @@ models:
         tests:
           - not_null
           - accepted_values:
-              arguments:
-                values: ['never_ordered', 'active', 'at_risk', 'churning', 'churned']
+              values: ['never_ordered', 'active', 'at_risk', 'churning', 'churned']
       - name: churn_score
         description: "Score de churn de 0 (actif) à 3 (churné ou jamais commandé)."
       - name: days_since_last_order

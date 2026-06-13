@@ -86,17 +86,20 @@ def _get_airbyte_token() -> str:
     return resp.json()["access_token"]
 
 
-def _get_running_job_id(connection_id: str, headers: dict) -> str | None:
-    """Retourne l'ID du job en cours sur cette connexion, ou None."""
-    resp = requests.get(
-        f"{AIRBYTE_API_URL}/api/public/v1/jobs",
-        params={"connectionId": connection_id, "status": "running", "limit": 1},
-        headers=headers,
-        timeout=30,
-    )
-    resp.raise_for_status()
-    jobs = resp.json().get("data", [])
-    return jobs[0]["jobId"] if jobs else None
+def _get_active_job_id(connection_id: str, headers: dict) -> str | None:
+    """Retourne l'ID du job actif (pending ou running) sur cette connexion, ou None."""
+    for status in ("running", "pending", "incomplete"):
+        resp = requests.get(
+            f"{AIRBYTE_API_URL}/api/public/v1/jobs",
+            params={"connectionId": connection_id, "status": status, "limit": 1},
+            headers=headers,
+            timeout=30,
+        )
+        resp.raise_for_status()
+        jobs = resp.json().get("data", [])
+        if jobs:
+            return jobs[0]["jobId"]
+    return None
 
 
 def _run_airbyte_sync(connection_id_var: str, timeout: int = 3600) -> None:
@@ -114,7 +117,7 @@ def _run_airbyte_sync(connection_id_var: str, timeout: int = 3600) -> None:
 
     if resp.status_code == 409:
         # Un job tourne déjà — on le récupère et on attend sa fin
-        job_id = _get_running_job_id(connection_id, headers)
+        job_id = _get_active_job_id(connection_id, headers)
         if not job_id:
             resp.raise_for_status()  # 409 sans job actif = erreur inattendue
     else:

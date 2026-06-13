@@ -69,25 +69,19 @@ def _dbt(verb: str, select: str) -> str:
     )
 
 
-def _get_airbyte_token() -> str:
-    """Obtient un token OAuth2 Airbyte via Client Credentials."""
-    client_id = Variable.get("airbyte_client_id")
-    client_secret = Variable.get("airbyte_client_secret")
-    resp = requests.post(
-        f"{AIRBYTE_API_URL}/api/v1/applications/token",
-        json={"client_id": client_id, "client_secret": client_secret, "grant_type": "client_credentials"},
-        timeout=30,
-    )
-    resp.raise_for_status()
-    return resp.json()["access_token"]
+def _get_airbyte_auth() -> tuple[str, str]:
+    """Retourne les credentials HTTP Basic Auth pour Airbyte OSS."""
+    username = Variable.get("airbyte_username", default_var="airbyte")
+    password = Variable.get("airbyte_password", default_var="password")
+    return (username, password)
 
 
-def _get_running_job_id(connection_id: str, headers: dict) -> str | None:
+def _get_running_job_id(connection_id: str, auth: tuple[str, str]) -> str | None:
     """Retourne l'ID du job en cours sur cette connexion, ou None."""
     resp = requests.get(
         f"{AIRBYTE_API_URL}/api/public/v1/jobs",
         params={"connectionId": connection_id, "status": "running", "limit": 1},
-        headers=headers,
+        auth=auth,
         timeout=30,
     )
     resp.raise_for_status()
@@ -98,19 +92,18 @@ def _get_running_job_id(connection_id: str, headers: dict) -> str | None:
 def _run_airbyte_sync(connection_id_var: str, timeout: int = 3600) -> None:
     """Déclenche une sync Airbyte (Platform API public/v1) et attend sa complétion."""
     connection_id = Variable.get(connection_id_var)
-    token = _get_airbyte_token()
-    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+    auth = _get_airbyte_auth()
 
     resp = requests.post(
         f"{AIRBYTE_API_URL}/api/public/v1/jobs",
         json={"connectionId": connection_id, "jobType": "sync"},
-        headers=headers,
+        auth=auth,
         timeout=30,
     )
 
     if resp.status_code == 409:
         # Un job tourne déjà — on le récupère et on attend sa fin
-        job_id = _get_running_job_id(connection_id, headers)
+        job_id = _get_running_job_id(connection_id, auth)
         if not job_id:
             resp.raise_for_status()  # 409 sans job actif = erreur inattendue
     else:
@@ -123,7 +116,7 @@ def _run_airbyte_sync(connection_id_var: str, timeout: int = 3600) -> None:
         time.sleep(15)
         status_resp = requests.get(
             f"{AIRBYTE_API_URL}/api/public/v1/jobs/{job_id}",
-            headers=headers,
+            auth=auth,
             timeout=30,
         )
         status_resp.raise_for_status()

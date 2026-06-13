@@ -1,9 +1,6 @@
 """
 Pipeline principal warehouse — déclenché chaque nuit à 3h.
 
-Chaque source Airbyte et chaque datamart métier ont leur propre pipeline.
-Les domaines sans dépendances croisées tournent en parallèle.
-
 Séquence :
 
   Phase 1+2 — Sync + warehouse (3 pipelines parallèles) :
@@ -21,14 +18,7 @@ Séquence :
   Dépendance cross-BI : bi_log__shortage_coverage ref() bi_prod__bom_vs_stock
   → BI_LOGISTIQUE ne peut démarrer qu'après test_bi_production.
 
-Configuration requise (Airflow UI → Admin → Variables) :
-    airbyte_connection_id_erp   → UUID connexion ERP dans Airbyte
-    airbyte_connection_id_crm   → UUID connexion CRM dans Airbyte
-    airbyte_connection_id_mkt   → UUID connexion MKT dans Airbyte
-
-    Si Airbyte OSS requiert une authentification HTTP basic :
-    airbyte_username  → (défaut : airbyte)
-    airbyte_password  → (défaut : password)
+Config Airbyte (UUIDs + credentials) dans include/constants.py.
 """
 
 from __future__ import annotations
@@ -41,12 +31,14 @@ import requests
 from airflow.decorators import dag
 from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
-from airflow.sdk import Variable
 
 from include.constants import (
     AIRBYTE_API_URL,
     AIRBYTE_CLIENT_ID,
     AIRBYTE_CLIENT_SECRET,
+    AIRBYTE_CONN_CRM,
+    AIRBYTE_CONN_ERP,
+    AIRBYTE_CONN_MKT,
     DBT_BIN,
     DBT_SELECT_BI_FINANCE,
     DBT_SELECT_BI_LOGISTIQUE,
@@ -103,9 +95,8 @@ def _get_active_job_id(connection_id: str, headers: dict) -> str | None:
     return None
 
 
-def _run_airbyte_sync(connection_id_var: str, timeout: int = 3600) -> None:
+def _run_airbyte_sync(connection_id: str, timeout: int = 3600) -> None:
     """Déclenche une sync Airbyte (Platform API public/v1) et attend sa complétion."""
-    connection_id = Variable.get(connection_id_var)
     token = _get_airbyte_token()
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
 
@@ -143,11 +134,11 @@ def _run_airbyte_sync(connection_id_var: str, timeout: int = 3600) -> None:
     raise TimeoutError(f"Airbyte sync {connection_id} n'a pas abouti en {timeout}s")
 
 
-def _airbyte_sync(task_id: str, connection_id_var: str) -> PythonOperator:
+def _airbyte_sync(task_id: str, connection_id: str) -> PythonOperator:
     return PythonOperator(
         task_id=task_id,
         python_callable=_run_airbyte_sync,
-        op_kwargs={"connection_id_var": connection_id_var},
+        op_kwargs={"connection_id": connection_id},
     )
 
 
@@ -194,15 +185,15 @@ def warehouse_pipeline() -> None:
 
     # ── Phase 1+2 : Sync Airbyte → dbt warehouse (3 pipelines parallèles) ────
 
-    sync_erp = _airbyte_sync("airbyte_sync_erp", "airbyte_connection_id_erp")
+    sync_erp = _airbyte_sync("airbyte_sync_erp", AIRBYTE_CONN_ERP)
     run_erp, test_erp = _dbt_domain("erp", DBT_SELECT_ERP)
     sync_erp >> run_erp
 
-    sync_crm = _airbyte_sync("airbyte_sync_crm", "airbyte_connection_id_crm")
+    sync_crm = _airbyte_sync("airbyte_sync_crm", AIRBYTE_CONN_CRM)
     run_crm, test_crm = _dbt_domain("crm", DBT_SELECT_CRM)
     sync_crm >> run_crm
 
-    sync_mkt = _airbyte_sync("airbyte_sync_mkt", "airbyte_connection_id_mkt")
+    sync_mkt = _airbyte_sync("airbyte_sync_mkt", AIRBYTE_CONN_MKT)
     run_mkt, test_mkt = _dbt_domain("mkt", DBT_SELECT_MKT)
     sync_mkt >> run_mkt
 

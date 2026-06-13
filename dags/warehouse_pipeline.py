@@ -86,19 +86,20 @@ def _get_airbyte_token() -> str:
     return resp.json()["access_token"]
 
 
+_TERMINAL_STATUSES = {"succeeded", "failed", "cancelled", "incomplete"}
+
 def _get_active_job_id(connection_id: str, headers: dict) -> str | None:
-    """Retourne l'ID du job actif (pending ou running) sur cette connexion, ou None."""
-    for status in ("running", "pending", "incomplete"):
-        resp = requests.get(
-            f"{AIRBYTE_API_URL}/api/public/v1/jobs",
-            params={"connectionId": connection_id, "status": status, "limit": 1},
-            headers=headers,
-            timeout=30,
-        )
-        resp.raise_for_status()
-        jobs = resp.json().get("data", [])
-        if jobs:
-            return jobs[0]["jobId"]
+    """Retourne l'ID du dernier job non-terminal sur cette connexion, ou None."""
+    resp = requests.get(
+        f"{AIRBYTE_API_URL}/api/public/v1/jobs",
+        params={"connectionId": connection_id, "limit": 10},
+        headers=headers,
+        timeout=30,
+    )
+    resp.raise_for_status()
+    for job in resp.json().get("data", []):
+        if job.get("status") not in _TERMINAL_STATUSES:
+            return job["jobId"]
     return None
 
 
@@ -125,7 +126,6 @@ def _run_airbyte_sync(connection_id_var: str, timeout: int = 3600) -> None:
         job_id = resp.json()["jobId"]
 
     deadline = time.monotonic() + timeout
-    terminal = {"succeeded", "failed", "cancelled", "incomplete"}
     while time.monotonic() < deadline:
         time.sleep(15)
         status_resp = requests.get(
@@ -137,7 +137,7 @@ def _run_airbyte_sync(connection_id_var: str, timeout: int = 3600) -> None:
         status = status_resp.json()["status"]
         if status == "succeeded":
             return
-        if status in terminal:
+        if status in _TERMINAL_STATUSES:
             raise RuntimeError(f"Airbyte sync {connection_id} terminée en erreur : {status}")
 
     raise TimeoutError(f"Airbyte sync {connection_id} n'a pas abouti en {timeout}s")

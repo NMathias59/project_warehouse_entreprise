@@ -2,7 +2,7 @@
     materialized='incremental',
     unique_key='id_supplier_contract',
     incremental_strategy='append',
-    on_schema_change='sync_all_columns',
+    on_schema_change='append_new_columns',
     tags=['mart','erp','core','procurement'],
     pre_hook=[ clickhouse_delete_existing_rows(ref('stg_erp__supplier_contracts'), 'id_supplier_contract', 'id_supplier_contract', 'created_at', 7) ]
 ) }}

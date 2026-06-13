@@ -139,6 +139,7 @@ def _airbyte_sync(task_id: str, connection_id: str) -> PythonOperator:
         task_id=task_id,
         python_callable=_run_airbyte_sync,
         op_kwargs={"connection_id": connection_id},
+        retries=0,  # le code gère déjà le 409 (job en cours) — un retry Airflow ne ferait qu'empiler
     )
 
 
@@ -150,12 +151,13 @@ def _dbt_domain(
     run = BashOperator(
         task_id=f"dbt_run_{domain}",
         bash_command=_dbt("run", select),
-        retries=0,
+        retries=1,         # 1 retry utile pour les erreurs transitoires ClickHouse
+        retry_delay=timedelta(minutes=2),
     )
     test = BashOperator(
         task_id=f"dbt_test_{domain}",
         bash_command=_dbt("test", select),
-        retries=0,
+        retries=0,         # un test qui échoue doit être investigué, pas rejoué
     )
     run >> test
     return run, test
@@ -165,8 +167,8 @@ def _dbt_domain(
 
 default_args: dict = {
     "owner":            "data-team",
-    "retries":          2,
-    "retry_delay":      timedelta(minutes=10),
+    "retries":          0,
+    "retry_delay":      timedelta(minutes=2),
     "email_on_failure": False,
 }
 

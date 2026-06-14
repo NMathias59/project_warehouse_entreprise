@@ -1,39 +1,45 @@
 """
 Pipeline principal warehouse — déclenché chaque nuit à 3h.
 
-Séquence :
+─── Phase 1+2 : Sync Airbyte → dbt warehouse (12 domaines en parallèle) ────
 
-  Phase 1+2 — Sync Airbyte + dbt warehouse (12 domaines en parallèle) :
+  Domaines avec Airbyte configuré (AIRBYTE_CONN_* présent dans .env) :
+    airbyte_trigger_<d> → airbyte_wait_<d> → dbt_run_<d> → dbt_test_<d>
 
-    airbyte_trigger_erp → airbyte_wait_erp → dbt_run_erp → dbt_test_erp ──┐
-    airbyte_trigger_crm → airbyte_wait_crm → dbt_run_crm → dbt_test_crm ──┤
-    airbyte_trigger_mkt → airbyte_wait_mkt → dbt_run_mkt → dbt_test_mkt ──┤
-    [trigger_wms →] [wait_wms →] dbt_run_wms → dbt_test_wms ─────────────┤ → BI
-    ...                                                                     │
-    [trigger_procurement →] [...] dbt_run_procurement → dbt_test_proc ─────┘
+  Domaines sans UUID Airbyte encore (.env absent) :
+    dbt_run_<d> → dbt_test_<d>   (sources vides, tests passent quand même)
 
-  [trigger_* / wait_*] = présents uniquement si AIRBYTE_CONN_<DOMAIN> est
-  défini dans .env. Sans UUID, seul le couple dbt_run/dbt_test est créé.
+  Domaines couverts :
+    erp · crm · mkt             (connexions Airbyte obligatoires)
+    wms · mes · marketing · sav · plm · sirh · qms · finance · procurement
+                                (connexions optionnelles — see .env.example)
 
-  Airbyte sync : trigger (PythonOperator, ~1 s) + wait (Sensor mode=reschedule)
-  → libère le worker slot entre chaque poke, évite de bloquer le pool sur les
-    12 syncs longues simultanées.
+  Pattern Airbyte : trigger (PythonOperator, ~1 s, retourne job_id via XCom)
+                  + AirbyteSyncSensor (mode=reschedule, poke toutes les 30 s)
+  → le worker slot est libéré entre chaque poke (pas de sleep() bloquant).
 
-  Phase 3 — BI datamarts (parallèle sauf dépendance LOGISTIQUE → PRODUCTION) :
-    ├─ dbt_run_bi_production → dbt_test_bi_production
-    │         └──────────────────────────────────────► dbt_run_bi_logistique
+─── Phase 3 : BI datamarts — gatée sur les 12 dbt_test_ ─────────────────────
+
+    ├─ dbt_run_bi_production → dbt_test_bi_production ─┐
+    │                                                   └─► dbt_run_bi_logistique
     ├─ dbt_run_bi_marketing  → dbt_test_bi_marketing
     ├─ dbt_run_bi_finance    → dbt_test_bi_finance
     ├─ dbt_run_bi_rh         → dbt_test_bi_rh
     └─ dbt_run_bi_sav        → dbt_test_bi_sav
 
-  Dépendance cross-BI : bi_log__shortage_coverage ref() bi_prod__bom_vs_stock
-  → BI_LOGISTIQUE attend dbt_test_bi_production.
+  bi_log__shortage_coverage ref() bi_prod__bom_vs_stock
+  → BI_LOGISTIQUE démarre après dbt_test_bi_production uniquement.
 
-  Notifications : on_failure_callback simulée (log uniquement).
-  Pour activer Slack/email/Teams, voir _on_failure_callback() ci-dessous.
+─── Notifications ────────────────────────────────────────────────────────────
 
-Config Airbyte (credentials + UUIDs) dans .env — voir include/constants.py.
+  on_failure_callback sur toutes les tâches — simulée par défaut (log Airflow).
+  Voir _on_failure_callback() pour brancher Slack / email / Teams.
+
+─── Config ───────────────────────────────────────────────────────────────────
+
+  Credentials Airbyte + UUIDs des connexions : .env (voir .env.example).
+  Auth : OAuth2 client_credentials (AIRBYTE_CLIENT_ID / AIRBYTE_CLIENT_SECRET).
+  Constantes dbt/Airbyte centralisées dans include/constants.py.
 """
 
 from __future__ import annotations

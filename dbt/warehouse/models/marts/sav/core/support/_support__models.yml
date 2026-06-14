@@ -1,0 +1,71 @@
+version: 2
+models:
+  - name: dim_sav_technicians
+    description: "Dimension techniciens SAV actifs avec spécialisation et coordonnées."
+    columns:
+      - name: id_technician
+        description: "PK."
+        tests:
+          - unique
+          - not_null
+      - name: code
+        description: "Code interne du technicien."
+      - name: first_name
+        description: "Prénom du technicien."
+      - name: last_name
+        description: "Nom du technicien."
+      - name: email
+        description: "Email du technicien."
+      - name: phone
+        description: "Téléphone du technicien."
+      - name: specialization
+        description: "Domaine de spécialisation."
+      - name: is_active
+        description: "Indique si le technicien est actif."
+      - name: created_at
+        description: "Date de création."
+      - name: updated_at
+        description: "Date de dernière mise à jour."
+      - name: _etl_loaded_at
+        description: "Date de chargement ETL."
+
+  - name: fct_sav_tickets
+    description: "Table de faits des tickets SAV avec statistiques de résolution."
+    columns:
+      - name: id_ticket
+        description: "PK."
+        tests:
+          - unique
+          - not_null
+      - name: created_at
+        description: "Date de création du ticket."
+
+  - name: fct_sav_interventions
+    description: "Table de faits des interventions SAV avec pièces utilisées."
+    columns:
+      - name: id_intervention
+        description: "PK."
+        tests:
+          - unique
+          - not_null
+      - name: scheduled_at
+        description: "Date planifiée de l'intervention."
+
+  - name: fct_sav_warranties
+    description: "Table de faits des garanties SAV."
+    columns:
+      - name: id_warranty
+        description: "PK."
+        tests:
+          - unique
+          - not_null
+      - name: created_at
+        description: "Date de création de la garantie."
+
+  - name: fct_sav_satisfaction
+    description: "Table de faits de satisfaction client SAV agrégée par type de sondage."
+    columns:
+      - name: survey_type
+        description: "PK — type de sondage satisfaction."
+        tests:
+          - not_null

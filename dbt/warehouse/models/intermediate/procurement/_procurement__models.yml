@@ -1,0 +1,106 @@
+version: 2
+
+models:
+  - name: int_procurement__purchase_orders_with_lines
+    description: "Lignes de bons de commande enrichies avec informations de l'en-tête et du fournisseur. Grain : une ligne de bon de commande."
+    columns:
+      - name: id_purchase_order_line
+        description: "Identifiant unique de la ligne de bon de commande."
+        tests:
+          - not_null
+      - name: id_purchase_order
+        description: "Identifiant du bon de commande parent."
+      - name: reference
+        description: "Référence du bon de commande."
+      - name: status
+        description: "Statut du bon de commande."
+      - name: supplier_id
+        description: "Identifiant du fournisseur."
+      - name: supplier_name
+        description: "Nom du fournisseur."
+      - name: supplier_type
+        description: "Type de fournisseur."
+      - name: currency
+        description: "Devise du bon de commande."
+      - name: sent_at
+        description: "Date d'envoi au fournisseur."
+      - name: expected_delivery_at
+        description: "Date de livraison attendue."
+      - name: product_id
+        description: "Identifiant du produit commandé."
+      - name: description
+        description: "Description de la ligne."
+      - name: quantity_ordered
+        description: "Quantité commandée."
+      - name: quantity_received
+        description: "Quantité reçue."
+      - name: unit_price
+        description: "Prix unitaire."
+      - name: line_total
+        description: "Total de la ligne = quantity_ordered * unit_price."
+      - name: receipt_rate
+        description: "Taux de réception = quantity_received / quantity_ordered."
+
+  - name: int_procurement__supplier_performance
+    description: "Performance agrégée des fournisseurs : commandes, montants et scores d'évaluation. Grain : un fournisseur."
+    columns:
+      - name: id_supplier
+        description: "Identifiant unique du fournisseur."
+        tests:
+          - not_null
+      - name: code
+        description: "Code fournisseur."
+      - name: name
+        description: "Nom du fournisseur."
+      - name: supplier_type
+        description: "Type de fournisseur."
+      - name: status
+        description: "Statut du fournisseur (actif, inactif, suspendu, etc.)."
+      - name: country_code
+        description: "Code pays du fournisseur."
+      - name: currency
+        description: "Devise de facturation."
+      - name: nb_purchase_orders
+        description: "Nombre total de bons de commande."
+      - name: nb_po_completed
+        description: "Nombre de bons de commande réceptionnés."
+      - name: nb_po_cancelled
+        description: "Nombre de bons de commande annulés."
+      - name: total_ordered_amount
+        description: "Montant total commandé."
+      - name: avg_evaluation_score
+        description: "Score moyen des évaluations fournisseur."
+      - name: latest_evaluation_score
+        description: "Score de la dernière évaluation."
+      - name: latest_evaluation_year
+        description: "Année de la dernière évaluation."
+
+  - name: int_procurement__rfq_responses_ranked
+    description: "Réponses aux appels d'offres classées par prix et délai au sein de chaque RFQ. Grain : une réponse à un appel d'offres."
+    columns:
+      - name: id_rfq_response
+        description: "Identifiant unique de la réponse."
+        tests:
+          - not_null
+      - name: rfq_id
+        description: "Identifiant de l'appel d'offres."
+      - name: supplier_id
+        description: "Identifiant du fournisseur répondant."
+      - name: supplier_name
+        description: "Nom du fournisseur."
+      - name: rfq_status
+        description: "Statut de l'appel d'offres."
+      - name: response_status
+        description: "Statut de la réponse (soumise, acceptée, rejetée, etc.)."
+      - name: unit_price
+        description: "Prix unitaire proposé."
+      - name: lead_time_days
+        description: "Délai de livraison proposé en jours."
+      - name: received_at
+        description: "Date de réception de la réponse."
+      - name: nb_rfq_lines
+        description: "Nombre de lignes dans l'appel d'offres."
+      - name: price_rank
+        description: "Classement du fournisseur par prix croissant au sein du RFQ."
+      - name: lead_time_rank
+        description: "Classement du fournisseur par délai croissant au sein du RFQ."

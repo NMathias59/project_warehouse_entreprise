@@ -1,0 +1,75 @@
+version: 2
+models:
+  - name: dim_wms_locations
+    description: "Dimension des emplacements de stockage dans l'entrepôt (allées, racks, zones)."
+    columns:
+      - name: id_location
+        description: "PK unique de l'emplacement."
+        tests:
+          - unique
+          - not_null
+      - name: code
+        description: "Code court identifiant l'emplacement."
+      - name: zone
+        description: "Zone de l'entrepôt (picking, réserve, quai...)."
+      - name: aisle
+        description: "Allée dans la zone."
+      - name: rack
+        description: "Rack dans l'allée."
+      - name: warehouse_id
+        description: "Référence à l'entrepôt parent."
+
+  - name: fct_wms_stock_movements
+    description: "Fait des mouvements de stock (entrées, sorties, transferts)."
+    columns:
+      - name: product_id
+        description: "Référence produit concerné."
+        tests:
+          - not_null
+      - name: moved_at
+        description: "Horodatage du mouvement."
+        tests:
+          - not_null
+
+  - name: fct_wms_stock_levels
+    description: "Niveaux de stock consolidés par produit et emplacement."
+    columns:
+      - name: product_id
+        description: "Référence produit."
+        tests:
+          - not_null
+      - name: location_id
+        description: "Référence emplacement."
+        tests:
+          - not_null
+
+  - name: fct_wms_receipts
+    description: "Fait des réceptions avec détail des lignes (calcul depuis int_wms__receipts_with_lines)."
+    columns:
+      - name: id_receipt_line
+        description: "PK unique de la ligne de réception."
+        tests:
+          - unique
+          - not_null
+      - name: received_at
+        description: "Horodatage de la réception."
+
+  - name: fct_wms_shipments
+    description: "Fait des expéditions avec détail des lignes (calcul depuis int_wms__shipments_with_lines)."
+    columns:
+      - name: id_shipment_line
+        description: "PK unique de la ligne d'expédition."
+        tests:
+          - unique
+          - not_null
+      - name: shipped_at
+        description: "Horodatage de l'expédition."
+
+  - name: fct_wms_picking_orders
+    description: "Fait des ordres de picking avec métriques de performance."
+    columns:
+      - name: id_picking_order
+        description: "PK unique de l'ordre de picking."
+        tests:
+          - unique
+          - not_null

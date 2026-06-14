@@ -1,0 +1,266 @@
+version: 2
+
+# Staging models pour la source QMS (DB_WH_QMS).
+# Convention : stg_qms__<table>.sql — 1-to-1 avec la table source.
+# Matérialisation : view (héritée de dbt_project.yml).
+
+models:
+  - name: stg_qms__non_conformities
+    description: "Non-conformités qualité détectées (produit, process, fournisseur, client)."
+    columns:
+      - name: id_non_conformity
+        description: "Identifiant unique de la non-conformité (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: reference
+        description: "Référence de la non-conformité."
+      - name: title
+        description: "Titre de la non-conformité."
+      - name: description
+        description: "Description détaillée (nullable)."
+      - name: nc_type
+        description: "Type : product/process/supplier/customer."
+      - name: severity
+        description: "Gravité : minor/major/critical."
+      - name: source
+        description: "Source de détection : production/audit/customer_complaint/supplier/internal."
+      - name: product_id
+        description: "Identifiant du produit concerné (nullable)."
+      - name: supplier_id
+        description: "Identifiant du fournisseur concerné (nullable)."
+      - name: status
+        description: "Statut : open/under_analysis/corrective_action/closed/cancelled."
+      - name: detected_by
+        description: "Personne ayant détecté la NC."
+      - name: detected_at
+        description: "Date de détection."
+      - name: closed_at
+        description: "Date de fermeture (nullable)."
+      - name: created_at
+        description: "Date de création."
+      - name: updated_at
+        description: "Date de dernière mise à jour (nullable)."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_qms__corrective_actions
+    description: "Actions correctives et préventives (CAPA) liées aux non-conformités."
+    columns:
+      - name: id_corrective_action
+        description: "Identifiant unique de l'action corrective (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: non_conformity_id
+        description: "FK vers la non-conformité (nullable)."
+      - name: reference
+        description: "Référence de l'action."
+      - name: action_type
+        description: "Type : corrective/preventive/improvement."
+      - name: description
+        description: "Description de l'action."
+      - name: responsible_id
+        description: "Responsable de l'action."
+      - name: status
+        description: "Statut : open/in_progress/implemented/verified/closed."
+      - name: root_cause
+        description: "Cause racine identifiée (nullable)."
+      - name: due_at
+        description: "Date limite (nullable)."
+      - name: implemented_at
+        description: "Date d'implémentation (nullable)."
+      - name: verified_at
+        description: "Date de vérification de l'efficacité (nullable)."
+      - name: verified_by
+        description: "Vérificateur (nullable)."
+      - name: created_at
+        description: "Date de création."
+      - name: updated_at
+        description: "Date de dernière mise à jour (nullable)."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_qms__audits
+    description: "Audits qualité internes, externes et fournisseurs."
+    columns:
+      - name: id_audit
+        description: "Identifiant unique de l'audit (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: reference
+        description: "Référence de l'audit."
+      - name: audit_type
+        description: "Type : internal/external/supplier/process/product."
+      - name: scope
+        description: "Périmètre de l'audit."
+      - name: auditor_id
+        description: "Identifiant de l'auditeur."
+      - name: auditee_department
+        description: "Département audité (nullable)."
+      - name: planned_at
+        description: "Date planifiée (nullable)."
+      - name: started_at
+        description: "Date de début réelle (nullable)."
+      - name: completed_at
+        description: "Date de complétion (nullable)."
+      - name: status
+        description: "Statut : planned/in_progress/completed/cancelled."
+      - name: overall_result
+        description: "Résultat global : pass/minor_nc/major_nc/critical_nc (nullable)."
+      - name: created_at
+        description: "Date de création."
+      - name: updated_at
+        description: "Date de dernière mise à jour (nullable)."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_qms__audit_findings
+    description: "Constats d'audit (conformités, non-conformités, observations)."
+    columns:
+      - name: id_audit_finding
+        description: "Identifiant unique du constat (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: audit_id
+        description: "FK vers l'audit."
+      - name: finding_type
+        description: "Type : conformity/minor_nc/major_nc/observation/opportunity."
+      - name: description
+        description: "Description du constat."
+      - name: requirement_reference
+        description: "Référence de l'exigence associée (nullable)."
+      - name: is_critical
+        description: "Indique si le constat est critique."
+      - name: corrective_action_id
+        description: "FK vers l'action corrective associée (nullable)."
+      - name: created_at
+        description: "Date de création."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_qms__control_plans
+    description: "Plans de contrôle qualité par produit ou process."
+    columns:
+      - name: id_control_plan
+        description: "Identifiant unique du plan de contrôle (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: product_id
+        description: "Identifiant du produit concerné (nullable)."
+      - name: process_name
+        description: "Nom du process couvert."
+      - name: version
+        description: "Version du plan de contrôle."
+      - name: status
+        description: "Statut : draft/active/obsolete."
+      - name: responsible_id
+        description: "Responsable du plan."
+      - name: effective_date
+        description: "Date d'entrée en vigueur (nullable)."
+      - name: created_at
+        description: "Date de création."
+      - name: updated_at
+        description: "Date de dernière mise à jour (nullable)."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_qms__control_points
+    description: "Points de contrôle définis dans un plan de contrôle."
+    columns:
+      - name: id_control_point
+        description: "Identifiant unique du point de contrôle (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: control_plan_id
+        description: "FK vers le plan de contrôle."
+      - name: step_name
+        description: "Nom de l'étape de contrôle."
+      - name: characteristic
+        description: "Caractéristique contrôlée."
+      - name: control_method
+        description: "Méthode de contrôle."
+      - name: frequency
+        description: "Fréquence de contrôle."
+      - name: specification_min
+        description: "Valeur minimale de spécification (nullable)."
+      - name: specification_max
+        description: "Valeur maximale de spécification (nullable)."
+      - name: specification_nominal
+        description: "Valeur nominale de spécification (nullable)."
+      - name: unit_of_measure
+        description: "Unité de mesure (nullable)."
+      - name: reaction_plan
+        description: "Plan de réaction en cas de non-conformité (nullable)."
+      - name: created_at
+        description: "Date de création."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_qms__certifications
+    description: "Certifications qualité de l'entreprise (ISO 9001, IATF, etc.)."
+    columns:
+      - name: id_certification
+        description: "Identifiant unique de la certification (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: certification_type
+        description: "Type : iso_9001/iso_14001/iso_45001/iatf_16949/other."
+      - name: certification_body
+        description: "Organisme certificateur."
+      - name: certificate_number
+        description: "Numéro de certificat (nullable)."
+      - name: scope
+        description: "Périmètre de la certification (nullable)."
+      - name: status
+        description: "Statut : valid/expired/suspended/pending."
+      - name: valid_from
+        description: "Date de début de validité (nullable)."
+      - name: valid_until
+        description: "Date de fin de validité (nullable)."
+      - name: last_audit_at
+        description: "Date du dernier audit de surveillance (nullable)."
+      - name: created_at
+        description: "Date de création."
+      - name: updated_at
+        description: "Date de dernière mise à jour (nullable)."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_qms__supplier_evaluations
+    description: "Évaluations périodiques de la performance qualité des fournisseurs."
+    columns:
+      - name: id_supplier_evaluation
+        description: "Identifiant unique de l'évaluation fournisseur (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: supplier_id
+        description: "Identifiant du fournisseur évalué."
+      - name: evaluation_period_year
+        description: "Année de la période d'évaluation."
+      - name: evaluation_period_quarter
+        description: "Trimestre de la période (nullable)."
+      - name: overall_score
+        description: "Score global."
+      - name: delivery_score
+        description: "Score livraisons (nullable)."
+      - name: quality_score
+        description: "Score qualité (nullable)."
+      - name: responsiveness_score
+        description: "Score réactivité (nullable)."
+      - name: status
+        description: "Statut : draft/submitted/approved."
+      - name: evaluated_by
+        description: "Évaluateur."
+      - name: created_at
+        description: "Date de création."
+      - name: updated_at
+        description: "Date de dernière mise à jour (nullable)."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."

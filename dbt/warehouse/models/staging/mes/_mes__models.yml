@@ -1,0 +1,252 @@
+version: 2
+
+# Staging models pour la source MES (DB_WH_MES).
+# Convention : stg_mes__<table>.sql — 1-to-1 avec la table source.
+# Matérialisation : view (héritée de dbt_project.yml).
+
+models:
+  - name: stg_mes__work_centers
+    description: "Postes de travail et machines de production."
+    columns:
+      - name: id_work_center
+        description: "Identifiant unique du poste de travail (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: code
+        description: "Code court du poste de travail."
+      - name: name
+        description: "Nom du poste de travail."
+      - name: department_id
+        description: "FK vers le département (nullable)."
+      - name: work_center_type
+        description: "Type : machine/assembly/test/packaging."
+      - name: capacity_per_hour
+        description: "Capacité de production par heure (nullable)."
+      - name: is_active
+        description: "Indique si le poste est actif."
+      - name: created_at
+        description: "Date de création."
+      - name: updated_at
+        description: "Date de dernière mise à jour (nullable)."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_mes__shifts
+    description: "Équipes de production (horaires d'équipe)."
+    columns:
+      - name: id_shift
+        description: "Identifiant unique de l'équipe (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: name
+        description: "Nom de l'équipe."
+      - name: start_time
+        description: "Heure de début au format HH:MM."
+      - name: end_time
+        description: "Heure de fin au format HH:MM."
+      - name: is_night_shift
+        description: "Indique si c'est une équipe de nuit."
+      - name: is_active
+        description: "Indique si l'équipe est active."
+      - name: created_at
+        description: "Date de création."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_mes__production_orders
+    description: "Ordres de fabrication avec quantités planifiées et réalisées."
+    columns:
+      - name: id_production_order
+        description: "Identifiant unique de l'ordre de fabrication (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: reference
+        description: "Référence de l'ordre de fabrication."
+      - name: status
+        description: "Statut : draft/planned/in_progress/completed/cancelled."
+      - name: product_id
+        description: "FK vers le produit fabriqué."
+      - name: bom_id
+        description: "FK vers la nomenclature (nullable)."
+      - name: work_center_id
+        description: "FK vers le poste de travail principal (nullable)."
+      - name: shift_id
+        description: "FK vers l'équipe (nullable)."
+      - name: quantity_planned
+        description: "Quantité planifiée."
+      - name: quantity_produced
+        description: "Quantité produite."
+      - name: quantity_scrapped
+        description: "Quantité mise au rebut."
+      - name: planned_start_at
+        description: "Début planifié (nullable)."
+      - name: planned_end_at
+        description: "Fin planifiée (nullable)."
+      - name: actual_start_at
+        description: "Début réel (nullable)."
+      - name: actual_end_at
+        description: "Fin réelle (nullable)."
+      - name: created_by
+        description: "Utilisateur créateur."
+      - name: created_at
+        description: "Date de création."
+      - name: updated_at
+        description: "Date de dernière mise à jour (nullable)."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_mes__production_operations
+    description: "Opérations réalisées dans le cadre d'un ordre de fabrication."
+    columns:
+      - name: id_production_operation
+        description: "Identifiant unique de l'opération (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: production_order_id
+        description: "FK vers l'ordre de fabrication."
+      - name: sequence_number
+        description: "Numéro de séquence de l'opération."
+      - name: operation_name
+        description: "Nom de l'opération."
+      - name: work_center_id
+        description: "FK vers le poste de travail."
+      - name: status
+        description: "Statut : pending/in_progress/completed/skipped."
+      - name: setup_time_minutes
+        description: "Temps de réglage en minutes."
+      - name: run_time_minutes
+        description: "Temps d'exécution prévu en minutes."
+      - name: actual_time_minutes
+        description: "Temps réel en minutes (nullable)."
+      - name: started_at
+        description: "Début réel (nullable)."
+      - name: completed_at
+        description: "Fin réelle (nullable)."
+      - name: operator_id
+        description: "Identifiant de l'opérateur (nullable)."
+      - name: created_at
+        description: "Date de création."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_mes__time_records
+    description: "Pointages des opérateurs sur les ordres de fabrication."
+    columns:
+      - name: id_time_record
+        description: "Identifiant unique du pointage (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: production_order_id
+        description: "FK vers l'ordre de fabrication."
+      - name: operation_id
+        description: "FK vers l'opération (nullable)."
+      - name: operator_id
+        description: "Identifiant de l'opérateur."
+      - name: work_center_id
+        description: "FK vers le poste de travail."
+      - name: record_type
+        description: "Type de pointage : setup/production/downtime/maintenance."
+      - name: duration_minutes
+        description: "Durée en minutes."
+      - name: recorded_at
+        description: "Horodatage du pointage."
+      - name: created_at
+        description: "Date de création."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_mes__material_consumptions
+    description: "Consommations de matières premières par ordre de fabrication."
+    columns:
+      - name: id_material_consumption
+        description: "Identifiant unique de la consommation (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: production_order_id
+        description: "FK vers l'ordre de fabrication."
+      - name: component_id
+        description: "FK vers le composant consommé."
+      - name: quantity_planned
+        description: "Quantité planifiée."
+      - name: quantity_consumed
+        description: "Quantité effectivement consommée."
+      - name: unit_cost
+        description: "Coût unitaire du composant."
+      - name: lot_number
+        description: "Numéro de lot (nullable)."
+      - name: consumed_at
+        description: "Date de consommation."
+      - name: created_at
+        description: "Date de création."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_mes__defects
+    description: "Défauts de production détectés (rebuts et retouches)."
+    columns:
+      - name: id_defect
+        description: "Identifiant unique du défaut (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: production_order_id
+        description: "FK vers l'ordre de fabrication."
+      - name: operation_id
+        description: "FK vers l'opération (nullable)."
+      - name: work_center_id
+        description: "FK vers le poste de travail (nullable)."
+      - name: defect_code
+        description: "Code du défaut."
+      - name: defect_description
+        description: "Description du défaut."
+      - name: severity
+        description: "Gravité : minor/major/critical."
+      - name: quantity_defective
+        description: "Quantité défectueuse."
+      - name: is_reworkable
+        description: "Indique si la pièce peut être retouchée."
+      - name: detected_by
+        description: "Personne ayant détecté le défaut."
+      - name: detected_at
+        description: "Date de détection."
+      - name: created_at
+        description: "Date de création."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_mes__machine_downtime
+    description: "Arrêts machine planifiés et non planifiés."
+    columns:
+      - name: id_machine_downtime
+        description: "Identifiant unique de l'arrêt machine (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: work_center_id
+        description: "FK vers le poste de travail."
+      - name: shift_id
+        description: "FK vers l'équipe (nullable)."
+      - name: downtime_type
+        description: "Type d'arrêt : planned/unplanned/maintenance."
+      - name: reason_code
+        description: "Code de la cause d'arrêt."
+      - name: description
+        description: "Description de l'arrêt (nullable)."
+      - name: started_at
+        description: "Début de l'arrêt."
+      - name: ended_at
+        description: "Fin de l'arrêt (nullable)."
+      - name: duration_minutes
+        description: "Durée de l'arrêt en minutes (nullable)."
+      - name: reported_by
+        description: "Personne ayant déclaré l'arrêt."
+      - name: created_at
+        description: "Date de création."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."

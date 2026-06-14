@@ -1,0 +1,100 @@
+version: 2
+
+models:
+  - name: int_mes__production_orders_with_stats
+    description: "Ordres de fabrication enrichis avec statistiques opérations, défauts et consommations matières. Grain : un ordre de fabrication."
+    columns:
+      - name: id_production_order
+        description: "Identifiant unique de l'ordre de fabrication."
+        tests:
+          - not_null
+      - name: reference
+        description: "Référence de l'ordre de fabrication."
+      - name: status
+        description: "Statut de l'ordre de fabrication."
+      - name: product_id
+        description: "Identifiant du produit fabriqué."
+      - name: quantity_planned
+        description: "Quantité planifiée."
+      - name: quantity_produced
+        description: "Quantité produite."
+      - name: quantity_scrapped
+        description: "Quantité mise au rebut."
+      - name: planned_start_at
+        description: "Date de début planifiée."
+      - name: actual_start_at
+        description: "Date de début réelle."
+      - name: actual_end_at
+        description: "Date de fin réelle."
+      - name: nb_operations
+        description: "Nombre total d'opérations sur l'ordre."
+      - name: nb_ops_completed
+        description: "Nombre d'opérations complétées."
+      - name: total_setup_minutes
+        description: "Temps total de préparation en minutes."
+      - name: total_run_minutes
+        description: "Temps total de production en minutes."
+      - name: total_actual_minutes
+        description: "Temps total réel en minutes."
+      - name: nb_defects
+        description: "Nombre total de défauts détectés."
+      - name: total_defective_qty
+        description: "Quantité totale défectueuse."
+      - name: total_material_cost
+        description: "Coût total des matières consommées."
+      - name: scrap_rate
+        description: "Taux de rebut = quantity_scrapped / quantity_planned."
+      - name: yield_rate
+        description: "Taux de rendement = (quantity_produced - quantity_scrapped) / quantity_planned."
+
+  - name: int_mes__work_center_utilization
+    description: "Taux d'utilisation des postes de travail calculé à partir des enregistrements de temps. Grain : un poste de travail."
+    columns:
+      - name: id_work_center
+        description: "Identifiant unique du poste de travail."
+        tests:
+          - not_null
+      - name: code
+        description: "Code du poste de travail."
+      - name: name
+        description: "Nom du poste de travail."
+      - name: work_center_type
+        description: "Type de poste de travail."
+      - name: capacity_per_hour
+        description: "Capacité horaire du poste."
+      - name: is_active
+        description: "Indique si le poste est actif."
+      - name: nb_time_records
+        description: "Nombre total d'enregistrements de temps."
+      - name: total_production_minutes
+        description: "Total des minutes de production."
+      - name: total_setup_minutes
+        description: "Total des minutes de préparation."
+      - name: total_downtime_minutes
+        description: "Total des minutes d'arrêt."
+      - name: utilization_rate
+        description: "Taux d'utilisation = production / (production + downtime)."
+
+  - name: int_mes__defects_aggregated_by_order
+    description: "Agrégation des défauts par ordre de fabrication avec décompte par sévérité. Grain : un ordre de fabrication."
+    columns:
+      - name: production_order_id
+        description: "Identifiant de l'ordre de fabrication."
+        tests:
+          - not_null
+      - name: nb_defects_total
+        description: "Nombre total de défauts."
+      - name: nb_defects_minor
+        description: "Nombre de défauts mineurs."
+      - name: nb_defects_major
+        description: "Nombre de défauts majeurs."
+      - name: nb_defects_critical
+        description: "Nombre de défauts critiques."
+      - name: total_defective_qty
+        description: "Quantité totale défectueuse."
+      - name: total_reworkable_qty
+        description: "Quantité défectueuse retravaillable."
+      - name: first_defect_at
+        description: "Date du premier défaut détecté."
+      - name: last_defect_at
+        description: "Date du dernier défaut détecté."

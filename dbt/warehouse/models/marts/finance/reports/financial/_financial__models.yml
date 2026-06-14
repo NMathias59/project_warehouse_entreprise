@@ -1,0 +1,59 @@
+version: 2
+models:
+  - name: rpt_finance__journal_enriched
+    description: "Report journal comptable enrichi avec les libellés compte et centre de coût."
+    columns:
+      - name: id_journal_line
+        description: "Identifiant de la ligne d'écriture."
+        tests:
+          - not_null
+      - name: entry_date
+        description: "Date de l'écriture comptable."
+      - name: account_number
+        description: "Numéro de compte comptable."
+      - name: account_label
+        description: "Libellé du compte comptable."
+      - name: debit_amount
+        description: "Montant au débit."
+      - name: credit_amount
+        description: "Montant au crédit."
+      - name: net_amount
+        description: "Montant net (crédit - débit)."
+
+  - name: rpt_finance__budget_vs_actuals
+    description: "Report budget vs réalisé par compte, centre de coût et période."
+    columns:
+      - name: account_id
+        description: "Référence au compte comptable."
+        tests:
+          - not_null
+      - name: period_number
+        description: "Numéro de période."
+      - name: budget_amount
+        description: "Montant budgété."
+      - name: actual_amount
+        description: "Montant réalisé."
+      - name: variance
+        description: "Écart budget vs réalisé."
+      - name: variance_pct
+        description: "Écart en pourcentage."
+      - name: is_over_budget
+        description: "Indique si le réalisé dépasse le budget."
+
+  - name: rpt_finance__bank_summary
+    description: "Report récapitulatif des transactions bancaires par compte et période."
+    columns:
+      - name: bank_account_id
+        description: "Identifiant du compte bancaire."
+        tests:
+          - not_null
+      - name: transaction_year
+        description: "Année de la transaction."
+      - name: transaction_month
+        description: "Mois de la transaction."
+      - name: nb_transactions
+        description: "Nombre de transactions."
+      - name: net_flow
+        description: "Flux net (crédit - débit)."
+      - name: nb_reconciled
+        description: "Nombre de transactions rapprochées."

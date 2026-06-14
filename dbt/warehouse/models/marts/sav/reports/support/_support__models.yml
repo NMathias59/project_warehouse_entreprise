@@ -1,0 +1,45 @@
+version: 2
+models:
+  - name: rpt_sav__ticket_resolution
+    description: "Report résolution des tickets SAV enrichi avec les informations technicien."
+    columns:
+      - name: id_ticket
+        description: "Identifiant du ticket."
+        tests:
+          - not_null
+      - name: reference
+        description: "Référence externe du ticket."
+      - name: status
+        description: "Statut courant du ticket."
+      - name: priority
+        description: "Priorité du ticket."
+      - name: resolution_time_hours
+        description: "Temps de résolution en heures."
+
+  - name: rpt_sav__technician_performance
+    description: "Report de performance des techniciens SAV : interventions, durée, coût pièces."
+    columns:
+      - name: id_technician
+        description: "Identifiant du technicien."
+        tests:
+          - not_null
+      - name: nb_interventions
+        description: "Nombre total d'interventions."
+      - name: nb_completed
+        description: "Nombre d'interventions complétées."
+      - name: avg_duration_minutes
+        description: "Durée moyenne d'intervention en minutes."
+
+  - name: rpt_sav__warranty_claims
+    description: "Report agrégé des réclamations garantie par type et statut."
+    columns:
+      - name: warranty_type
+        description: "Type de garantie."
+        tests:
+          - not_null
+      - name: status
+        description: "Statut de la garantie."
+      - name: nb_claims
+        description: "Nombre de réclamations."
+      - name: approval_rate
+        description: "Taux d'approbation des garanties."

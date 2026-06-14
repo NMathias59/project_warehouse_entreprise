@@ -1,0 +1,24 @@
+version: 2
+
+sources:
+  - name: wms
+    description: >
+      Source WMS — données de gestion d'entrepôt depuis DB_WH_WMS
+      (emplacements, mouvements de stock, réceptions, expéditions, prélèvements, ajustements d'inventaire).
+    schema: DB_WH_WMS
+
+    freshness:
+      warn_after: {count: 12, period: hour}
+      error_after: {count: 24, period: hour}
+    loaded_at_field: _airbyte_extracted_at
+
+    tables:
+      - name: locations
+      - name: stock_movements
+      - name: receipts
+      - name: receipt_lines
+      - name: shipments
+      - name: shipment_lines
+      - name: picking_orders
+      - name: picking_lines
+      - name: inventory_adjustments

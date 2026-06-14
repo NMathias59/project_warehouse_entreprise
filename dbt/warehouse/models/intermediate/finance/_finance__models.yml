@@ -1,0 +1,98 @@
+version: 2
+
+models:
+  - name: int_finance__journal_entries_with_lines
+    description: "Lignes d'écritures comptables enrichies avec informations de l'en-tête, du compte et du centre de coût. Grain : une ligne d'écriture."
+    columns:
+      - name: id_journal_line
+        description: "Identifiant unique de la ligne d'écriture."
+        tests:
+          - not_null
+      - name: id_journal_entry
+        description: "Identifiant de l'écriture comptable parente."
+      - name: reference
+        description: "Référence de l'écriture comptable."
+      - name: journal_type
+        description: "Type de journal (ventes, achats, banque, opérations diverses, etc.)."
+      - name: entry_date
+        description: "Date comptable de l'écriture."
+      - name: description
+        description: "Description de l'écriture."
+      - name: status
+        description: "Statut de l'écriture (brouillon, validé, etc.)."
+      - name: period_id
+        description: "Identifiant de la période comptable."
+      - name: account_id
+        description: "Identifiant du compte comptable."
+      - name: account_number
+        description: "Numéro de compte comptable."
+      - name: account_label
+        description: "Libellé du compte comptable."
+      - name: account_type
+        description: "Type de compte (actif, passif, charge, produit, etc.)."
+      - name: cost_center_id
+        description: "Identifiant du centre de coût."
+      - name: cost_center_code
+        description: "Code du centre de coût."
+      - name: cost_center_label
+        description: "Libellé du centre de coût."
+      - name: debit_amount
+        description: "Montant au débit."
+      - name: credit_amount
+        description: "Montant au crédit."
+      - name: currency
+        description: "Devise de la ligne."
+      - name: net_amount
+        description: "Montant net = debit_amount - credit_amount."
+
+  - name: int_finance__budget_vs_actuals
+    description: "Comparaison budget vs réalisé par compte, centre de coût et période. Grain : une ligne budgétaire."
+    columns:
+      - name: budget_id
+        description: "Identifiant du budget."
+        tests:
+          - not_null
+      - name: account_id
+        description: "Identifiant du compte comptable."
+      - name: cost_center_id
+        description: "Identifiant du centre de coût."
+      - name: period_number
+        description: "Numéro de période."
+      - name: budget_amount
+        description: "Montant budgété."
+      - name: actual_amount
+        description: "Montant réalisé."
+      - name: variance
+        description: "Écart = budget_amount - actual_amount."
+      - name: variance_pct
+        description: "Écart en pourcentage du budget."
+      - name: is_over_budget
+        description: "Indique si le réalisé dépasse le budget."
+
+  - name: int_finance__bank_transactions_aggregated
+    description: "Transactions bancaires agrégées par compte et mois avec flux nets et taux de rapprochement. Grain : compte bancaire × mois."
+    columns:
+      - name: bank_account_id
+        description: "Identifiant du compte bancaire."
+        tests:
+          - not_null
+      - name: transaction_year
+        description: "Année de la transaction."
+        tests:
+          - not_null
+      - name: transaction_month
+        description: "Mois de la transaction."
+        tests:
+          - not_null
+      - name: nb_transactions
+        description: "Nombre total de transactions."
+      - name: total_debit
+        description: "Total des débits."
+      - name: total_credit
+        description: "Total des crédits."
+      - name: net_flow
+        description: "Flux net = total_credit - total_debit."
+      - name: nb_reconciled
+        description: "Nombre de transactions rapprochées."
+      - name: nb_unreconciled
+        description: "Nombre de transactions non rapprochées."

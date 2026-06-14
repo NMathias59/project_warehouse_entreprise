@@ -12,7 +12,7 @@ select
     cast(specs as varchar)             as specs,
     cast(brand_id as varchar)          as brand_id,
     cast(is_active as boolean)         as is_active,
-    cast(weight_kg as decimal(38,9))   as weight_kg,
+    cast(coalesce(weight_kg, 0) as decimal(38,9)) as weight_kg,
     cast(created_at as timestamp)      as created_at,
     cast(deleted_at as timestamp)      as deleted_at,
     cast(updated_at as timestamp)      as updated_at,

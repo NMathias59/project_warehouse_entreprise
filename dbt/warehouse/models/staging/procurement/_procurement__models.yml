@@ -1,0 +1,364 @@
+version: 2
+
+# Staging models pour la source Procurement (DB_WH_PROCUREMENT).
+# Convention : stg_procurement__<table>.sql — 1-to-1 avec la table source.
+# Matérialisation : view (héritée de dbt_project.yml).
+
+models:
+  - name: stg_procurement__suppliers
+    description: "Fournisseurs homologués de l'entreprise."
+    columns:
+      - name: id_supplier
+        description: "Identifiant unique du fournisseur (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: code
+        description: "Code fournisseur."
+      - name: name
+        description: "Nom du fournisseur."
+      - name: supplier_type
+        description: "Type : product/service/both."
+      - name: status
+        description: "Statut : prospect/qualified/active/suspended/blacklisted."
+      - name: country_code
+        description: "Code pays (nullable)."
+      - name: city
+        description: "Ville (nullable)."
+      - name: payment_terms_id
+        description: "FK vers les conditions de paiement (nullable)."
+      - name: currency
+        description: "Devise de facturation (nullable)."
+      - name: tax_id
+        description: "Numéro de TVA (nullable)."
+      - name: is_active
+        description: "Indique si le fournisseur est actif."
+      - name: created_at
+        description: "Date de création."
+      - name: updated_at
+        description: "Date de dernière mise à jour (nullable)."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_procurement__supplier_contacts
+    description: "Contacts chez les fournisseurs."
+    columns:
+      - name: id_supplier_contact
+        description: "Identifiant unique du contact fournisseur (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: supplier_id
+        description: "FK vers le fournisseur."
+      - name: first_name
+        description: "Prénom."
+      - name: last_name
+        description: "Nom."
+      - name: email
+        description: "Adresse email."
+      - name: phone
+        description: "Téléphone (nullable)."
+      - name: role
+        description: "Rôle du contact (nullable)."
+      - name: is_primary
+        description: "Indique si c'est le contact principal."
+      - name: created_at
+        description: "Date de création."
+      - name: updated_at
+        description: "Date de dernière mise à jour (nullable)."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_procurement__rfqs
+    description: "Demandes de devis (RFQ) envoyées aux fournisseurs."
+    columns:
+      - name: id_rfq
+        description: "Identifiant unique de la demande de devis (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: reference
+        description: "Référence de la demande."
+      - name: status
+        description: "Statut : draft/sent/responses_received/awarded/cancelled."
+      - name: buyer_id
+        description: "Identifiant de l'acheteur."
+      - name: delivery_date_requested
+        description: "Date de livraison souhaitée (nullable)."
+      - name: description
+        description: "Description de la demande (nullable)."
+      - name: sent_at
+        description: "Date d'envoi (nullable)."
+      - name: response_deadline
+        description: "Date limite de réponse (nullable)."
+      - name: created_at
+        description: "Date de création."
+      - name: updated_at
+        description: "Date de dernière mise à jour (nullable)."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_procurement__rfq_lines
+    description: "Lignes de demandes de devis (produits et quantités demandés)."
+    columns:
+      - name: id_rfq_line
+        description: "Identifiant unique de la ligne de demande (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: rfq_id
+        description: "FK vers la demande de devis."
+      - name: product_id
+        description: "Identifiant du produit (nullable)."
+      - name: description
+        description: "Description du besoin (nullable)."
+      - name: quantity
+        description: "Quantité demandée."
+      - name: unit_of_measure
+        description: "Unité de mesure."
+      - name: created_at
+        description: "Date de création."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_procurement__rfq_responses
+    description: "Réponses des fournisseurs aux demandes de devis."
+    columns:
+      - name: id_rfq_response
+        description: "Identifiant unique de la réponse (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: rfq_id
+        description: "FK vers la demande de devis."
+      - name: supplier_id
+        description: "FK vers le fournisseur répondant."
+      - name: status
+        description: "Statut : received/accepted/rejected."
+      - name: unit_price
+        description: "Prix unitaire proposé (nullable)."
+      - name: lead_time_days
+        description: "Délai de livraison proposé en jours (nullable)."
+      - name: notes
+        description: "Notes du fournisseur (nullable)."
+      - name: received_at
+        description: "Date de réception de la réponse (nullable)."
+      - name: created_at
+        description: "Date de création."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_procurement__contracts
+    description: "Contrats cadre et ponctuels avec les fournisseurs."
+    columns:
+      - name: id_contract
+        description: "Identifiant unique du contrat fournisseur (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: reference
+        description: "Référence du contrat."
+      - name: supplier_id
+        description: "FK vers le fournisseur."
+      - name: contract_type
+        description: "Type : framework/spot/blanket."
+      - name: status
+        description: "Statut : draft/active/expired/terminated."
+      - name: title
+        description: "Titre du contrat."
+      - name: total_amount
+        description: "Montant total (nullable)."
+      - name: currency
+        description: "Devise du contrat."
+      - name: start_date
+        description: "Date de début (nullable)."
+      - name: end_date
+        description: "Date de fin (nullable)."
+      - name: signed_at
+        description: "Date de signature (nullable)."
+      - name: created_by
+        description: "Utilisateur créateur."
+      - name: created_at
+        description: "Date de création."
+      - name: updated_at
+        description: "Date de dernière mise à jour (nullable)."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_procurement__contract_lines
+    description: "Lignes de contrats fournisseurs (conditions tarifaires par produit)."
+    columns:
+      - name: id_contract_line
+        description: "Identifiant unique de la ligne de contrat (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: contract_id
+        description: "FK vers le contrat."
+      - name: product_id
+        description: "Identifiant du produit (nullable)."
+      - name: description
+        description: "Description de la prestation (nullable)."
+      - name: unit_price
+        description: "Prix unitaire."
+      - name: quantity_min
+        description: "Quantité minimale (nullable)."
+      - name: quantity_max
+        description: "Quantité maximale (nullable)."
+      - name: unit_of_measure
+        description: "Unité de mesure."
+      - name: created_at
+        description: "Date de création."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_procurement__purchase_orders
+    description: "Bons de commande émis aux fournisseurs."
+    columns:
+      - name: id_purchase_order
+        description: "Identifiant unique du bon de commande (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: reference
+        description: "Référence du bon de commande."
+      - name: supplier_id
+        description: "FK vers le fournisseur."
+      - name: contract_id
+        description: "FK vers le contrat (nullable)."
+      - name: status
+        description: "Statut : draft/sent/acknowledged/partially_received/received/cancelled."
+      - name: buyer_id
+        description: "Identifiant de l'acheteur."
+      - name: delivery_address
+        description: "Adresse de livraison (nullable)."
+      - name: currency
+        description: "Devise."
+      - name: total_amount
+        description: "Montant total du bon de commande."
+      - name: expected_delivery_at
+        description: "Date de livraison attendue (nullable)."
+      - name: sent_at
+        description: "Date d'envoi au fournisseur (nullable)."
+      - name: created_at
+        description: "Date de création."
+      - name: updated_at
+        description: "Date de dernière mise à jour (nullable)."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_procurement__purchase_order_lines
+    description: "Lignes de bons de commande (produits commandés)."
+    columns:
+      - name: id_purchase_order_line
+        description: "Identifiant unique de la ligne de commande (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: purchase_order_id
+        description: "FK vers le bon de commande."
+      - name: product_id
+        description: "Identifiant du produit (nullable)."
+      - name: description
+        description: "Description (nullable)."
+      - name: quantity_ordered
+        description: "Quantité commandée."
+      - name: quantity_received
+        description: "Quantité reçue."
+      - name: unit_price
+        description: "Prix unitaire."
+      - name: unit_of_measure
+        description: "Unité de mesure."
+      - name: expected_delivery_at
+        description: "Date de livraison attendue (nullable)."
+      - name: created_at
+        description: "Date de création."
+      - name: updated_at
+        description: "Date de dernière mise à jour (nullable)."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_procurement__receipts
+    description: "Réceptions de commandes fournisseurs en entrepôt."
+    columns:
+      - name: id_receipt
+        description: "Identifiant unique de la réception (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: reference
+        description: "Référence de la réception."
+      - name: purchase_order_id
+        description: "FK vers le bon de commande."
+      - name: warehouse_id
+        description: "Identifiant de l'entrepôt (nullable)."
+      - name: status
+        description: "Statut : pending/partial/completed."
+      - name: received_by
+        description: "Personne ayant réceptionné."
+      - name: received_at
+        description: "Date de réception."
+      - name: created_at
+        description: "Date de création."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_procurement__receipt_lines
+    description: "Lignes de réception de commandes fournisseurs."
+    columns:
+      - name: id_receipt_line
+        description: "Identifiant unique de la ligne de réception (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: receipt_id
+        description: "FK vers la réception."
+      - name: purchase_order_line_id
+        description: "FK vers la ligne de bon de commande."
+      - name: product_id
+        description: "Identifiant du produit (nullable)."
+      - name: quantity_received
+        description: "Quantité reçue."
+      - name: unit_cost
+        description: "Coût unitaire."
+      - name: lot_number
+        description: "Numéro de lot (nullable)."
+      - name: created_at
+        description: "Date de création."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_procurement__supplier_evaluations
+    description: "Évaluations périodiques des performances fournisseurs (livraison, qualité, prix, réactivité)."
+    columns:
+      - name: id_supplier_evaluation
+        description: "Identifiant unique de l'évaluation (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: supplier_id
+        description: "FK vers le fournisseur."
+      - name: evaluation_year
+        description: "Année d'évaluation."
+      - name: evaluation_quarter
+        description: "Trimestre d'évaluation (nullable)."
+      - name: quality_score
+        description: "Score qualité (nullable)."
+      - name: delivery_score
+        description: "Score livraison (nullable)."
+      - name: responsiveness_score
+        description: "Score réactivité (nullable)."
+      - name: price_score
+        description: "Score prix (nullable)."
+      - name: overall_score
+        description: "Score global."
+      - name: status
+        description: "Statut : draft/submitted/approved."
+      - name: evaluated_by
+        description: "Évaluateur."
+      - name: created_at
+        description: "Date de création."
+      - name: updated_at
+        description: "Date de dernière mise à jour (nullable)."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."

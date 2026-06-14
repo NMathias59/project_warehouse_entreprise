@@ -1,0 +1,37 @@
+version: 2
+models:
+  - name: rpt_qms__nc_overview
+    description: "Report vue d'ensemble des non-conformités QMS agrégées par type, sévérité et statut."
+    columns:
+      - name: nc_type
+        description: "Type de non-conformité."
+        tests:
+          - not_null
+      - name: severity
+        description: "Niveau de sévérité."
+      - name: nb_nc
+        description: "Nombre de non-conformités."
+      - name: avg_resolution_days
+        description: "Délai moyen de résolution en jours."
+      - name: nb_critical
+        description: "Nombre de non-conformités critiques."
+
+  - name: rpt_qms__audit_results
+    description: "Report résultats d'audits QMS."
+    columns:
+      - name: id_audit
+        description: "Identifiant de l'audit."
+        tests:
+          - not_null
+      - name: planned_at
+        description: "Date planifiée de l'audit."
+
+  - name: rpt_qms__supplier_quality
+    description: "Report qualité fournisseur QMS par période d'évaluation."
+    columns:
+      - name: supplier_id
+        description: "Identifiant du fournisseur."
+        tests:
+          - not_null
+      - name: evaluation_year
+        description: "Année d'évaluation."

@@ -36,6 +36,114 @@ warehouse:
       verify: false
       connect_timeout: 10
 
+    wms:
+      type: clickhouse
+      host: host.docker.internal
+      port: 8123
+      driver: http
+      user: admin
+      password: password123
+      schema: "DB_WH_WMS"
+      secure: false
+      verify: false
+      connect_timeout: 10
+
+    mes:
+      type: clickhouse
+      host: host.docker.internal
+      port: 8123
+      driver: http
+      user: admin
+      password: password123
+      schema: "DB_WH_MES"
+      secure: false
+      verify: false
+      connect_timeout: 10
+
+    marketing:
+      type: clickhouse
+      host: host.docker.internal
+      port: 8123
+      driver: http
+      user: admin
+      password: password123
+      schema: "DB_WH_MARKETING"
+      secure: false
+      verify: false
+      connect_timeout: 10
+
+    sav:
+      type: clickhouse
+      host: host.docker.internal
+      port: 8123
+      driver: http
+      user: admin
+      password: password123
+      schema: "DB_WH_SAV"
+      secure: false
+      verify: false
+      connect_timeout: 10
+
+    plm:
+      type: clickhouse
+      host: host.docker.internal
+      port: 8123
+      driver: http
+      user: admin
+      password: password123
+      schema: "DB_WH_PLM"
+      secure: false
+      verify: false
+      connect_timeout: 10
+
+    sirh:
+      type: clickhouse
+      host: host.docker.internal
+      port: 8123
+      driver: http
+      user: admin
+      password: password123
+      schema: "DB_WH_SIRH"
+      secure: false
+      verify: false
+      connect_timeout: 10
+
+    qms:
+      type: clickhouse
+      host: host.docker.internal
+      port: 8123
+      driver: http
+      user: admin
+      password: password123
+      schema: "DB_WH_QMS"
+      secure: false
+      verify: false
+      connect_timeout: 10
+
+    finance:
+      type: clickhouse
+      host: host.docker.internal
+      port: 8123
+      driver: http
+      user: admin
+      password: password123
+      schema: "DB_WH_FINANCE"
+      secure: false
+      verify: false
+      connect_timeout: 10
+
+    procurement:
+      type: clickhouse
+      host: host.docker.internal
+      port: 8123
+      driver: http
+      user: admin
+      password: password123
+      schema: "DB_WH_PROCUREMENT"
+      secure: false
+      verify: false
+      connect_timeout: 10
+
     bi_logistique:
       type: clickhouse
       host: host.docker.internal
@@ -108,5 +216,6 @@ warehouse:
       verify: false
       connect_timeout: 10
 
-  # targets disponibles : erp, mkt, crm, bi_logistique, bi_marketing, bi_production, bi_finance, bi_rh, bi_sav
+  # targets disponibles : erp, mkt, crm, wms, mes, marketing, sav, plm, sirh, qms, finance, procurement
+  # targets BI cross-domaines : bi_logistique, bi_marketing, bi_production, bi_finance, bi_rh, bi_sav
   target: erp

@@ -1,0 +1,51 @@
+version: 2
+models:
+  - name: fct_qms_non_conformities
+    description: "Table de faits des non-conformités QMS avec actions associées."
+    columns:
+      - name: id_non_conformity
+        description: "PK."
+        tests:
+          - not_null
+      - name: detected_at
+        description: "Date de détection de la non-conformité."
+
+  - name: fct_qms_audits
+    description: "Table de faits des audits QMS avec résultats agrégés."
+    columns:
+      - name: id_audit
+        description: "PK."
+        tests:
+          - not_null
+      - name: planned_at
+        description: "Date planifiée de l'audit."
+
+  - name: fct_qms_corrective_actions
+    description: "Table de faits des actions correctives QMS."
+    columns:
+      - name: id_corrective_action
+        description: "PK."
+        tests:
+          - not_null
+      - name: due_at
+        description: "Date limite de l'action corrective."
+
+  - name: fct_qms_certifications
+    description: "Table de faits des certifications QMS."
+    columns:
+      - name: id_certification
+        description: "PK."
+        tests:
+          - not_null
+
+  - name: fct_qms_supplier_quality
+    description: "Table de faits de la qualité fournisseur QMS agrégée par période."
+    columns:
+      - name: supplier_id
+        description: "Référence au fournisseur."
+        tests:
+          - not_null
+      - name: evaluation_year
+        description: "Année d'évaluation."
+        tests:
+          - not_null

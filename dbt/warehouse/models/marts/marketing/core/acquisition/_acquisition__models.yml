@@ -1,0 +1,61 @@
+version: 2
+models:
+  - name: dim_marketing_campaigns
+    description: "Dimension des campagnes marketing enrichie des métriques de performance (email, pub, ROI)."
+    columns:
+      - name: id_campaign
+        description: "PK unique de la campagne."
+        tests:
+          - unique
+          - not_null
+      - name: name
+        description: "Nom de la campagne."
+      - name: campaign_type
+        description: "Type de campagne (email, social, display...)."
+      - name: channel
+        description: "Canal de diffusion."
+      - name: roi
+        description: "Retour sur investissement de la campagne."
+
+  - name: dim_marketing_audiences
+    description: "Dimension des segments d'audience marketing."
+    columns:
+      - name: id_audience
+        description: "PK unique du segment d'audience."
+        tests:
+          - unique
+          - not_null
+
+  - name: fct_marketing_leads
+    description: "Fait des leads avec attribution source et canal."
+    columns:
+      - name: id_lead
+        description: "PK unique du lead."
+        tests:
+          - unique
+          - not_null
+      - name: created_at
+        description: "Date de création du lead."
+        tests:
+          - not_null
+
+  - name: fct_marketing_email_funnel
+    description: "Entonnoir email agrégé par campagne (envois, ouvertures, clics, bounces)."
+    columns:
+      - name: campaign_id
+        description: "Référence à la campagne."
+        tests:
+          - unique
+          - not_null
+
+  - name: fct_marketing_ad_performance
+    description: "Performance publicitaire quotidienne par campagne."
+    columns:
+      - name: campaign_id
+        description: "Référence à la campagne."
+        tests:
+          - not_null
+      - name: date
+        description: "Date de la performance."
+        tests:
+          - not_null

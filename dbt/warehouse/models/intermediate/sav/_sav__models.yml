@@ -1,0 +1,118 @@
+version: 2
+
+models:
+  - name: int_sav__tickets_with_resolution_stats
+    description: "Tickets SAV enrichis avec métriques de résolution, messages et historique. Grain : un ticket."
+    columns:
+      - name: id_ticket
+        description: "Identifiant unique du ticket."
+        tests:
+          - not_null
+      - name: reference
+        description: "Référence du ticket."
+      - name: title
+        description: "Titre du ticket."
+      - name: status
+        description: "Statut courant du ticket."
+      - name: priority
+        description: "Priorité du ticket."
+      - name: ticket_type
+        description: "Type de ticket (incident, demande, plainte, etc.)."
+      - name: channel
+        description: "Canal de création du ticket (email, phone, chat, etc.)."
+      - name: customer_id
+        description: "Identifiant du client."
+      - name: order_id
+        description: "Identifiant de la commande associée."
+      - name: product_id
+        description: "Identifiant du produit concerné."
+      - name: assigned_to
+        description: "Agent assigné au ticket."
+      - name: created_at
+        description: "Date de création du ticket."
+      - name: resolved_at
+        description: "Date de résolution du ticket."
+      - name: closed_at
+        description: "Date de fermeture du ticket."
+      - name: nb_messages
+        description: "Nombre total de messages sur le ticket."
+      - name: nb_customer_messages
+        description: "Nombre de messages du client."
+      - name: nb_agent_messages
+        description: "Nombre de messages de l'agent."
+      - name: nb_status_changes
+        description: "Nombre de changements de statut."
+      - name: resolution_time_hours
+        description: "Temps de résolution en heures."
+      - name: first_response_at
+        description: "Date et heure du premier message de l'agent."
+      - name: first_response_time_minutes
+        description: "Temps de première réponse en minutes."
+
+  - name: int_sav__interventions_with_parts
+    description: "Interventions techniques enrichies avec pièces utilisées et informations technicien. Grain : une intervention."
+    columns:
+      - name: id_intervention
+        description: "Identifiant unique de l'intervention."
+        tests:
+          - not_null
+      - name: reference
+        description: "Référence de l'intervention."
+      - name: status
+        description: "Statut de l'intervention."
+      - name: intervention_type
+        description: "Type d'intervention (réparation, maintenance, installation, etc.)."
+      - name: ticket_id
+        description: "Identifiant du ticket associé."
+      - name: technician_id
+        description: "Identifiant du technicien."
+      - name: technician_first_name
+        description: "Prénom du technicien."
+      - name: technician_last_name
+        description: "Nom du technicien."
+      - name: customer_id
+        description: "Identifiant du client."
+      - name: product_id
+        description: "Identifiant du produit concerné."
+      - name: diagnostic
+        description: "Diagnostic établi."
+      - name: resolution
+        description: "Résolution appliquée."
+      - name: scheduled_at
+        description: "Date planifiée de l'intervention."
+      - name: started_at
+        description: "Date de début de l'intervention."
+      - name: completed_at
+        description: "Date de fin de l'intervention."
+      - name: duration_minutes
+        description: "Durée de l'intervention en minutes."
+      - name: travel_km
+        description: "Kilométrage parcouru."
+      - name: nb_parts_used
+        description: "Nombre de pièces détachées utilisées."
+      - name: total_parts_cost
+        description: "Coût total des pièces utilisées."
+      - name: nb_warranty_parts
+        description: "Nombre de pièces sous garantie."
+
+  - name: int_sav__satisfaction_aggregated
+    description: "Agrégation des scores de satisfaction client par type de sondage avec calcul NPS. Grain : un type de sondage."
+    columns:
+      - name: survey_type
+        description: "Type de sondage (NPS, CSAT, CES, etc.)."
+        tests:
+          - not_null
+      - name: nb_responses
+        description: "Nombre total de réponses."
+      - name: avg_score
+        description: "Score moyen."
+      - name: min_score
+        description: "Score minimum."
+      - name: max_score
+        description: "Score maximum."
+      - name: nb_promoters
+        description: "Nombre de promoteurs (score >= 9)."
+      - name: nb_detractors
+        description: "Nombre de détracteurs (score <= 6)."
+      - name: nps_score
+        description: "Net Promoter Score = ((promoteurs - détracteurs) / total) * 100."

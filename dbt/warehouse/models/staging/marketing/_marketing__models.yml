@@ -1,0 +1,219 @@
+version: 2
+
+# Staging models pour la source Marketing (DB_WH_MARKETING).
+# Convention : stg_marketing__<table>.sql — 1-to-1 avec la table source.
+# Matérialisation : view (héritée de dbt_project.yml).
+
+models:
+  - name: stg_marketing__campaigns
+    description: "Campagnes marketing multicanal (email, réseaux sociaux, paid, SEO, événements, referral)."
+    columns:
+      - name: id_campaign
+        description: "Identifiant unique de la campagne (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: name
+        description: "Nom de la campagne."
+      - name: campaign_type
+        description: "Type : email/social/paid/seo/event/referral."
+      - name: status
+        description: "Statut : draft/active/paused/completed/cancelled."
+      - name: channel
+        description: "Canal principal de la campagne."
+      - name: budget
+        description: "Budget alloué (nullable)."
+      - name: spent
+        description: "Montant dépensé (nullable)."
+      - name: target_audience
+        description: "Description de l'audience cible (nullable)."
+      - name: started_at
+        description: "Date de démarrage (nullable)."
+      - name: ended_at
+        description: "Date de fin (nullable)."
+      - name: created_by
+        description: "Utilisateur créateur."
+      - name: created_at
+        description: "Date de création."
+      - name: updated_at
+        description: "Date de dernière mise à jour (nullable)."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_marketing__leads
+    description: "Prospects générés par les campagnes marketing."
+    columns:
+      - name: id_lead
+        description: "Identifiant unique du prospect (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: first_name
+        description: "Prénom du prospect (nullable)."
+      - name: last_name
+        description: "Nom du prospect (nullable)."
+      - name: email
+        description: "Adresse email du prospect."
+      - name: phone
+        description: "Téléphone (nullable)."
+      - name: company
+        description: "Entreprise du prospect (nullable)."
+      - name: job_title
+        description: "Intitulé de poste (nullable)."
+      - name: lead_source
+        description: "Source du lead."
+      - name: campaign_id
+        description: "FK vers la campagne (nullable)."
+      - name: status
+        description: "Statut : new/contacted/qualified/converted/dead."
+      - name: score
+        description: "Score de qualification du lead."
+      - name: converted_at
+        description: "Date de conversion (nullable)."
+      - name: assigned_to
+        description: "Commercial assigné (nullable)."
+      - name: created_at
+        description: "Date de création."
+      - name: updated_at
+        description: "Date de dernière mise à jour (nullable)."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_marketing__email_sends
+    description: "Envois d'emails dans le cadre des campagnes."
+    columns:
+      - name: id_email_send
+        description: "Identifiant unique de l'envoi (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: campaign_id
+        description: "FK vers la campagne."
+      - name: email_template_id
+        description: "Identifiant du template email utilisé (nullable)."
+      - name: recipient_email
+        description: "Adresse email du destinataire."
+      - name: recipient_name
+        description: "Nom du destinataire (nullable)."
+      - name: subject
+        description: "Sujet de l'email."
+      - name: sent_at
+        description: "Date d'envoi."
+      - name: created_at
+        description: "Date de création."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_marketing__email_events
+    description: "Événements sur les emails envoyés (open, clic, bounce, désabonnement)."
+    columns:
+      - name: id_email_event
+        description: "Identifiant unique de l'événement (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: send_id
+        description: "FK vers l'envoi email."
+      - name: event_type
+        description: "Type d'événement : sent/delivered/opened/clicked/bounced/unsubscribed/complained."
+      - name: event_url
+        description: "URL cliquée (nullable)."
+      - name: occurred_at
+        description: "Horodatage de l'événement."
+      - name: created_at
+        description: "Date de création."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_marketing__ad_performance
+    description: "Performance des publicités par plateforme et par jour."
+    columns:
+      - name: id_ad_performance
+        description: "Identifiant unique de la ligne de performance (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: campaign_id
+        description: "FK vers la campagne."
+      - name: platform
+        description: "Plateforme publicitaire : google/meta/linkedin/tiktok."
+      - name: ad_group
+        description: "Groupe d'annonces (nullable)."
+      - name: ad_name
+        description: "Nom de l'annonce (nullable)."
+      - name: date
+        description: "Date de la période de performance."
+      - name: impressions
+        description: "Nombre d'impressions."
+      - name: clicks
+        description: "Nombre de clics."
+      - name: conversions
+        description: "Nombre de conversions."
+      - name: cost
+        description: "Coût total sur la période."
+      - name: revenue_attributed
+        description: "Revenu attribué (nullable)."
+      - name: created_at
+        description: "Date de création."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_marketing__utm_links
+    description: "Liens de tracking UTM avec compteur de clics."
+    columns:
+      - name: id_utm_link
+        description: "Identifiant unique du lien UTM (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: campaign_id
+        description: "FK vers la campagne (nullable)."
+      - name: short_url
+        description: "URL courte."
+      - name: full_url
+        description: "URL complète avec paramètres UTM."
+      - name: utm_source
+        description: "Paramètre utm_source."
+      - name: utm_medium
+        description: "Paramètre utm_medium."
+      - name: utm_campaign
+        description: "Paramètre utm_campaign."
+      - name: utm_content
+        description: "Paramètre utm_content (nullable)."
+      - name: utm_term
+        description: "Paramètre utm_term (nullable)."
+      - name: clicks_count
+        description: "Nombre total de clics sur ce lien."
+      - name: created_at
+        description: "Date de création."
+      - name: updated_at
+        description: "Date de dernière mise à jour (nullable)."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_marketing__audiences
+    description: "Segments d'audience marketing (statiques et dynamiques)."
+    columns:
+      - name: id_audience
+        description: "Identifiant unique du segment (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: name
+        description: "Nom du segment."
+      - name: description
+        description: "Description du segment (nullable)."
+      - name: segment_type
+        description: "Type : static/dynamic."
+      - name: criteria
+        description: "Critères de segmentation (nullable)."
+      - name: estimated_size
+        description: "Taille estimée du segment (nullable)."
+      - name: is_active
+        description: "Indique si le segment est actif."
+      - name: created_at
+        description: "Date de création."
+      - name: updated_at
+        description: "Date de dernière mise à jour (nullable)."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."

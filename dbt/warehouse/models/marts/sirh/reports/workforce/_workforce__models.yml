@@ -1,0 +1,49 @@
+version: 2
+models:
+  - name: rpt_sirh__workforce
+    description: "Report effectifs SIRH agrégés par département : contrats, statuts, salaires."
+    columns:
+      - name: department_id
+        description: "Identifiant du département."
+        tests:
+          - not_null
+      - name: department_name
+        description: "Nom du département."
+      - name: nb_employees
+        description: "Nombre total d'employés."
+      - name: nb_active
+        description: "Nombre d'employés actifs."
+      - name: avg_gross_salary
+        description: "Salaire brut moyen."
+
+  - name: rpt_sirh__payroll_summary
+    description: "Report récapitulatif de la paie SIRH par période."
+    columns:
+      - name: pay_period_year
+        description: "Année de la période de paie."
+        tests:
+          - not_null
+      - name: pay_period_month
+        description: "Mois de la période de paie."
+        tests:
+          - not_null
+      - name: nb_payslips
+        description: "Nombre de fiches de paie."
+      - name: total_gross
+        description: "Masse salariale brute totale."
+      - name: total_net_to_pay
+        description: "Total net à payer."
+
+  - name: rpt_sirh__absences_overview
+    description: "Report détail des absences SIRH enrichi avec les informations employé."
+    columns:
+      - name: id_absence
+        description: "Identifiant de l'absence."
+        tests:
+          - not_null
+      - name: employee_id
+        description: "Référence à l'employé."
+      - name: absence_label
+        description: "Libellé du type d'absence."
+      - name: duration_days
+        description: "Durée de l'absence en jours."

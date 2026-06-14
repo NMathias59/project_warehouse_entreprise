@@ -1,0 +1,23 @@
+version: 2
+
+sources:
+  - name: qms
+    description: >
+      Source QMS — données du système de management de la qualité depuis DB_WH_QMS
+      (non-conformités, actions correctives, audits, constats, plans de contrôle, certifications, évaluations fournisseurs qualité).
+    schema: DB_WH_QMS
+
+    freshness:
+      warn_after: {count: 24, period: hour}
+      error_after: {count: 48, period: hour}
+    loaded_at_field: _airbyte_extracted_at
+
+    tables:
+      - name: non_conformities
+      - name: corrective_actions
+      - name: audits
+      - name: audit_findings
+      - name: control_plans
+      - name: control_points
+      - name: certifications
+      - name: supplier_evaluations

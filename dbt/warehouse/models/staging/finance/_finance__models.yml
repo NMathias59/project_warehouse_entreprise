@@ -1,0 +1,315 @@
+version: 2
+
+# Staging models pour la source Finance (DB_WH_FINANCE).
+# Convention : stg_finance__<table>.sql — 1-to-1 avec la table source.
+# Matérialisation : view (héritée de dbt_project.yml).
+
+models:
+  - name: stg_finance__fiscal_years
+    description: "Exercices fiscaux de l'entreprise."
+    columns:
+      - name: id_fiscal_year
+        description: "Identifiant unique de l'exercice fiscal (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: label
+        description: "Libellé de l'exercice fiscal."
+      - name: start_date
+        description: "Date de début de l'exercice (nullable)."
+      - name: end_date
+        description: "Date de fin de l'exercice (nullable)."
+      - name: is_closed
+        description: "Indique si l'exercice est clôturé."
+      - name: closed_at
+        description: "Date de clôture (nullable)."
+      - name: created_at
+        description: "Date de création."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_finance__accounting_periods
+    description: "Périodes comptables au sein d'un exercice fiscal."
+    columns:
+      - name: id_accounting_period
+        description: "Identifiant unique de la période (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: fiscal_year_id
+        description: "FK vers l'exercice fiscal."
+      - name: period_number
+        description: "Numéro de la période."
+      - name: label
+        description: "Libellé de la période."
+      - name: start_date
+        description: "Date de début (nullable)."
+      - name: end_date
+        description: "Date de fin (nullable)."
+      - name: is_closed
+        description: "Indique si la période est clôturée."
+      - name: closed_at
+        description: "Date de clôture (nullable)."
+      - name: created_at
+        description: "Date de création."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_finance__accounts
+    description: "Plan comptable général."
+    columns:
+      - name: id_account
+        description: "Identifiant unique du compte (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: account_number
+        description: "Numéro de compte."
+      - name: label
+        description: "Libellé du compte."
+      - name: account_type
+        description: "Type : asset/liability/equity/revenue/expense."
+      - name: account_class
+        description: "Classe de compte (nullable)."
+      - name: parent_account_id
+        description: "FK vers le compte parent (nullable)."
+      - name: is_leaf
+        description: "Indique si c'est un compte de détail (sans enfants)."
+      - name: is_active
+        description: "Indique si le compte est actif."
+      - name: created_at
+        description: "Date de création."
+      - name: updated_at
+        description: "Date de dernière mise à jour (nullable)."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_finance__cost_centers
+    description: "Centres de coût analytiques."
+    columns:
+      - name: id_cost_center
+        description: "Identifiant unique du centre de coût (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: code
+        description: "Code du centre de coût."
+      - name: label
+        description: "Libellé du centre de coût."
+      - name: department_id
+        description: "Identifiant du département associé (nullable)."
+      - name: manager_id
+        description: "Identifiant du responsable (nullable)."
+      - name: budget_year
+        description: "Année budgétaire de référence (nullable)."
+      - name: is_active
+        description: "Indique si le centre de coût est actif."
+      - name: created_at
+        description: "Date de création."
+      - name: updated_at
+        description: "Date de dernière mise à jour (nullable)."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_finance__journal_entries
+    description: "En-têtes d'écritures comptables (journaux)."
+    columns:
+      - name: id_journal_entry
+        description: "Identifiant unique de l'écriture (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: reference
+        description: "Référence de l'écriture."
+      - name: journal_type
+        description: "Type : general/sales/purchase/cash/bank/payroll."
+      - name: accounting_period_id
+        description: "FK vers la période comptable."
+      - name: entry_date
+        description: "Date de l'écriture (nullable)."
+      - name: description
+        description: "Description de l'écriture (nullable)."
+      - name: status
+        description: "Statut : draft/posted/reversed."
+      - name: posted_at
+        description: "Date de validation (nullable)."
+      - name: reversed_entry_id
+        description: "FK vers l'écriture d'extourne (nullable)."
+      - name: created_by
+        description: "Utilisateur créateur."
+      - name: created_at
+        description: "Date de création."
+      - name: updated_at
+        description: "Date de dernière mise à jour (nullable)."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_finance__journal_lines
+    description: "Lignes d'écritures comptables (débit/crédit par compte)."
+    columns:
+      - name: id_journal_line
+        description: "Identifiant unique de la ligne d'écriture (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: journal_entry_id
+        description: "FK vers l'écriture comptable."
+      - name: line_number
+        description: "Numéro de ligne."
+      - name: account_id
+        description: "FK vers le compte."
+      - name: cost_center_id
+        description: "FK vers le centre de coût (nullable)."
+      - name: description
+        description: "Description de la ligne (nullable)."
+      - name: debit_amount
+        description: "Montant au débit."
+      - name: credit_amount
+        description: "Montant au crédit."
+      - name: currency
+        description: "Code devise."
+      - name: exchange_rate
+        description: "Taux de change."
+      - name: created_at
+        description: "Date de création."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_finance__budgets
+    description: "Budgets annuels (opérationnel, investissement, trésorerie)."
+    columns:
+      - name: id_budget
+        description: "Identifiant unique du budget (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: label
+        description: "Libellé du budget."
+      - name: fiscal_year_id
+        description: "FK vers l'exercice fiscal."
+      - name: budget_type
+        description: "Type : operational/investment/cash_flow."
+      - name: status
+        description: "Statut : draft/validated/active/closed."
+      - name: validated_by
+        description: "Approbateur du budget (nullable)."
+      - name: validated_at
+        description: "Date de validation (nullable)."
+      - name: created_at
+        description: "Date de création."
+      - name: updated_at
+        description: "Date de dernière mise à jour (nullable)."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_finance__budget_lines
+    description: "Lignes budgétaires par compte, centre de coût et période."
+    columns:
+      - name: id_budget_line
+        description: "Identifiant unique de la ligne budgétaire (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: budget_id
+        description: "FK vers le budget."
+      - name: account_id
+        description: "FK vers le compte."
+      - name: cost_center_id
+        description: "FK vers le centre de coût (nullable)."
+      - name: period_number
+        description: "Numéro de période."
+      - name: amount
+        description: "Montant budgété."
+      - name: notes
+        description: "Notes (nullable)."
+      - name: created_at
+        description: "Date de création."
+      - name: updated_at
+        description: "Date de dernière mise à jour (nullable)."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_finance__bank_accounts
+    description: "Comptes bancaires de l'entreprise."
+    columns:
+      - name: id_bank_account
+        description: "Identifiant unique du compte bancaire (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: iban
+        description: "IBAN du compte."
+      - name: bic
+        description: "BIC/SWIFT (nullable)."
+      - name: bank_name
+        description: "Nom de la banque."
+      - name: account_name
+        description: "Intitulé du compte."
+      - name: currency
+        description: "Devise du compte."
+      - name: is_active
+        description: "Indique si le compte est actif."
+      - name: created_at
+        description: "Date de création."
+      - name: updated_at
+        description: "Date de dernière mise à jour (nullable)."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_finance__bank_transactions
+    description: "Transactions bancaires (mouvements débit/crédit sur les comptes)."
+    columns:
+      - name: id_bank_transaction
+        description: "Identifiant unique de la transaction bancaire (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: bank_account_id
+        description: "FK vers le compte bancaire."
+      - name: transaction_date
+        description: "Date de transaction (nullable)."
+      - name: value_date
+        description: "Date de valeur (nullable)."
+      - name: transaction_type
+        description: "Type : debit/credit."
+      - name: description
+        description: "Libellé de la transaction."
+      - name: amount
+        description: "Montant de la transaction."
+      - name: currency
+        description: "Devise."
+      - name: reference
+        description: "Référence de la transaction (nullable)."
+      - name: is_reconciled
+        description: "Indique si la transaction est rapprochée."
+      - name: journal_line_id
+        description: "FK vers la ligne d'écriture associée (nullable)."
+      - name: created_at
+        description: "Date de création."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_finance__payment_terms
+    description: "Conditions de paiement (délais, escomptes)."
+    columns:
+      - name: id_payment_term
+        description: "Identifiant unique de la condition de paiement (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: code
+        description: "Code de la condition de paiement."
+      - name: label
+        description: "Libellé."
+      - name: days_due
+        description: "Délai de règlement en jours."
+      - name: discount_days
+        description: "Jours d'escompte (nullable)."
+      - name: discount_percent
+        description: "Taux d'escompte en pourcentage (nullable)."
+      - name: is_active
+        description: "Indique si la condition est active."
+      - name: created_at
+        description: "Date de création."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."

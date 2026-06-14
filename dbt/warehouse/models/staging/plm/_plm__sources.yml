@@ -1,0 +1,22 @@
+version: 2
+
+sources:
+  - name: plm
+    description: >
+      Source PLM — données du cycle de vie produit depuis DB_WH_PLM
+      (référentiel produit, versions, nomenclatures, documents techniques, demandes de modification, certifications produit).
+    schema: DB_WH_PLM
+
+    freshness:
+      warn_after: {count: 24, period: hour}
+      error_after: {count: 48, period: hour}
+    loaded_at_field: _airbyte_extracted_at
+
+    tables:
+      - name: products
+      - name: product_versions
+      - name: bom_headers
+      - name: bom_lines
+      - name: documents
+      - name: change_requests
+      - name: certifications

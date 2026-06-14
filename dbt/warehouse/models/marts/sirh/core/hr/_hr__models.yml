@@ -1,0 +1,81 @@
+version: 2
+models:
+  - name: dim_sirh_employees
+    description: "Dimension employés SIRH enrichie avec les informations contractuelles."
+    columns:
+      - name: id_employee
+        description: "PK."
+        tests:
+          - unique
+          - not_null
+      - name: employee_number
+        description: "Numéro matricule de l'employé."
+      - name: department_id
+        description: "Identifiant du département."
+      - name: employment_status
+        description: "Statut d'emploi (active, on_leave, terminated)."
+      - name: contract_type
+        description: "Type de contrat (cdi, cdd, intern)."
+      - name: gross_salary
+        description: "Salaire brut."
+
+  - name: dim_sirh_departments
+    description: "Dimension départements SIRH actifs."
+    columns:
+      - name: id_department
+        description: "PK."
+        tests:
+          - unique
+          - not_null
+      - name: is_active
+        description: "Indique si le département est actif."
+
+  - name: dim_sirh_positions
+    description: "Dimension postes SIRH actifs."
+    columns:
+      - name: id_position
+        description: "PK."
+        tests:
+          - unique
+          - not_null
+      - name: is_active
+        description: "Indique si le poste est actif."
+
+  - name: fct_sirh_payslips
+    description: "Table de faits des fiches de paie SIRH."
+    columns:
+      - name: employee_id
+        description: "Référence à l'employé."
+        tests:
+          - not_null
+      - name: pay_period_year
+        description: "Année de la période de paie."
+      - name: pay_period_month
+        description: "Mois de la période de paie."
+
+  - name: fct_sirh_absences
+    description: "Table de faits des absences SIRH enrichie avec le type d'absence."
+    columns:
+      - name: id_absence
+        description: "PK."
+        tests:
+          - unique
+          - not_null
+      - name: employee_id
+        description: "Référence à l'employé."
+        tests:
+          - not_null
+      - name: start_date
+        description: "Date de début de l'absence."
+      - name: duration_days
+        description: "Durée en jours."
+
+  - name: fct_sirh_performance_reviews
+    description: "Table de faits des évaluations de performance SIRH."
+    columns:
+      - name: employee_id
+        description: "Référence à l'employé."
+        tests:
+          - not_null
+      - name: review_period_year
+        description: "Année de la période d'évaluation."

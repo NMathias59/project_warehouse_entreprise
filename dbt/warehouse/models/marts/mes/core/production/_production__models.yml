@@ -1,0 +1,61 @@
+version: 2
+models:
+  - name: dim_mes_work_centers
+    description: "Dimension des centres de travail avec métriques d'utilisation consolidées."
+    columns:
+      - name: id_work_center
+        description: "PK unique du centre de travail."
+        tests:
+          - unique
+          - not_null
+      - name: code
+        description: "Code court du centre de travail."
+      - name: name
+        description: "Nom du centre de travail."
+      - name: work_center_type
+        description: "Type de centre (machine, assemblage, contrôle...)."
+      - name: capacity_per_hour
+        description: "Capacité de production par heure."
+      - name: utilization_rate
+        description: "Taux d'utilisation calculé depuis int_mes__work_center_utilization."
+
+  - name: dim_mes_shifts
+    description: "Dimension des équipes de travail (shifts) de production."
+    columns:
+      - name: id_shift
+        description: "PK unique de l'équipe."
+        tests:
+          - unique
+          - not_null
+
+  - name: fct_mes_production_orders
+    description: "Fait des ordres de fabrication avec statistiques de production."
+    columns:
+      - name: id_production_order
+        description: "PK unique de l'ordre de fabrication."
+        tests:
+          - unique
+          - not_null
+      - name: actual_start_at
+        description: "Date et heure de début réel de production."
+
+  - name: fct_mes_defects
+    description: "Fait des défauts agrégés par ordre de fabrication."
+    columns:
+      - name: production_order_id
+        description: "Référence à l'ordre de fabrication."
+        tests:
+          - unique
+          - not_null
+
+  - name: fct_mes_time_records
+    description: "Enregistrements de temps par centre de travail (production, setup, arrêts)."
+    columns:
+      - name: work_center_id
+        description: "Référence au centre de travail."
+        tests:
+          - not_null
+      - name: recorded_at
+        description: "Horodatage de l'enregistrement."
+        tests:
+          - not_null

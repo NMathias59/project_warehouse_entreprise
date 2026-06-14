@@ -1,0 +1,43 @@
+version: 2
+models:
+  - name: rpt_procurement__po_status
+    description: "Report statut des bons de commande Procurement agrégés par PO avec informations fournisseur."
+    columns:
+      - name: purchase_order_id
+        description: "Identifiant du bon de commande."
+        tests:
+          - not_null
+      - name: status
+        description: "Statut du bon de commande."
+      - name: supplier_id
+        description: "Identifiant du fournisseur."
+      - name: total_ordered_amount
+        description: "Montant total commandé."
+      - name: avg_receipt_rate
+        description: "Taux de réception moyen."
+
+  - name: rpt_procurement__supplier_performance
+    description: "Report performance fournisseurs Procurement enrichi avec les scores d'évaluation par période."
+    columns:
+      - name: id_supplier
+        description: "Identifiant du fournisseur."
+        tests:
+          - not_null
+      - name: evaluation_year
+        description: "Année d'évaluation."
+      - name: quality_score
+        description: "Score qualité."
+      - name: delivery_score
+        description: "Score livraison."
+      - name: overall_score
+        description: "Score global."
+
+  - name: rpt_procurement__rfq_analysis
+    description: "Report analyse des réponses aux appels d'offres Procurement avec classement prix."
+    columns:
+      - name: rfq_id
+        description: "Identifiant de l'appel d'offres."
+        tests:
+          - not_null
+      - name: price_rank
+        description: "Classement par prix."

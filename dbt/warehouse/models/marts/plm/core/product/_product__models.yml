@@ -1,0 +1,66 @@
+version: 2
+models:
+  - name: dim_plm_products
+    description: "Dimension produits PLM enrichie avec versions et statistiques de demandes de changement."
+    columns:
+      - name: id_product
+        description: "PK."
+        tests:
+          - unique
+          - not_null
+      - name: code
+        description: "Code produit."
+      - name: name
+        description: "Nom du produit."
+      - name: product_family
+        description: "Famille produit."
+      - name: lifecycle_status
+        description: "Statut dans le cycle de vie (concept, development, active, end_of_life)."
+      - name: latest_version_number
+        description: "Numéro de la dernière version."
+      - name: nb_versions
+        description: "Nombre total de versions."
+      - name: nb_change_requests
+        description: "Nombre total de demandes de changement."
+
+  - name: fct_plm_product_versions
+    description: "Table de faits des versions de produits PLM."
+    columns:
+      - name: id_product_version
+        description: "PK."
+        tests:
+          - unique
+          - not_null
+      - name: approved_at
+        description: "Date d'approbation de la version."
+
+  - name: fct_plm_bom
+    description: "Table de faits des nomenclatures (BOM) avec lignes détaillées."
+    columns:
+      - name: id_bom_line
+        description: "PK."
+        tests:
+          - unique
+          - not_null
+      - name: bom_id
+        description: "Identifiant de la nomenclature parente."
+
+  - name: fct_plm_change_requests
+    description: "Table de faits des demandes de changement PLM."
+    columns:
+      - name: id_change_request
+        description: "PK."
+        tests:
+          - unique
+          - not_null
+      - name: submitted_at
+        description: "Date de soumission de la demande."
+
+  - name: fct_plm_certifications
+    description: "Table de faits des certifications produit PLM."
+    columns:
+      - name: id_certification
+        description: "PK."
+        tests:
+          - unique
+          - not_null

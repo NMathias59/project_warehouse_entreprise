@@ -1,0 +1,94 @@
+version: 2
+
+models:
+  - name: int_sirh__employees_with_contract
+    description: "Employés enrichis avec les informations du contrat actif, poste et département. Grain : un employé."
+    columns:
+      - name: id_employee
+        description: "Identifiant unique de l'employé."
+        tests:
+          - not_null
+      - name: employee_number
+        description: "Matricule de l'employé."
+      - name: first_name
+        description: "Prénom de l'employé."
+      - name: last_name
+        description: "Nom de l'employé."
+      - name: email
+        description: "Adresse email professionnelle."
+      - name: employment_status
+        description: "Statut d'emploi (actif, en congé, démissionnaire, etc.)."
+      - name: hire_date
+        description: "Date d'embauche."
+      - name: termination_date
+        description: "Date de fin de contrat."
+      - name: position_id
+        description: "Identifiant du poste."
+      - name: position_title
+        description: "Intitulé du poste."
+      - name: position_job_family
+        description: "Famille de métier du poste."
+      - name: department_id
+        description: "Identifiant du département."
+      - name: department_name
+        description: "Nom du département."
+      - name: manager_id
+        description: "Identifiant du manager."
+      - name: contract_type
+        description: "Type du contrat le plus récent (CDI, CDD, etc.)."
+      - name: gross_salary
+        description: "Salaire brut du contrat le plus récent."
+      - name: working_hours_per_week
+        description: "Heures travaillées par semaine (contrat le plus récent)."
+      - name: contract_start_date
+        description: "Date de début du contrat le plus récent."
+      - name: nb_contracts
+        description: "Nombre total de contrats."
+
+  - name: int_sirh__payroll_monthly_aggregated
+    description: "Agrégation mensuelle de la paie : masses salariales, charges et effectifs. Grain : un mois de paie."
+    columns:
+      - name: pay_period_year
+        description: "Année de la période de paie."
+        tests:
+          - not_null
+      - name: pay_period_month
+        description: "Mois de la période de paie."
+        tests:
+          - not_null
+      - name: nb_payslips
+        description: "Nombre de bulletins de paie émis."
+      - name: total_gross
+        description: "Masse salariale brute totale."
+      - name: total_net
+        description: "Total net salarial."
+      - name: total_employer_charges
+        description: "Total des charges patronales."
+      - name: total_employee_charges
+        description: "Total des charges salariales."
+      - name: total_net_to_pay
+        description: "Total net à payer."
+      - name: avg_gross_salary
+        description: "Salaire brut moyen."
+
+  - name: int_sirh__absence_stats_by_employee
+    description: "Statistiques d'absences agrégées par employé avec décompte par statut et type. Grain : un employé."
+    columns:
+      - name: employee_id
+        description: "Identifiant de l'employé."
+        tests:
+          - not_null
+      - name: nb_absences_total
+        description: "Nombre total d'absences."
+      - name: nb_absences_approved
+        description: "Nombre d'absences approuvées."
+      - name: nb_absences_pending
+        description: "Nombre d'absences en attente."
+      - name: total_days_approved
+        description: "Total des jours d'absences approuvées."
+      - name: nb_paid_absences
+        description: "Nombre d'absences rémunérées."
+      - name: nb_unpaid_absences
+        description: "Nombre d'absences non rémunérées."
+      - name: last_absence_start_date
+        description: "Date de début de la dernière absence."

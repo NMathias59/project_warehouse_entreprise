@@ -1,0 +1,33 @@
+version: 2
+models:
+  - name: rpt_plm__product_lifecycle
+    description: "Report cycle de vie produit PLM : statut, versions et demandes de changement ouvertes."
+    columns:
+      - name: id_product
+        description: "Identifiant du produit."
+        tests:
+          - not_null
+      - name: lifecycle_status
+        description: "Statut dans le cycle de vie."
+      - name: nb_versions
+        description: "Nombre de versions."
+      - name: nb_change_requests
+        description: "Nombre de demandes de changement."
+      - name: last_approval_at
+        description: "Date de la dernière approbation de version."
+
+  - name: rpt_plm__change_management
+    description: "Report gestion des changements PLM enrichi avec les données produit et délais."
+    columns:
+      - name: id_change_request
+        description: "Identifiant de la demande de changement."
+        tests:
+          - not_null
+      - name: change_type
+        description: "Type de changement."
+      - name: priority
+        description: "Priorité de la demande."
+      - name: approval_days
+        description: "Délai d'approbation en jours."
+      - name: implementation_days
+        description: "Délai d'implémentation en jours."

@@ -1,0 +1,223 @@
+version: 2
+
+# Staging models pour la source PLM (DB_WH_PLM).
+# Convention : stg_plm__<table>.sql — 1-to-1 avec la table source.
+# Matérialisation : view (héritée de dbt_project.yml).
+
+models:
+  - name: stg_plm__products
+    description: "Référentiel produit PLM avec statut de cycle de vie."
+    columns:
+      - name: id_product
+        description: "Identifiant unique du produit PLM (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: code
+        description: "Code produit."
+      - name: name
+        description: "Nom du produit."
+      - name: description
+        description: "Description du produit (nullable)."
+      - name: product_family
+        description: "Famille de produit (nullable)."
+      - name: lifecycle_status
+        description: "Statut de cycle de vie : concept/development/active/obsolete/discontinued."
+      - name: responsible_id
+        description: "Responsable produit (nullable)."
+      - name: launch_date
+        description: "Date de lancement commerciale (nullable)."
+      - name: end_of_life_date
+        description: "Date de fin de vie (nullable)."
+      - name: created_at
+        description: "Date de création."
+      - name: updated_at
+        description: "Date de dernière mise à jour (nullable)."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_plm__product_versions
+    description: "Versions successives d'un produit PLM."
+    columns:
+      - name: id_product_version
+        description: "Identifiant unique de la version (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: product_id
+        description: "FK vers le produit."
+      - name: version_number
+        description: "Numéro de version."
+      - name: status
+        description: "Statut : draft/under_review/approved/deprecated."
+      - name: change_summary
+        description: "Résumé des modifications (nullable)."
+      - name: approved_by
+        description: "Approbateur (nullable)."
+      - name: approved_at
+        description: "Date d'approbation (nullable)."
+      - name: effective_date
+        description: "Date d'entrée en vigueur (nullable)."
+      - name: created_at
+        description: "Date de création."
+      - name: updated_at
+        description: "Date de dernière mise à jour (nullable)."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_plm__bom_headers
+    description: "En-têtes de nomenclatures (BOM engineering ou manufacturing)."
+    columns:
+      - name: id_bom_header
+        description: "Identifiant unique de la nomenclature (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: product_version_id
+        description: "FK vers la version produit."
+      - name: bom_type
+        description: "Type : engineering/manufacturing."
+      - name: status
+        description: "Statut : draft/approved/obsolete."
+      - name: total_components
+        description: "Nombre total de composants."
+      - name: created_at
+        description: "Date de création."
+      - name: updated_at
+        description: "Date de dernière mise à jour (nullable)."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_plm__bom_lines
+    description: "Lignes de nomenclature (composants et sous-ensembles)."
+    columns:
+      - name: id_bom_line
+        description: "Identifiant unique de la ligne de nomenclature (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: bom_id
+        description: "FK vers la nomenclature."
+      - name: parent_component_id
+        description: "FK vers le composant parent (nullable pour composants racines)."
+      - name: component_code
+        description: "Code du composant."
+      - name: component_name
+        description: "Nom du composant."
+      - name: component_type
+        description: "Type : raw_material/sub_assembly/purchased_part."
+      - name: quantity
+        description: "Quantité nécessaire."
+      - name: unit_of_measure
+        description: "Unité de mesure."
+      - name: is_critical
+        description: "Indique si le composant est critique."
+      - name: lead_time_days
+        description: "Délai d'approvisionnement en jours (nullable)."
+      - name: created_at
+        description: "Date de création."
+      - name: updated_at
+        description: "Date de dernière mise à jour (nullable)."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_plm__documents
+    description: "Documents techniques associés aux produits (fiches, plans, manuels, certificats)."
+    columns:
+      - name: id_document
+        description: "Identifiant unique du document (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: product_id
+        description: "FK vers le produit."
+      - name: product_version_id
+        description: "FK vers la version produit (nullable)."
+      - name: document_type
+        description: "Type : datasheet/drawing/manual/certificate/test_report."
+      - name: title
+        description: "Titre du document."
+      - name: file_reference
+        description: "Référence ou chemin du fichier."
+      - name: version
+        description: "Version du document."
+      - name: status
+        description: "Statut : draft/reviewed/approved/obsolete."
+      - name: created_by
+        description: "Auteur du document."
+      - name: approved_by
+        description: "Approbateur (nullable)."
+      - name: created_at
+        description: "Date de création."
+      - name: updated_at
+        description: "Date de dernière mise à jour (nullable)."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_plm__change_requests
+    description: "Demandes de modification engineering (ECR/ECO)."
+    columns:
+      - name: id_change_request
+        description: "Identifiant unique de la demande de modification (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: reference
+        description: "Référence de la demande."
+      - name: title
+        description: "Titre de la demande."
+      - name: description
+        description: "Description détaillée (nullable)."
+      - name: product_id
+        description: "FK vers le produit concerné."
+      - name: change_type
+        description: "Type de modification : design/process/material/supplier."
+      - name: priority
+        description: "Priorité : low/medium/high/critical."
+      - name: status
+        description: "Statut : draft/submitted/under_review/approved/implemented/rejected."
+      - name: requested_by
+        description: "Demandeur."
+      - name: approved_by
+        description: "Approbateur (nullable)."
+      - name: submitted_at
+        description: "Date de soumission (nullable)."
+      - name: approved_at
+        description: "Date d'approbation (nullable)."
+      - name: implemented_at
+        description: "Date d'implémentation (nullable)."
+      - name: created_at
+        description: "Date de création."
+      - name: updated_at
+        description: "Date de dernière mise à jour (nullable)."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_plm__certifications
+    description: "Certifications produit (CE, RoHS, ISO, etc.)."
+    columns:
+      - name: id_certification
+        description: "Identifiant unique de la certification (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: product_id
+        description: "FK vers le produit."
+      - name: certification_type
+        description: "Type de certification (ex. CE, RoHS, ISO 9001)."
+      - name: certification_body
+        description: "Organisme certificateur."
+      - name: certificate_number
+        description: "Numéro de certificat (nullable)."
+      - name: status
+        description: "Statut : valid/expired/suspended/pending."
+      - name: valid_from
+        description: "Date de début de validité (nullable)."
+      - name: valid_until
+        description: "Date de fin de validité (nullable)."
+      - name: created_at
+        description: "Date de création."
+      - name: updated_at
+        description: "Date de dernière mise à jour (nullable)."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."

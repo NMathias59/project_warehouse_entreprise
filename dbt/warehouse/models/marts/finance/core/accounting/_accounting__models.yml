@@ -1,0 +1,87 @@
+version: 2
+models:
+  - name: dim_finance_accounts
+    description: "Dimension comptes comptables Finance actifs."
+    columns:
+      - name: account_number
+        description: "PK — numéro de compte comptable."
+        tests:
+          - unique
+          - not_null
+      - name: label
+        description: "Libellé du compte."
+      - name: account_type
+        description: "Type de compte (asset, liability, equity, revenue, expense)."
+      - name: is_active
+        description: "Indique si le compte est actif."
+
+  - name: dim_finance_cost_centers
+    description: "Dimension centres de coûts Finance actifs."
+    columns:
+      - name: id_cost_center
+        description: "PK."
+        tests:
+          - unique
+          - not_null
+      - name: code
+        description: "Code du centre de coût."
+      - name: label
+        description: "Libellé du centre de coût."
+
+  - name: dim_finance_fiscal_years
+    description: "Dimension exercices fiscaux Finance."
+    columns:
+      - name: id_fiscal_year
+        description: "PK."
+        tests:
+          - unique
+          - not_null
+      - name: year
+        description: "Année fiscale."
+      - name: is_current
+        description: "Indique si c'est l'exercice en cours."
+
+  - name: fct_finance_journal_lines
+    description: "Table de faits des lignes d'écritures comptables Finance (statut posted uniquement)."
+    columns:
+      - name: id_journal_line
+        description: "PK."
+        tests:
+          - unique
+          - not_null
+      - name: journal_entry_id
+        description: "Identifiant de l'écriture comptable parente."
+        tests:
+          - not_null
+      - name: entry_date
+        description: "Date de l'écriture."
+      - name: debit_amount
+        description: "Montant au débit."
+      - name: credit_amount
+        description: "Montant au crédit."
+
+  - name: fct_finance_budget_lines
+    description: "Table de faits des lignes budgétaires Finance."
+    columns:
+      - name: budget_id
+        description: "Identifiant du budget parent."
+        tests:
+          - not_null
+      - name: account_id
+        description: "Référence au compte comptable."
+      - name: period_number
+        description: "Numéro de période budgétaire."
+
+  - name: fct_finance_bank_transactions
+    description: "Table de faits des transactions bancaires Finance."
+    columns:
+      - name: bank_account_id
+        description: "Référence au compte bancaire."
+        tests:
+          - not_null
+      - name: transaction_date
+        description: "Date de la transaction."
+      - name: amount
+        description: "Montant de la transaction."
+      - name: is_reconciled
+        description: "Indique si la transaction est rapprochée."

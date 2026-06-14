@@ -1,0 +1,69 @@
+version: 2
+models:
+  - name: dim_procurement_suppliers
+    description: "Dimension fournisseurs Procurement enrichie avec les indicateurs de performance."
+    columns:
+      - name: id_supplier
+        description: "PK."
+        tests:
+          - unique
+          - not_null
+      - name: code
+        description: "Code fournisseur."
+      - name: name
+        description: "Nom du fournisseur."
+      - name: supplier_type
+        description: "Type de fournisseur."
+      - name: status
+        description: "Statut du fournisseur."
+      - name: nb_purchase_orders
+        description: "Nombre total de bons de commande."
+      - name: avg_evaluation_score
+        description: "Score d'évaluation moyen."
+
+  - name: fct_procurement_purchase_orders
+    description: "Table de faits des bons de commande Procurement avec lignes."
+    columns:
+      - name: purchase_order_id
+        description: "Identifiant du bon de commande."
+        tests:
+          - not_null
+      - name: sent_at
+        description: "Date d'envoi du bon de commande."
+
+  - name: fct_procurement_rfq_responses
+    description: "Table de faits des réponses aux appels d'offres Procurement avec classement prix."
+    columns:
+      - name: rfq_id
+        description: "Identifiant de l'appel d'offres."
+        tests:
+          - not_null
+      - name: price_rank
+        description: "Classement par prix de la réponse."
+
+  - name: fct_procurement_receipts
+    description: "Table de faits des réceptions Procurement avec lignes détaillées."
+    columns:
+      - name: id_receipt_line
+        description: "PK."
+        tests:
+          - unique
+          - not_null
+      - name: purchase_order_id
+        description: "Référence au bon de commande."
+      - name: received_at
+        description: "Date de réception."
+      - name: line_total_cost
+        description: "Coût total de la ligne (qté x coût unitaire)."
+
+  - name: fct_procurement_supplier_evaluations
+    description: "Table de faits des évaluations fournisseurs Procurement."
+    columns:
+      - name: supplier_id
+        description: "Référence au fournisseur."
+        tests:
+          - not_null
+      - name: evaluation_year
+        description: "Année d'évaluation."
+        tests:
+          - not_null

@@ -1,0 +1,341 @@
+version: 2
+
+# Staging models pour la source SIRH (DB_WH_SIRH).
+# Convention : stg_sirh__<table>.sql — 1-to-1 avec la table source.
+# Matérialisation : view (héritée de dbt_project.yml).
+
+models:
+  - name: stg_sirh__departments
+    description: "Départements organisationnels de l'entreprise."
+    columns:
+      - name: id_department
+        description: "Identifiant unique du département (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: code
+        description: "Code court du département."
+      - name: name
+        description: "Nom du département."
+      - name: parent_department_id
+        description: "FK vers le département parent (nullable pour les départements racines)."
+      - name: manager_id
+        description: "Identifiant du responsable (nullable)."
+      - name: cost_center_code
+        description: "Code du centre de coût associé (nullable)."
+      - name: is_active
+        description: "Indique si le département est actif."
+      - name: created_at
+        description: "Date de création."
+      - name: updated_at
+        description: "Date de dernière mise à jour (nullable)."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_sirh__positions
+    description: "Postes et intitulés de fonctions."
+    columns:
+      - name: id_position
+        description: "Identifiant unique du poste (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: code
+        description: "Code du poste."
+      - name: title
+        description: "Intitulé du poste."
+      - name: department_id
+        description: "FK vers le département (nullable)."
+      - name: job_family
+        description: "Famille de métier (nullable)."
+      - name: seniority_level
+        description: "Niveau de séniorité (nullable)."
+      - name: is_active
+        description: "Indique si le poste est actif."
+      - name: created_at
+        description: "Date de création."
+      - name: updated_at
+        description: "Date de dernière mise à jour (nullable)."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_sirh__employees
+    description: "Collaborateurs de l'entreprise."
+    columns:
+      - name: id_employee
+        description: "Identifiant unique du collaborateur (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: employee_number
+        description: "Matricule employé."
+      - name: first_name
+        description: "Prénom."
+      - name: last_name
+        description: "Nom."
+      - name: email
+        description: "Adresse email professionnelle."
+      - name: phone
+        description: "Téléphone (nullable)."
+      - name: gender
+        description: "Genre (nullable)."
+      - name: birth_date
+        description: "Date de naissance (nullable)."
+      - name: nationality
+        description: "Nationalité (nullable)."
+      - name: position_id
+        description: "FK vers le poste (nullable)."
+      - name: department_id
+        description: "FK vers le département (nullable)."
+      - name: manager_id
+        description: "FK vers le manager (nullable)."
+      - name: employment_status
+        description: "Statut : active/on_leave/terminated."
+      - name: hire_date
+        description: "Date d'embauche (nullable)."
+      - name: termination_date
+        description: "Date de sortie (nullable)."
+      - name: created_at
+        description: "Date de création."
+      - name: updated_at
+        description: "Date de dernière mise à jour (nullable)."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_sirh__contracts
+    description: "Contrats de travail des collaborateurs."
+    columns:
+      - name: id_contract
+        description: "Identifiant unique du contrat (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: employee_id
+        description: "FK vers le collaborateur."
+      - name: contract_type
+        description: "Type : cdi/cdd/interim/apprenticeship/internship."
+      - name: status
+        description: "Statut : active/terminated/suspended."
+      - name: start_date
+        description: "Date de début (nullable)."
+      - name: end_date
+        description: "Date de fin (nullable)."
+      - name: gross_salary
+        description: "Salaire brut mensuel."
+      - name: working_hours_per_week
+        description: "Nombre d'heures travaillées par semaine."
+      - name: created_at
+        description: "Date de création."
+      - name: updated_at
+        description: "Date de dernière mise à jour (nullable)."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_sirh__payslips
+    description: "Fiches de paie mensuelles des collaborateurs."
+    columns:
+      - name: id_payslip
+        description: "Identifiant unique de la fiche de paie (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: employee_id
+        description: "FK vers le collaborateur."
+      - name: contract_id
+        description: "FK vers le contrat (nullable)."
+      - name: pay_period_year
+        description: "Année de la période de paie."
+      - name: pay_period_month
+        description: "Mois de la période de paie."
+      - name: gross_salary
+        description: "Salaire brut."
+      - name: net_salary
+        description: "Salaire net."
+      - name: employer_charges
+        description: "Charges patronales."
+      - name: employee_charges
+        description: "Charges salariales."
+      - name: net_to_pay
+        description: "Net à payer."
+      - name: paid_at
+        description: "Date de paiement (nullable)."
+      - name: created_at
+        description: "Date de création."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_sirh__payslip_lines
+    description: "Lignes détaillées des fiches de paie."
+    columns:
+      - name: id_payslip_line
+        description: "Identifiant unique de la ligne de paie (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: payslip_id
+        description: "FK vers la fiche de paie."
+      - name: line_type
+        description: "Type de ligne : base/bonus/overtime/deduction/benefit/charge."
+      - name: label
+        description: "Libellé de la ligne."
+      - name: quantity
+        description: "Quantité (nullable)."
+      - name: unit_rate
+        description: "Taux unitaire (nullable)."
+      - name: amount
+        description: "Montant de la ligne."
+      - name: created_at
+        description: "Date de création."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_sirh__absence_types
+    description: "Types d'absences gérés dans le SIRH."
+    columns:
+      - name: id_absence_type
+        description: "Identifiant unique du type d'absence (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: code
+        description: "Code du type d'absence."
+      - name: label
+        description: "Libellé du type d'absence."
+      - name: is_paid
+        description: "Indique si l'absence est rémunérée."
+      - name: requires_approval
+        description: "Indique si une approbation est requise."
+      - name: is_active
+        description: "Indique si le type est actif."
+      - name: created_at
+        description: "Date de création."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_sirh__absences
+    description: "Absences et congés des collaborateurs."
+    columns:
+      - name: id_absence
+        description: "Identifiant unique de l'absence (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: employee_id
+        description: "FK vers le collaborateur."
+      - name: absence_type_id
+        description: "FK vers le type d'absence."
+      - name: status
+        description: "Statut : requested/approved/rejected/cancelled."
+      - name: start_date
+        description: "Date de début (nullable)."
+      - name: end_date
+        description: "Date de fin (nullable)."
+      - name: duration_days
+        description: "Durée en jours."
+      - name: reason
+        description: "Motif de l'absence (nullable)."
+      - name: approved_by
+        description: "Approbateur (nullable)."
+      - name: approved_at
+        description: "Date d'approbation (nullable)."
+      - name: created_at
+        description: "Date de création."
+      - name: updated_at
+        description: "Date de dernière mise à jour (nullable)."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_sirh__training_sessions
+    description: "Sessions de formation organisées pour les collaborateurs."
+    columns:
+      - name: id_training_session
+        description: "Identifiant unique de la session de formation (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: title
+        description: "Titre de la formation."
+      - name: training_type
+        description: "Type : internal/external/e_learning/certification."
+      - name: provider
+        description: "Prestataire de formation (nullable)."
+      - name: duration_hours
+        description: "Durée en heures."
+      - name: cost_per_person
+        description: "Coût par personne (nullable)."
+      - name: planned_at
+        description: "Date prévue (nullable)."
+      - name: completed_at
+        description: "Date de completion (nullable)."
+      - name: is_mandatory
+        description: "Indique si la formation est obligatoire."
+      - name: created_at
+        description: "Date de création."
+      - name: updated_at
+        description: "Date de dernière mise à jour (nullable)."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_sirh__training_enrollments
+    description: "Inscriptions des collaborateurs aux sessions de formation."
+    columns:
+      - name: id_training_enrollment
+        description: "Identifiant unique de l'inscription (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: training_session_id
+        description: "FK vers la session de formation."
+      - name: employee_id
+        description: "FK vers le collaborateur."
+      - name: status
+        description: "Statut : registered/completed/cancelled/absent."
+      - name: score
+        description: "Score obtenu (nullable)."
+      - name: certificate_issued
+        description: "Indique si un certificat a été délivré."
+      - name: enrolled_at
+        description: "Date d'inscription."
+      - name: completed_at
+        description: "Date de complétion (nullable)."
+      - name: created_at
+        description: "Date de création."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_sirh__performance_reviews
+    description: "Entretiens d'évaluation annuels et périodiques des collaborateurs."
+    columns:
+      - name: id_performance_review
+        description: "Identifiant unique de l'évaluation (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: employee_id
+        description: "FK vers le collaborateur évalué."
+      - name: reviewer_id
+        description: "Identifiant de l'évaluateur."
+      - name: review_period_year
+        description: "Année de la période d'évaluation."
+      - name: review_type
+        description: "Type : annual/mid_year/probation/exit."
+      - name: overall_rating
+        description: "Note globale (nullable)."
+      - name: strengths
+        description: "Points forts identifiés (nullable)."
+      - name: areas_for_improvement
+        description: "Axes d'amélioration (nullable)."
+      - name: objectives_next_period
+        description: "Objectifs pour la prochaine période (nullable)."
+      - name: status
+        description: "Statut : draft/submitted/validated."
+      - name: submitted_at
+        description: "Date de soumission (nullable)."
+      - name: validated_at
+        description: "Date de validation (nullable)."
+      - name: created_at
+        description: "Date de création."
+      - name: updated_at
+        description: "Date de dernière mise à jour (nullable)."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."

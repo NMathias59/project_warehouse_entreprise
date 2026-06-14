@@ -1,0 +1,26 @@
+version: 2
+
+sources:
+  - name: sirh
+    description: >
+      Source SIRH — données RH depuis DB_WH_SIRH
+      (départements, postes, collaborateurs, contrats, fiches de paie, absences, formations, évaluations de performance).
+    schema: DB_WH_SIRH
+
+    freshness:
+      warn_after: {count: 24, period: hour}
+      error_after: {count: 48, period: hour}
+    loaded_at_field: _airbyte_extracted_at
+
+    tables:
+      - name: departments
+      - name: positions
+      - name: employees
+      - name: contracts
+      - name: payslips
+      - name: payslip_lines
+      - name: absence_types
+      - name: absences
+      - name: training_sessions
+      - name: training_enrollments
+      - name: performance_reviews

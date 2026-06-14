@@ -1,0 +1,26 @@
+version: 2
+
+sources:
+  - name: finance
+    description: >
+      Source Finance — données comptables et financières depuis DB_WH_FINANCE
+      (exercices fiscaux, périodes, plan comptable, centres de coût, écritures, budgets, comptes bancaires, transactions, conditions de paiement).
+    schema: DB_WH_FINANCE
+
+    freshness:
+      warn_after: {count: 12, period: hour}
+      error_after: {count: 24, period: hour}
+    loaded_at_field: _airbyte_extracted_at
+
+    tables:
+      - name: fiscal_years
+      - name: accounting_periods
+      - name: accounts
+      - name: cost_centers
+      - name: journal_entries
+      - name: journal_lines
+      - name: budgets
+      - name: budget_lines
+      - name: bank_accounts
+      - name: bank_transactions
+      - name: payment_terms

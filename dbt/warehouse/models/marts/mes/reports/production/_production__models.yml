@@ -1,0 +1,39 @@
+version: 2
+models:
+  - name: rpt_mes__production_performance
+    description: "Performance de production par ordre de fabrication, enrichie des informations du centre de travail."
+    columns:
+      - name: id_production_order
+        description: "Identifiant de l'ordre de fabrication."
+        tests:
+          - not_null
+      - name: work_center_id
+        description: "Référence au centre de travail."
+      - name: scrap_rate
+        description: "Taux de rebut (quantité rebutée / quantité produite)."
+      - name: yield_rate
+        description: "Taux de rendement (quantité bonne / quantité planifiée)."
+
+  - name: rpt_mes__quality_defects
+    description: "Vue qualité des défauts par ordre de fabrication, croisée avec les métriques de production."
+    columns:
+      - name: production_order_id
+        description: "Identifiant de l'ordre de fabrication."
+        tests:
+          - not_null
+      - name: nb_defects_total
+        description: "Nombre total de défauts détectés."
+      - name: nb_defects_critical
+        description: "Nombre de défauts critiques."
+
+  - name: rpt_mes__oee_by_work_center
+    description: "OEE (Overall Equipment Effectiveness) agrégé par centre de travail depuis les enregistrements de temps."
+    columns:
+      - name: id_work_center
+        description: "Identifiant du centre de travail."
+        tests:
+          - not_null
+      - name: utilization_rate
+        description: "Taux d'utilisation global du centre de travail."
+      - name: total_production_minutes
+        description: "Total des minutes de production enregistrées."

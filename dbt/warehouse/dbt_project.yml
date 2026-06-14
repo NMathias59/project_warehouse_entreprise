@@ -59,6 +59,24 @@ models:
         +schema: DB_WH_MKT
       crm:
         +schema: DB_WH_CRM
+      wms:
+        +schema: DB_WH_WMS
+      mes:
+        +schema: DB_WH_MES
+      marketing:
+        +schema: DB_WH_MARKETING
+      sav:
+        +schema: DB_WH_SAV
+      plm:
+        +schema: DB_WH_PLM
+      sirh:
+        +schema: DB_WH_SIRH
+      qms:
+        +schema: DB_WH_QMS
+      finance:
+        +schema: DB_WH_FINANCE
+      procurement:
+        +schema: DB_WH_PROCUREMENT
 
     # ---------- INTERMEDIATE ----------
     # Molécules : transformations intermédiaires non exposées aux end users.
@@ -125,6 +143,60 @@ models:
             +tags: ["reports", "crm", "sales"]
           pipeline:
             +tags: ["reports", "crm", "pipeline"]
+      wms:
+        +schema: DB_WH_WMS
+        +tags: ["wms"]
+        reports:
+          operations:
+            +tags: ["reports", "wms", "operations"]
+      mes:
+        +schema: DB_WH_MES
+        +tags: ["mes"]
+        reports:
+          production:
+            +tags: ["reports", "mes", "production"]
+      marketing:
+        +schema: DB_WH_MARKETING
+        +tags: ["marketing"]
+        reports:
+          performance:
+            +tags: ["reports", "marketing", "performance"]
+      sav:
+        +schema: DB_WH_SAV
+        +tags: ["sav"]
+        reports:
+          support:
+            +tags: ["reports", "sav", "support"]
+      plm:
+        +schema: DB_WH_PLM
+        +tags: ["plm"]
+        reports:
+          product:
+            +tags: ["reports", "plm", "product"]
+      sirh:
+        +schema: DB_WH_SIRH
+        +tags: ["sirh"]
+        reports:
+          workforce:
+            +tags: ["reports", "sirh", "workforce"]
+      qms:
+        +schema: DB_WH_QMS
+        +tags: ["qms"]
+        reports:
+          quality:
+            +tags: ["reports", "qms", "quality"]
+      finance:
+        +schema: DB_WH_FINANCE
+        +tags: ["finance"]
+        reports:
+          financial:
+            +tags: ["reports", "finance", "financial"]
+      procurement:
+        +schema: DB_WH_PROCUREMENT
+        +tags: ["procurement"]
+        reports:
+          sourcing:
+            +tags: ["reports", "procurement", "sourcing"]
 
       # ---------- BI Datamarts ----------
       # Couche cross-domaines : combinent ERP + MKT + CRM via ref().

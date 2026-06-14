@@ -1,0 +1,252 @@
+version: 2
+
+# Staging models pour la source SAV (DB_WH_SAV).
+# Convention : stg_sav__<table>.sql — 1-to-1 avec la table source.
+# Matérialisation : view (héritée de dbt_project.yml).
+
+models:
+  - name: stg_sav__technicians
+    description: "Techniciens SAV habilités pour les interventions."
+    columns:
+      - name: id_technician
+        description: "Identifiant unique du technicien (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: code
+        description: "Code court du technicien."
+      - name: first_name
+        description: "Prénom du technicien."
+      - name: last_name
+        description: "Nom du technicien."
+      - name: email
+        description: "Adresse email du technicien."
+      - name: phone
+        description: "Téléphone (nullable)."
+      - name: specialization
+        description: "Spécialisation technique (nullable)."
+      - name: is_active
+        description: "Indique si le technicien est actif."
+      - name: created_at
+        description: "Date de création."
+      - name: updated_at
+        description: "Date de dernière mise à jour (nullable)."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_sav__tickets
+    description: "Tickets de support, incidents et demandes SAV."
+    columns:
+      - name: id_ticket
+        description: "Identifiant unique du ticket (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: reference
+        description: "Référence du ticket."
+      - name: title
+        description: "Titre du ticket."
+      - name: description
+        description: "Description détaillée (nullable)."
+      - name: status
+        description: "Statut : open/in_progress/pending_customer/resolved/closed."
+      - name: priority
+        description: "Priorité : low/medium/high/critical."
+      - name: ticket_type
+        description: "Type : incident/request/warranty/return."
+      - name: channel
+        description: "Canal d'entrée : email/phone/web/store."
+      - name: customer_id
+        description: "FK vers le client (nullable)."
+      - name: order_id
+        description: "FK vers la commande (nullable)."
+      - name: product_id
+        description: "FK vers le produit (nullable)."
+      - name: assigned_to
+        description: "Agent assigné (nullable)."
+      - name: resolved_at
+        description: "Date de résolution (nullable)."
+      - name: closed_at
+        description: "Date de fermeture (nullable)."
+      - name: created_at
+        description: "Date de création."
+      - name: updated_at
+        description: "Date de dernière mise à jour (nullable)."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_sav__ticket_messages
+    description: "Messages échangés sur un ticket (client, agent, système)."
+    columns:
+      - name: id_ticket_message
+        description: "Identifiant unique du message (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: ticket_id
+        description: "FK vers le ticket."
+      - name: sender_type
+        description: "Type d'émetteur : customer/agent/system."
+      - name: sender_id
+        description: "Identifiant de l'émetteur."
+      - name: body
+        description: "Corps du message."
+      - name: has_attachment
+        description: "Indique si le message contient une pièce jointe."
+      - name: sent_at
+        description: "Date d'envoi."
+      - name: created_at
+        description: "Date de création."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_sav__ticket_history
+    description: "Historique des changements de statut sur les tickets."
+    columns:
+      - name: id_ticket_history
+        description: "Identifiant unique de l'événement d'historique (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: ticket_id
+        description: "FK vers le ticket."
+      - name: status_from
+        description: "Statut avant changement (nullable)."
+      - name: status_to
+        description: "Statut après changement."
+      - name: changed_by
+        description: "Agent ayant effectué le changement."
+      - name: changed_at
+        description: "Date du changement."
+      - name: created_at
+        description: "Date de création de l'enregistrement."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_sav__interventions
+    description: "Interventions techniques sur site, en atelier ou à distance."
+    columns:
+      - name: id_intervention
+        description: "Identifiant unique de l'intervention (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: reference
+        description: "Référence de l'intervention."
+      - name: ticket_id
+        description: "FK vers le ticket (nullable)."
+      - name: technician_id
+        description: "FK vers le technicien."
+      - name: customer_id
+        description: "FK vers le client (nullable)."
+      - name: product_id
+        description: "FK vers le produit (nullable)."
+      - name: intervention_type
+        description: "Type : on_site/workshop/remote."
+      - name: status
+        description: "Statut : planned/in_progress/completed/cancelled."
+      - name: diagnostic
+        description: "Diagnostic posé (nullable)."
+      - name: resolution
+        description: "Solution apportée (nullable)."
+      - name: scheduled_at
+        description: "Date planifiée (nullable)."
+      - name: started_at
+        description: "Date de début réelle (nullable)."
+      - name: completed_at
+        description: "Date de fin réelle (nullable)."
+      - name: travel_km
+        description: "Kilométrage parcouru (nullable)."
+      - name: duration_minutes
+        description: "Durée de l'intervention en minutes (nullable)."
+      - name: created_at
+        description: "Date de création."
+      - name: updated_at
+        description: "Date de dernière mise à jour (nullable)."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_sav__spare_parts_used
+    description: "Pièces détachées utilisées lors d'une intervention."
+    columns:
+      - name: id_spare_part_used
+        description: "Identifiant unique (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: intervention_id
+        description: "FK vers l'intervention."
+      - name: part_reference
+        description: "Référence de la pièce détachée."
+      - name: part_name
+        description: "Nom de la pièce détachée."
+      - name: quantity
+        description: "Quantité utilisée."
+      - name: unit_cost
+        description: "Coût unitaire."
+      - name: is_under_warranty
+        description: "Indique si la pièce est couverte par la garantie."
+      - name: created_at
+        description: "Date de création."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_sav__warranties
+    description: "Dossiers de garantie liés aux tickets et produits."
+    columns:
+      - name: id_warranty
+        description: "Identifiant unique du dossier de garantie (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: ticket_id
+        description: "FK vers le ticket (nullable)."
+      - name: customer_id
+        description: "FK vers le client (nullable)."
+      - name: product_id
+        description: "FK vers le produit."
+      - name: serial_number
+        description: "Numéro de série du produit (nullable)."
+      - name: warranty_type
+        description: "Type : manufacturer/commercial/extended."
+      - name: status
+        description: "Statut : open/approved/rejected/closed."
+      - name: claim_reason
+        description: "Motif de la demande de garantie."
+      - name: approved_at
+        description: "Date d'approbation (nullable)."
+      - name: rejected_reason
+        description: "Motif de refus (nullable)."
+      - name: created_at
+        description: "Date de création."
+      - name: updated_at
+        description: "Date de dernière mise à jour (nullable)."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_sav__customer_satisfaction
+    description: "Enquêtes de satisfaction client (CSAT, NPS, CES) après ticket ou intervention."
+    columns:
+      - name: id_customer_satisfaction
+        description: "Identifiant unique de l'enquête (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: ticket_id
+        description: "FK vers le ticket (nullable)."
+      - name: intervention_id
+        description: "FK vers l'intervention (nullable)."
+      - name: customer_id
+        description: "FK vers le client (nullable)."
+      - name: survey_type
+        description: "Type d'enquête : csat/nps/ces."
+      - name: score
+        description: "Score de satisfaction."
+      - name: comment
+        description: "Commentaire libre (nullable)."
+      - name: surveyed_at
+        description: "Date de l'enquête."
+      - name: created_at
+        description: "Date de création."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."

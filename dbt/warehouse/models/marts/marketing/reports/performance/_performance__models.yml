@@ -1,0 +1,43 @@
+version: 2
+models:
+  - name: rpt_marketing__campaign_performance
+    description: "Performance globale des campagnes marketing (email + publicité) avec ROI."
+    columns:
+      - name: id_campaign
+        description: "Identifiant de la campagne."
+        tests:
+          - not_null
+      - name: roi
+        description: "Retour sur investissement de la campagne."
+      - name: open_rate
+        description: "Taux d'ouverture des emails."
+      - name: click_rate
+        description: "Taux de clic des emails."
+
+  - name: rpt_marketing__lead_funnel
+    description: "Entonnoir de conversion des leads avec attribution campagne et canal."
+    columns:
+      - name: id_lead
+        description: "Identifiant unique du lead."
+        tests:
+          - not_null
+      - name: created_at
+        description: "Date de création du lead."
+        tests:
+          - not_null
+      - name: days_to_convert
+        description: "Nombre de jours entre la création et la conversion."
+
+  - name: rpt_marketing__channel_roi
+    description: "ROI agrégé par canal marketing (display, email, social, search...)."
+    columns:
+      - name: channel
+        description: "Canal marketing."
+        tests:
+          - not_null
+      - name: nb_campaigns
+        description: "Nombre de campagnes distinctes sur ce canal."
+      - name: avg_cpc
+        description: "Coût par clic moyen (total_cost / total_clicks)."
+      - name: avg_roi
+        description: "ROI moyen sur le canal."

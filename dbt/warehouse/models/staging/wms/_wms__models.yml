@@ -1,0 +1,281 @@
+version: 2
+
+# Staging models pour la source WMS (DB_WH_WMS).
+# Convention : stg_wms__<table>.sql — 1-to-1 avec la table source.
+# Matérialisation : view (héritée de dbt_project.yml).
+
+models:
+  - name: stg_wms__locations
+    description: "Emplacements physiques de l'entrepôt (allées, racks, niveaux, positions)."
+    columns:
+      - name: id_location
+        description: "Identifiant unique de l'emplacement (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: code
+        description: "Code court de l'emplacement."
+      - name: label
+        description: "Libellé descriptif de l'emplacement."
+      - name: zone
+        description: "Zone de l'entrepôt."
+      - name: aisle
+        description: "Allée de l'entrepôt."
+      - name: rack
+        description: "Rack de l'emplacement."
+      - name: level
+        description: "Niveau vertical du rack."
+      - name: position
+        description: "Position horizontale dans le niveau."
+      - name: warehouse_id
+        description: "FK vers l'entrepôt."
+      - name: location_type
+        description: "Type d'emplacement (ex. stockage, picking, réception)."
+      - name: max_weight_kg
+        description: "Poids maximum supporté en kilogrammes."
+      - name: is_active
+        description: "Indique si l'emplacement est actif."
+      - name: created_at
+        description: "Date de création de l'emplacement."
+      - name: updated_at
+        description: "Date de dernière mise à jour."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_wms__stock_movements
+    description: "Mouvements de stock entrants et sortants (réception, expédition, ajustement, transfert)."
+    columns:
+      - name: id_stock_movement
+        description: "Identifiant unique du mouvement de stock (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: reference
+        description: "Référence du mouvement."
+      - name: movement_type
+        description: "Type de mouvement : receipt/shipment/adjustment/transfer."
+      - name: product_id
+        description: "FK vers le produit."
+      - name: location_id
+        description: "FK vers l'emplacement."
+      - name: warehouse_id
+        description: "FK vers l'entrepôt."
+      - name: source_document_id
+        description: "FK vers le document source (nullable)."
+      - name: quantity
+        description: "Quantité déplacée."
+      - name: unit_cost
+        description: "Coût unitaire au moment du mouvement."
+      - name: moved_at
+        description: "Horodatage du mouvement."
+      - name: created_by
+        description: "Utilisateur ayant créé le mouvement."
+      - name: created_at
+        description: "Date de création de l'enregistrement."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_wms__receipts
+    description: "Réceptions de marchandises en entrepôt."
+    columns:
+      - name: id_receipt
+        description: "Identifiant unique de la réception (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: reference
+        description: "Référence de la réception."
+      - name: status
+        description: "Statut de la réception : pending/in_progress/completed/cancelled."
+      - name: supplier_id
+        description: "FK vers le fournisseur."
+      - name: warehouse_id
+        description: "FK vers l'entrepôt."
+      - name: purchase_order_id
+        description: "FK vers le bon de commande (nullable)."
+      - name: expected_at
+        description: "Date de réception prévue (nullable)."
+      - name: received_at
+        description: "Date de réception effective (nullable)."
+      - name: notes
+        description: "Notes libres sur la réception (nullable)."
+      - name: created_at
+        description: "Date de création de l'enregistrement."
+      - name: updated_at
+        description: "Date de dernière mise à jour (nullable)."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_wms__receipt_lines
+    description: "Lignes de réception de marchandises."
+    columns:
+      - name: id_receipt_line
+        description: "Identifiant unique de la ligne de réception (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: receipt_id
+        description: "FK vers la réception."
+      - name: product_id
+        description: "FK vers le produit."
+      - name: location_id
+        description: "FK vers l'emplacement de rangement (nullable)."
+      - name: quantity_expected
+        description: "Quantité attendue."
+      - name: quantity_received
+        description: "Quantité effectivement reçue."
+      - name: unit_cost
+        description: "Coût unitaire."
+      - name: lot_number
+        description: "Numéro de lot (nullable)."
+      - name: expiry_date
+        description: "Date d'expiration du lot (nullable)."
+      - name: created_at
+        description: "Date de création de l'enregistrement."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_wms__shipments
+    description: "Expéditions sortantes depuis l'entrepôt."
+    columns:
+      - name: id_shipment
+        description: "Identifiant unique de l'expédition (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: reference
+        description: "Référence de l'expédition."
+      - name: status
+        description: "Statut : pending/picking/packed/shipped/delivered/cancelled."
+      - name: order_id
+        description: "FK vers la commande client (nullable)."
+      - name: carrier_id
+        description: "FK vers le transporteur (nullable)."
+      - name: warehouse_id
+        description: "FK vers l'entrepôt."
+      - name: tracking_number
+        description: "Numéro de suivi transporteur (nullable)."
+      - name: shipped_at
+        description: "Date d'expédition effective (nullable)."
+      - name: delivered_at
+        description: "Date de livraison effective (nullable)."
+      - name: created_at
+        description: "Date de création de l'enregistrement."
+      - name: updated_at
+        description: "Date de dernière mise à jour (nullable)."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_wms__shipment_lines
+    description: "Lignes d'expédition (produits expédiés par expédition)."
+    columns:
+      - name: id_shipment_line
+        description: "Identifiant unique de la ligne d'expédition (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: shipment_id
+        description: "FK vers l'expédition."
+      - name: product_id
+        description: "FK vers le produit."
+      - name: location_id
+        description: "FK vers l'emplacement de prélèvement."
+      - name: quantity
+        description: "Quantité expédiée."
+      - name: picked_at
+        description: "Date de prélèvement (nullable)."
+      - name: created_at
+        description: "Date de création de l'enregistrement."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_wms__picking_orders
+    description: "Ordres de prélèvement associés aux expéditions."
+    columns:
+      - name: id_picking_order
+        description: "Identifiant unique de l'ordre de prélèvement (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: reference
+        description: "Référence de l'ordre de prélèvement."
+      - name: status
+        description: "Statut : open/in_progress/completed/cancelled."
+      - name: shipment_id
+        description: "FK vers l'expédition (nullable)."
+      - name: warehouse_id
+        description: "FK vers l'entrepôt."
+      - name: assigned_to
+        description: "Opérateur assigné à l'ordre (nullable)."
+      - name: started_at
+        description: "Date de début du prélèvement (nullable)."
+      - name: completed_at
+        description: "Date de complétion (nullable)."
+      - name: created_at
+        description: "Date de création de l'enregistrement."
+      - name: updated_at
+        description: "Date de dernière mise à jour (nullable)."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_wms__picking_lines
+    description: "Lignes de prélèvement (détail produit/emplacement par ordre de prélèvement)."
+    columns:
+      - name: id_picking_line
+        description: "Identifiant unique de la ligne de prélèvement (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: picking_order_id
+        description: "FK vers l'ordre de prélèvement."
+      - name: product_id
+        description: "FK vers le produit."
+      - name: location_id
+        description: "FK vers l'emplacement."
+      - name: quantity_requested
+        description: "Quantité demandée."
+      - name: quantity_picked
+        description: "Quantité effectivement prélevée."
+      - name: is_completed
+        description: "Indique si la ligne est complétée."
+      - name: picked_at
+        description: "Date de prélèvement (nullable)."
+      - name: created_at
+        description: "Date de création de l'enregistrement."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."
+
+  - name: stg_wms__inventory_adjustments
+    description: "Ajustements d'inventaire (gains, pertes, corrections)."
+    columns:
+      - name: id_inventory_adjustment
+        description: "Identifiant unique de l'ajustement (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: reference
+        description: "Référence de l'ajustement."
+      - name: adjustment_type
+        description: "Type d'ajustement : gain/loss/correction."
+      - name: product_id
+        description: "FK vers le produit."
+      - name: location_id
+        description: "FK vers l'emplacement."
+      - name: warehouse_id
+        description: "FK vers l'entrepôt."
+      - name: quantity_before
+        description: "Quantité avant ajustement."
+      - name: quantity_after
+        description: "Quantité après ajustement."
+      - name: delta_quantity
+        description: "Delta de quantité (after - before)."
+      - name: reason
+        description: "Motif de l'ajustement (nullable)."
+      - name: adjusted_by
+        description: "Utilisateur ayant effectué l'ajustement."
+      - name: adjusted_at
+        description: "Date de l'ajustement."
+      - name: created_at
+        description: "Date de création de l'enregistrement."
+      - name: _etl_loaded_at
+        description: "Horodatage d'extraction Airbyte."

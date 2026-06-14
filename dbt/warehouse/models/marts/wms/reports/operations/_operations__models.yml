@@ -1,0 +1,53 @@
+version: 2
+models:
+  - name: rpt_wms__stock_status
+    description: "Rapport du statut de stock par produit et emplacement, enrichi des infos de localisation (zone, allée, rack)."
+    columns:
+      - name: product_id
+        description: "Identifiant du produit."
+        tests:
+          - not_null
+      - name: location_id
+        description: "Identifiant de l'emplacement."
+        tests:
+          - not_null
+      - name: current_stock
+        description: "Quantité en stock courante."
+      - name: total_received
+        description: "Total des quantités reçues sur cet emplacement."
+      - name: total_shipped
+        description: "Total des quantités expédiées depuis cet emplacement."
+      - name: last_movement_at
+        description: "Date et heure du dernier mouvement de stock."
+
+  - name: rpt_wms__receiving_performance
+    description: "Performance des réceptions hebdomadaires par fournisseur et entrepôt."
+    columns:
+      - name: supplier_id
+        description: "Identifiant du fournisseur."
+        tests:
+          - not_null
+      - name: week
+        description: "Semaine de référence (début de semaine)."
+        tests:
+          - not_null
+      - name: nb_receipts
+        description: "Nombre de bons de réception distincts."
+      - name: receipt_accuracy
+        description: "Taux de conformité des quantités reçues vs attendues."
+
+  - name: rpt_wms__outbound_performance
+    description: "Performance des expéditions sortantes, croisée avec les métriques de picking."
+    columns:
+      - name: id_shipment
+        description: "Identifiant de l'expédition."
+        tests:
+          - not_null
+      - name: shipped_at
+        description: "Date et heure d'expédition."
+      - name: nb_lines
+        description: "Nombre de lignes dans l'expédition."
+      - name: completion_rate
+        description: "Taux de complétion du picking associé."
+      - name: duration_minutes
+        description: "Durée du picking en minutes."

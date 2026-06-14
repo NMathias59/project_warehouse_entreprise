@@ -1,0 +1,130 @@
+version: 2
+
+models:
+  - name: int_wms__receipts_with_lines
+    description: "Réceptions enrichies avec leurs lignes de détail. Grain : une ligne par ligne de réception."
+    columns:
+      - name: id_receipt_line
+        description: "Identifiant unique de la ligne de réception."
+        tests:
+          - not_null
+      - name: id_receipt
+        description: "Identifiant de la réception parente."
+      - name: reference
+        description: "Référence de la réception."
+      - name: status
+        description: "Statut de la réception."
+      - name: supplier_id
+        description: "Identifiant du fournisseur."
+      - name: warehouse_id
+        description: "Identifiant de l'entrepôt."
+      - name: purchase_order_id
+        description: "Identifiant du bon de commande associé."
+      - name: received_at
+        description: "Date et heure de réception."
+      - name: product_id
+        description: "Identifiant du produit reçu."
+      - name: location_id
+        description: "Identifiant de l'emplacement de stockage."
+      - name: quantity_expected
+        description: "Quantité attendue sur la ligne."
+      - name: quantity_received
+        description: "Quantité effectivement reçue."
+      - name: unit_cost
+        description: "Coût unitaire du produit."
+      - name: lot_number
+        description: "Numéro de lot."
+      - name: expiry_date
+        description: "Date d'expiration du lot."
+      - name: line_total_cost
+        description: "Coût total de la ligne = quantity_received * unit_cost."
+
+  - name: int_wms__stock_levels_by_product_location
+    description: "Stock courant calculé par agrégation des mouvements de stock, par produit et emplacement."
+    columns:
+      - name: product_id
+        description: "Identifiant du produit."
+        tests:
+          - not_null
+      - name: location_id
+        description: "Identifiant de l'emplacement."
+        tests:
+          - not_null
+      - name: warehouse_id
+        description: "Identifiant de l'entrepôt."
+      - name: total_received
+        description: "Total des quantités reçues (mouvements de type receipt)."
+      - name: total_shipped
+        description: "Total des quantités expédiées (mouvements de type shipment)."
+      - name: total_adjusted
+        description: "Total des ajustements de stock (mouvements de type adjustment)."
+      - name: current_stock
+        description: "Stock courant = total_received - total_shipped + total_adjusted."
+      - name: last_movement_at
+        description: "Date du dernier mouvement de stock."
+
+  - name: int_wms__shipments_with_lines
+    description: "Expéditions enrichies avec leurs lignes de détail. Grain : une ligne par ligne d'expédition."
+    columns:
+      - name: id_shipment_line
+        description: "Identifiant unique de la ligne d'expédition."
+        tests:
+          - not_null
+      - name: id_shipment
+        description: "Identifiant de l'expédition parente."
+      - name: reference
+        description: "Référence de l'expédition."
+      - name: status
+        description: "Statut de l'expédition."
+      - name: order_id
+        description: "Identifiant de la commande associée."
+      - name: carrier_id
+        description: "Identifiant du transporteur."
+      - name: warehouse_id
+        description: "Identifiant de l'entrepôt d'expédition."
+      - name: tracking_number
+        description: "Numéro de suivi de l'expédition."
+      - name: shipped_at
+        description: "Date et heure d'expédition."
+      - name: delivered_at
+        description: "Date et heure de livraison."
+      - name: product_id
+        description: "Identifiant du produit expédié."
+      - name: location_id
+        description: "Identifiant de l'emplacement de prélèvement."
+      - name: quantity
+        description: "Quantité expédiée sur la ligne."
+
+  - name: int_wms__picking_performance
+    description: "Performance des ordres de prélèvement avec agrégation des lignes. Grain : un ordre de prélèvement."
+    columns:
+      - name: id_picking_order
+        description: "Identifiant unique de l'ordre de prélèvement."
+        tests:
+          - not_null
+      - name: reference
+        description: "Référence de l'ordre de prélèvement."
+      - name: status
+        description: "Statut de l'ordre de prélèvement."
+      - name: shipment_id
+        description: "Identifiant de l'expédition associée."
+      - name: warehouse_id
+        description: "Identifiant de l'entrepôt."
+      - name: assigned_to
+        description: "Identifiant du préparateur assigné."
+      - name: started_at
+        description: "Date et heure de début du prélèvement."
+      - name: completed_at
+        description: "Date et heure de fin du prélèvement."
+      - name: nb_lines
+        description: "Nombre total de lignes de prélèvement."
+      - name: nb_lines_completed
+        description: "Nombre de lignes complétées."
+      - name: total_qty_requested
+        description: "Quantité totale demandée sur l'ordre."
+      - name: total_qty_picked
+        description: "Quantité totale prélevée."
+      - name: completion_rate
+        description: "Taux de complétion = total_qty_picked / total_qty_requested."
+      - name: duration_minutes
+        description: "Durée totale du prélèvement en minutes."

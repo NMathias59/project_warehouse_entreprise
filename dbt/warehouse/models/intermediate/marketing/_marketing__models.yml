@@ -1,0 +1,120 @@
+version: 2
+
+models:
+  - name: int_marketing__campaigns_with_performance
+    description: "Campagnes marketing enrichies avec métriques email et performance publicitaire. Grain : une campagne."
+    columns:
+      - name: id_campaign
+        description: "Identifiant unique de la campagne."
+        tests:
+          - not_null
+      - name: name
+        description: "Nom de la campagne."
+      - name: campaign_type
+        description: "Type de campagne (email, ads, social, etc.)."
+      - name: status
+        description: "Statut de la campagne."
+      - name: channel
+        description: "Canal marketing utilisé."
+      - name: budget
+        description: "Budget alloué à la campagne."
+      - name: spent
+        description: "Montant dépensé sur la campagne."
+      - name: started_at
+        description: "Date de début de la campagne."
+      - name: ended_at
+        description: "Date de fin de la campagne."
+      - name: nb_emails_sent
+        description: "Nombre d'emails envoyés."
+      - name: nb_opens
+        description: "Nombre d'ouvertures d'emails."
+      - name: nb_clicks
+        description: "Nombre de clics sur les emails."
+      - name: nb_bounces
+        description: "Nombre de bounces."
+      - name: nb_unsubscribes
+        description: "Nombre de désabonnements."
+      - name: open_rate
+        description: "Taux d'ouverture = nb_opens / nb_emails_sent."
+      - name: click_rate
+        description: "Taux de clic = nb_clicks / nb_emails_sent."
+      - name: total_impressions
+        description: "Total des impressions publicitaires."
+      - name: total_ad_clicks
+        description: "Total des clics publicitaires."
+      - name: total_conversions
+        description: "Total des conversions publicitaires."
+      - name: total_ad_cost
+        description: "Coût total des publicités."
+      - name: roi
+        description: "Retour sur investissement = revenue_attributed / cost."
+
+  - name: int_marketing__leads_with_attribution
+    description: "Leads enrichis avec les informations de la campagne source. Grain : un lead."
+    columns:
+      - name: id_lead
+        description: "Identifiant unique du lead."
+        tests:
+          - not_null
+      - name: first_name
+        description: "Prénom du lead."
+      - name: last_name
+        description: "Nom du lead."
+      - name: email
+        description: "Adresse email du lead."
+      - name: company
+        description: "Entreprise du lead."
+      - name: job_title
+        description: "Titre de poste du lead."
+      - name: lead_source
+        description: "Source d'acquisition du lead."
+      - name: status
+        description: "Statut du lead dans le funnel."
+      - name: score
+        description: "Score de qualification du lead."
+      - name: campaign_id
+        description: "Identifiant de la campagne source."
+      - name: campaign_name
+        description: "Nom de la campagne source."
+      - name: campaign_type
+        description: "Type de la campagne source."
+      - name: channel
+        description: "Canal de la campagne source."
+      - name: converted_at
+        description: "Date de conversion du lead."
+      - name: assigned_to
+        description: "Commercial assigné au lead."
+      - name: created_at
+        description: "Date de création du lead."
+      - name: days_to_convert
+        description: "Nombre de jours entre la création et la conversion."
+
+  - name: int_marketing__email_funnel_by_campaign
+    description: "Entonnoir email agrégé par campagne avec taux de délivrabilité, ouverture, clic et désabonnement. Grain : une campagne."
+    columns:
+      - name: campaign_id
+        description: "Identifiant de la campagne."
+        tests:
+          - not_null
+      - name: nb_sent
+        description: "Nombre d'emails envoyés."
+      - name: nb_delivered
+        description: "Nombre d'emails délivrés."
+      - name: nb_opened
+        description: "Nombre d'emails ouverts."
+      - name: nb_clicked
+        description: "Nombre d'emails avec clic."
+      - name: nb_bounced
+        description: "Nombre d'emails en bounce."
+      - name: nb_unsubscribed
+        description: "Nombre de désabonnements."
+      - name: delivery_rate
+        description: "Taux de délivrabilité = nb_delivered / nb_sent."
+      - name: open_rate
+        description: "Taux d'ouverture = nb_opened / nb_sent."
+      - name: click_to_open_rate
+        description: "Taux de clic sur ouverture = nb_clicked / nb_opened."
+      - name: bounce_rate
+        description: "Taux de bounce = nb_bounced / nb_sent."
+      - name: unsubscribe_rate
+        description: "Taux de désabonnement = nb_unsubscribed / nb_sent."

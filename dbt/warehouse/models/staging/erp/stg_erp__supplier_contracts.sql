@@ -11,7 +11,7 @@ select
     cast(currency as varchar)        as currency,
     cast(incoterm as varchar)        as incoterm,
     cast(valid_from as date)         as valid_from,
-    cast(valid_until as date)        as valid_until,
+    if(valid_until is null, toDate('9999-12-31'), cast(valid_until as date)) as valid_until,
     cast(payment_days as int)        as payment_days,
     cast(created_at as timestamp)    as created_at
 from source

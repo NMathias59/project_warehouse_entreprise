@@ -1,0 +1,88 @@
+version: 2
+
+models:
+  - name: int_plm__products_with_latest_version
+    description: "Produits PLM enrichis avec la dernière version approuvée et les compteurs de versions. Grain : un produit PLM."
+    columns:
+      - name: id_product
+        description: "Identifiant unique du produit."
+        tests:
+          - not_null
+      - name: code
+        description: "Code produit."
+      - name: name
+        description: "Nom du produit."
+      - name: product_family
+        description: "Famille de produits."
+      - name: lifecycle_status
+        description: "Statut du cycle de vie du produit."
+      - name: responsible_id
+        description: "Identifiant du responsable produit."
+      - name: launch_date
+        description: "Date de lancement commerciale."
+      - name: end_of_life_date
+        description: "Date de fin de vie prévue."
+      - name: latest_version_number
+        description: "Numéro de la dernière version approuvée."
+      - name: latest_version_status
+        description: "Statut de la dernière version approuvée."
+      - name: latest_version_approved_at
+        description: "Date d'approbation de la dernière version."
+      - name: nb_versions
+        description: "Nombre total de versions."
+      - name: nb_approved_versions
+        description: "Nombre de versions approuvées."
+
+  - name: int_plm__bom_with_lines
+    description: "Nomenclatures (BOM) enrichies avec leurs lignes de composants. Grain : une ligne de nomenclature."
+    columns:
+      - name: id_bom_line
+        description: "Identifiant unique de la ligne de nomenclature."
+        tests:
+          - not_null
+      - name: id_bom
+        description: "Identifiant de la nomenclature parente."
+      - name: product_version_id
+        description: "Identifiant de la version produit associée."
+      - name: bom_type
+        description: "Type de nomenclature (production, engineering, etc.)."
+      - name: bom_status
+        description: "Statut de la nomenclature."
+      - name: parent_component_id
+        description: "Identifiant du composant parent (pour les BOM multi-niveaux)."
+      - name: component_code
+        description: "Code du composant."
+      - name: component_name
+        description: "Nom du composant."
+      - name: component_type
+        description: "Type de composant."
+      - name: quantity
+        description: "Quantité nécessaire du composant."
+      - name: unit_of_measure
+        description: "Unité de mesure."
+      - name: is_critical
+        description: "Indique si le composant est critique."
+      - name: lead_time_days
+        description: "Délai d'approvisionnement en jours."
+
+  - name: int_plm__change_requests_by_product
+    description: "Agrégation des demandes de modification par produit avec décompte par statut et priorité. Grain : un produit PLM."
+    columns:
+      - name: product_id
+        description: "Identifiant du produit."
+        tests:
+          - not_null
+      - name: nb_change_requests
+        description: "Nombre total de demandes de modification."
+      - name: nb_open
+        description: "Nombre de demandes ouvertes (draft, submitted, under_review)."
+      - name: nb_approved
+        description: "Nombre de demandes approuvées."
+      - name: nb_implemented
+        description: "Nombre de demandes implémentées."
+      - name: nb_rejected
+        description: "Nombre de demandes rejetées."
+      - name: nb_high_priority
+        description: "Nombre de demandes haute priorité ou critiques."
+      - name: last_request_at
+        description: "Date de soumission de la dernière demande."

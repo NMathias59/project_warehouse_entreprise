@@ -1,0 +1,106 @@
+version: 2
+
+models:
+  - name: int_qms__non_conformities_with_actions
+    description: "Non-conformités enrichies avec le nombre et le statut des actions correctives associées. Grain : une non-conformité."
+    columns:
+      - name: id_non_conformity
+        description: "Identifiant unique de la non-conformité."
+        tests:
+          - not_null
+      - name: reference
+        description: "Référence de la non-conformité."
+      - name: title
+        description: "Titre de la non-conformité."
+      - name: nc_type
+        description: "Type de non-conformité."
+      - name: severity
+        description: "Sévérité de la non-conformité."
+      - name: source
+        description: "Source de détection (audit, inspection, client, etc.)."
+      - name: product_id
+        description: "Identifiant du produit concerné."
+      - name: supplier_id
+        description: "Identifiant du fournisseur concerné."
+      - name: status
+        description: "Statut de la non-conformité."
+      - name: detected_by
+        description: "Identifiant de la personne ayant détecté la NC."
+      - name: detected_at
+        description: "Date de détection."
+      - name: closed_at
+        description: "Date de clôture."
+      - name: nb_actions
+        description: "Nombre total d'actions correctives."
+      - name: nb_actions_open
+        description: "Nombre d'actions ouvertes ou en cours."
+      - name: nb_actions_closed
+        description: "Nombre d'actions clôturées."
+      - name: resolution_days
+        description: "Délai de résolution en jours."
+
+  - name: int_qms__audit_results_aggregated
+    description: "Audits enrichis avec le décompte des constats par type et criticité. Grain : un audit."
+    columns:
+      - name: id_audit
+        description: "Identifiant unique de l'audit."
+        tests:
+          - not_null
+      - name: reference
+        description: "Référence de l'audit."
+      - name: audit_type
+        description: "Type d'audit (interne, externe, fournisseur, etc.)."
+      - name: scope
+        description: "Périmètre de l'audit."
+      - name: auditor_id
+        description: "Identifiant de l'auditeur."
+      - name: auditee_department
+        description: "Département audité."
+      - name: planned_at
+        description: "Date planifiée de l'audit."
+      - name: completed_at
+        description: "Date de réalisation de l'audit."
+      - name: status
+        description: "Statut de l'audit."
+      - name: overall_result
+        description: "Résultat global de l'audit."
+      - name: nb_findings
+        description: "Nombre total de constats."
+      - name: nb_conformities
+        description: "Nombre de points de conformité."
+      - name: nb_minor_nc
+        description: "Nombre de non-conformités mineures."
+      - name: nb_major_nc
+        description: "Nombre de non-conformités majeures."
+      - name: nb_observations
+        description: "Nombre d'observations."
+      - name: nb_critical
+        description: "Nombre de constats critiques."
+      - name: nb_with_capa
+        description: "Nombre de constats avec action corrective associée."
+
+  - name: int_qms__supplier_quality_by_period
+    description: "Qualité fournisseur agrégée par fournisseur et année d'évaluation. Grain : fournisseur × année."
+    columns:
+      - name: supplier_id
+        description: "Identifiant du fournisseur."
+        tests:
+          - not_null
+      - name: evaluation_year
+        description: "Année de l'évaluation."
+        tests:
+          - not_null
+      - name: nb_evaluations
+        description: "Nombre d'évaluations réalisées."
+      - name: avg_overall_score
+        description: "Score global moyen."
+      - name: avg_quality_score
+        description: "Score qualité moyen."
+      - name: avg_delivery_score
+        description: "Score livraison moyen."
+      - name: avg_responsiveness_score
+        description: "Score réactivité moyen."
+      - name: min_overall_score
+        description: "Score global minimum."
+      - name: max_overall_score
+        description: "Score global maximum."

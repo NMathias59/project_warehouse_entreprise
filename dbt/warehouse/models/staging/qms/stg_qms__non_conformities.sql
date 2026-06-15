@@ -1,27 +1,8 @@
 {{ config(tags=['staging', 'qms']) }}
 
-with source as (
+with base as (
 
-    select * from {{ source('qms', 'non_conformities') }}
-    where id is not null
-
-),
-
-deduped as (
-
-    select
-        id,
-        argMax(nc_number,    _airbyte_extracted_at) as reference,
-        argMax(description,  _airbyte_extracted_at) as description,
-        argMax(`source`,     _airbyte_extracted_at) as nc_type,
-        argMax(severity,     _airbyte_extracted_at) as severity,
-        argMax(product_sku,  _airbyte_extracted_at) as product_id,
-        argMax(status,       _airbyte_extracted_at) as status,
-        argMax(detected_at,  _airbyte_extracted_at) as detected_at,
-        argMax(closed_at,    _airbyte_extracted_at) as closed_at,
-        max(_airbyte_extracted_at)                  as latest_extracted_at
-    from source
-    group by id
+    select * from {{ ref('base_qms__non_conformities') }}
 
 )
 
@@ -41,5 +22,5 @@ select
     toDateTimeOrNull(toString(closed_at))               as closed_at,
     cast(null as Nullable(DateTime64(3)))               as created_at,
     cast(null as Nullable(DateTime64(3)))               as updated_at,
-    cast(latest_extracted_at              as timestamp) as _etl_loaded_at
-from deduped
+    cast(latest_extracted_at                as timestamp) as _etl_loaded_at
+from base

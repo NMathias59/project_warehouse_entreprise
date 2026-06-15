@@ -22,4 +22,20 @@ renamed as (
     from source
 )
 
-select * from renamed
+select
+    newsletter_campaign__airbyte_raw_id,
+    newsletter_campaign__airbyte_extracted_at,
+    newsletter_campaign__airbyte_meta,
+    newsletter_campaign__airbyte_generation_id,
+    newsletter_campaign_id,
+    newsletter_campaign_sent_at,
+    newsletter_campaign_subject,
+    newsletter_campaign_body_html,
+    newsletter_campaign_created_at,
+    newsletter_campaign__ab_cdc_lsn,
+    newsletter_campaign_opened_count,
+    newsletter_campaign_clicked_count,
+    newsletter_campaign_sent_to_count,
+    newsletter_campaign__ab_cdc_deleted_at,
+    newsletter_campaign__ab_cdc_updated_at
+from renamed

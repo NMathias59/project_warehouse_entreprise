@@ -18,4 +18,16 @@ renamed as (
     from source
 )
 
-select * from renamed
+select
+    wishlist_item__airbyte_raw_id,
+    wishlist_item__airbyte_extracted_at,
+    wishlist_item__airbyte_meta,
+    wishlist_item__airbyte_generation_id,
+    wishlist_item_id,
+    wishlist_item_added_at,
+    wishlist_item_product_id,
+    wishlist_item__ab_cdc_lsn,
+    wishlist_item_wishlist_id,
+    wishlist_item__ab_cdc_deleted_at,
+    wishlist_item__ab_cdc_updated_at
+from renamed

@@ -5,6 +5,12 @@ sources:
     description: "Sources for marketplace data"
     database: DB_WH_MKT
     schema: DB_WH_MKT
+
+    freshness:
+      warn_after: {count: 12, period: hour}
+      error_after: {count: 24, period: hour}
+    loaded_at_field: _airbyte_extracted_at
+
     tables:
       - name: brands
       - name: carriers

@@ -1,28 +1,8 @@
 {{ config(tags=['staging', 'marketing']) }}
 
-with source as (
+with base as (
 
-    select * from {{ source('marketing', 'campaigns') }}
-    where id is not null
-
-),
-
-deduped as (
-
-    select
-        id,
-        argMax(name,          _airbyte_extracted_at) as name,
-        argMax(campaign_type, _airbyte_extracted_at) as campaign_type,
-        argMax(status,        _airbyte_extracted_at) as status,
-        argMax(channel,       _airbyte_extracted_at) as channel,
-        argMax(audience_id,   _airbyte_extracted_at) as target_audience,
-        argMax(scheduled_at,  _airbyte_extracted_at) as started_at,
-        argMax(sent_at,       _airbyte_extracted_at) as ended_at,
-        argMax(created_at,    _airbyte_extracted_at) as created_at,
-        argMax(updated_at,    _airbyte_extracted_at) as updated_at,
-        max(_airbyte_extracted_at)                   as latest_extracted_at
-    from source
-    group by id
+    select * from {{ ref('base_marketing__campaigns') }}
 
 )
 
@@ -40,5 +20,5 @@ select
     cast(''                                  as varchar)       as created_by,
     cast(created_at                          as timestamp)     as created_at,
     toDateTimeOrNull(toString(updated_at))                     as updated_at,
-    cast(latest_extracted_at                 as timestamp)     as _etl_loaded_at
-from deduped
+    cast(latest_extracted_at                as timestamp)     as _etl_loaded_at
+from base

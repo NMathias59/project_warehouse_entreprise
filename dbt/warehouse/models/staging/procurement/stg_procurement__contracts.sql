@@ -1,28 +1,8 @@
 {{ config(tags=['staging', 'procurement']) }}
 
-with source as (
+with base as (
 
-    select * from {{ source('procurement', 'contracts') }}
-    where id is not null
-
-),
-
-deduped as (
-
-    select
-        id,
-        argMax(contract_number, _airbyte_extracted_at) as reference,
-        argMax(supplier_id,     _airbyte_extracted_at) as supplier_id,
-        argMax(contract_type,   _airbyte_extracted_at) as contract_type,
-        argMax(status,          _airbyte_extracted_at) as status,
-        argMax(title,           _airbyte_extracted_at) as title,
-        argMax(value_eur,       _airbyte_extracted_at) as total_amount,
-        argMax(start_date,      _airbyte_extracted_at) as start_date,
-        argMax(end_date,        _airbyte_extracted_at) as end_date,
-        argMax(created_at,      _airbyte_extracted_at) as created_at,
-        max(_airbyte_extracted_at)                     as latest_extracted_at
-    from source
-    group by id
+    select * from {{ ref('base_procurement__contracts') }}
 
 )
 
@@ -41,5 +21,5 @@ select
     cast(''                                  as varchar)       as created_by,
     cast(created_at                          as timestamp)     as created_at,
     cast(null as Nullable(DateTime64(3)))                      as updated_at,
-    cast(latest_extracted_at                 as timestamp)     as _etl_loaded_at
-from deduped
+    cast(latest_extracted_at                as timestamp)     as _etl_loaded_at
+from base

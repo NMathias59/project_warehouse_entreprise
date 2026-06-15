@@ -23,4 +23,21 @@ renamed as (
     from source
 )
 
-select * from renamed
+select
+    payment__airbyte_raw_id,
+    payment__airbyte_extracted_at,
+    payment__airbyte_meta,
+    payment__airbyte_generation_id,
+    payment_id,
+    payment_amount,
+    payment_status,
+    payment_paid_at,
+    payment_currency,
+    payment_order_id,
+    payment_created_at,
+    payment__ab_cdc_lsn,
+    payment_gateway_ref,
+    payment_payment_method_id,
+    payment__ab_cdc_deleted_at,
+    payment__ab_cdc_updated_at
+from renamed

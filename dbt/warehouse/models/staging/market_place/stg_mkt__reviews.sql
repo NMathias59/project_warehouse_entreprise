@@ -24,4 +24,22 @@ renamed as (
     from source
 )
 
-select * from renamed
+select
+    review__airbyte_raw_id,
+    review__airbyte_extracted_at,
+    review__airbyte_meta,
+    review__airbyte_generation_id,
+    review_id,
+    review_body,
+    review_title,
+    review_rating,
+    review_created_at,
+    review_deleted_at,
+    review_product_id,
+    review__ab_cdc_lsn,
+    review_customer_id,
+    review_is_verified,
+    review_order_line_id,
+    review__ab_cdc_deleted_at,
+    review__ab_cdc_updated_at
+from renamed

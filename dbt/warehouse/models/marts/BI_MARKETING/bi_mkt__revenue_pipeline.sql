@@ -31,10 +31,20 @@ crm_pipeline as (
     where created_at is not null
     group by toDate(created_at)
 
+),
+
+-- ClickHouse join_use_nulls=0 : FULL OUTER JOIN remplace NULL par '1970-01-01' pour les colonnes
+-- Date, ce qui casse coalesce() sur la clé de jointure. On contourne avec UNION + LEFT JOIN.
+all_dates as (
+
+    select revenue_date from confirmed_revenue
+    union distinct
+    select revenue_date from crm_pipeline
+
 )
 
 select
-    coalesce(r.revenue_date, p.revenue_date)       as revenue_date,
+    assumeNotNull(d.revenue_date)                  as revenue_date,
     coalesce(r.orders_placed, 0)                   as orders_placed,
     coalesce(r.mkt_revenue_ttc, 0)                 as mkt_revenue_ttc,
     coalesce(p.new_opportunities, 0)               as new_crm_opportunities,
@@ -43,6 +53,6 @@ select
     coalesce(p.crm_revenue_won, 0)                 as crm_revenue_won,
     coalesce(r.mkt_revenue_ttc, 0)
         + coalesce(p.crm_revenue_won, 0)           as total_revenue_combined
-from confirmed_revenue as r
-full outer join crm_pipeline as p
-    on p.revenue_date = r.revenue_date
+from all_dates as d
+left join confirmed_revenue as r on r.revenue_date = d.revenue_date
+left join crm_pipeline as p      on p.revenue_date = d.revenue_date

@@ -26,4 +26,24 @@ renamed as (
     from source
 )
 
-select * from renamed
+select
+    customer_addresse__airbyte_raw_id,
+    customer_addresse__airbyte_extracted_at,
+    customer_addresse__airbyte_meta,
+    customer_addresse__airbyte_generation_id,
+    customer_addresse_id,
+    customer_addresse_city,
+    customer_addresse_label,
+    customer_addresse_street,
+    customer_addresse_last_name,
+    customer_addresse_created_at,
+    customer_addresse_deleted_at,
+    customer_addresse_first_name,
+    customer_addresse_is_default,
+    customer_addresse__ab_cdc_lsn,
+    customer_addresse_customer_id,
+    customer_addresse_postal_code,
+    customer_addresse_country_code,
+    customer_addresse__ab_cdc_deleted_at,
+    customer_addresse__ab_cdc_updated_at
+from renamed

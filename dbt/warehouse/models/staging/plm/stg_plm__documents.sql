@@ -1,27 +1,8 @@
 {{ config(tags=['staging', 'plm']) }}
 
-with source as (
+with base as (
 
-    select * from {{ source('plm', 'documents') }}
-    where id is not null
-
-),
-
-deduped as (
-
-    select
-        id,
-        argMax(product_id,      _airbyte_extracted_at) as product_id,
-        argMax(doc_type,        _airbyte_extracted_at) as document_type,
-        argMax(title,           _airbyte_extracted_at) as title,
-        argMax(file_path,       _airbyte_extracted_at) as file_reference,
-        argMax(current_version, _airbyte_extracted_at) as version,
-        argMax(status,          _airbyte_extracted_at) as status,
-        argMax(author,          _airbyte_extracted_at) as created_by,
-        argMax(created_at,      _airbyte_extracted_at) as created_at,
-        max(_airbyte_extracted_at)                     as latest_extracted_at
-    from source
-    group by id
+    select * from {{ ref('base_plm__documents') }}
 
 )
 
@@ -38,5 +19,5 @@ select
     cast(''                                    as varchar)   as approved_by,
     cast(created_at                            as timestamp) as created_at,
     cast(null as Nullable(DateTime64(3)))                    as updated_at,
-    cast(latest_extracted_at                   as timestamp) as _etl_loaded_at
-from deduped
+    cast(latest_extracted_at                as timestamp) as _etl_loaded_at
+from base

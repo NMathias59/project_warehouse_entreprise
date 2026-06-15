@@ -23,4 +23,21 @@ renamed as (
     from source
 )
 
-select * from renamed
+select
+    promotion__airbyte_raw_id,
+    promotion__airbyte_extracted_at,
+    promotion__airbyte_meta,
+    promotion__airbyte_generation_id,
+    promotion_id,
+    promotion_name,
+    promotion_type,
+    promotion_value,
+    promotion_ends_at,
+    promotion_is_active,
+    promotion_starts_at,
+    promotion_created_at,
+    promotion_deleted_at,
+    promotion__ab_cdc_lsn,
+    promotion__ab_cdc_deleted_at,
+    promotion__ab_cdc_updated_at
+from renamed

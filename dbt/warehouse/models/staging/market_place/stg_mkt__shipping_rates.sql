@@ -22,4 +22,20 @@ renamed as (
     from source
 )
 
-select * from renamed
+select
+    shipping_rate__airbyte_raw_id,
+    shipping_rate__airbyte_extracted_at,
+    shipping_rate__airbyte_meta,
+    shipping_rate__airbyte_generation_id,
+    shipping_rate_id,
+    shipping_rate_price,
+    shipping_rate_zone_id,
+    shipping_rate_currency,
+    shipping_rate_method_id,
+    shipping_rate_created_at,
+    shipping_rate__ab_cdc_lsn,
+    shipping_rate_max_weight_kg,
+    shipping_rate_min_weight_kg,
+    shipping_rate__ab_cdc_deleted_at,
+    shipping_rate__ab_cdc_updated_at
+from renamed

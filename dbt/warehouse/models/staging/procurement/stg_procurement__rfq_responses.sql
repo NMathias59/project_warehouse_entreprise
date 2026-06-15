@@ -1,25 +1,8 @@
 {{ config(tags=['staging', 'procurement']) }}
 
-with source as (
+with base as (
 
-    select * from {{ source('procurement', 'rfq_responses') }}
-    where id is not null
-
-),
-
-deduped as (
-
-    select
-        id,
-        argMax(rfq_id,         _airbyte_extracted_at) as rfq_id,
-        argMax(supplier_id,    _airbyte_extracted_at) as supplier_id,
-        argMax(unit_price_eur, _airbyte_extracted_at) as unit_price,
-        argMax(lead_time_days, _airbyte_extracted_at) as lead_time_days,
-        argMax(notes,          _airbyte_extracted_at) as notes,
-        argMax(received_at,    _airbyte_extracted_at) as received_at,
-        max(_airbyte_extracted_at)                    as latest_extracted_at
-    from source
-    group by id
+    select * from {{ ref('base_procurement__rfq_responses') }}
 
 )
 
@@ -33,5 +16,5 @@ select
     cast(coalesce(notes, '')                 as varchar)       as notes,
     toDateTimeOrNull(toString(received_at))                    as received_at,
     cast(received_at                         as timestamp)     as created_at,
-    cast(latest_extracted_at                 as timestamp)     as _etl_loaded_at
-from deduped
+    cast(latest_extracted_at                as timestamp)     as _etl_loaded_at
+from base

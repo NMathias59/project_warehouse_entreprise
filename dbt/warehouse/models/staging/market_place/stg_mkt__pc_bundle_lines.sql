@@ -19,4 +19,17 @@ renamed as (
     from source
 )
 
-select * from renamed
+select
+    pc_bundle_line__airbyte_raw_id,
+    pc_bundle_line__airbyte_extracted_at,
+    pc_bundle_line__airbyte_meta,
+    pc_bundle_line__airbyte_generation_id,
+    pc_bundle_line_id,
+    pc_bundle_line_position,
+    pc_bundle_line_quantity,
+    pc_bundle_line_bundle_id,
+    pc_bundle_line_product_id,
+    pc_bundle_line__ab_cdc_lsn,
+    pc_bundle_line__ab_cdc_deleted_at,
+    pc_bundle_line__ab_cdc_updated_at
+from renamed

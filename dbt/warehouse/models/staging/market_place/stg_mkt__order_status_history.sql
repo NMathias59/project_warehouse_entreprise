@@ -20,4 +20,18 @@ renamed as (
     from source
 )
 
-select * from renamed
+select
+    order_status_history__airbyte_raw_id,
+    order_status_history__airbyte_extracted_at,
+    order_status_history__airbyte_meta,
+    order_status_history__airbyte_generation_id,
+    order_status_history_id,
+    order_status_history_status,
+    order_status_history_comment,
+    order_status_history_order_id,
+    order_status_history_changed_at,
+    order_status_history_changed_by,
+    order_status_history__ab_cdc_lsn,
+    order_status_history__ab_cdc_deleted_at,
+    order_status_history__ab_cdc_updated_at
+from renamed

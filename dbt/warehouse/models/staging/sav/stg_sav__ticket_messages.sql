@@ -1,24 +1,8 @@
 {{ config(tags=['staging', 'sav']) }}
 
-with source as (
+with base as (
 
-    select * from {{ source('sav', 'ticket_messages') }}
-    where id is not null
-
-),
-
-deduped as (
-
-    select
-        id,
-        argMax(ticket_id,   _airbyte_extracted_at) as ticket_id,
-        argMax(author_type, _airbyte_extracted_at) as sender_type,
-        argMax(author_ref,  _airbyte_extracted_at) as sender_id,
-        argMax(body,        _airbyte_extracted_at) as body,
-        argMax(created_at,  _airbyte_extracted_at) as created_at,
-        max(_airbyte_extracted_at)                 as latest_extracted_at
-    from source
-    group by id
+    select * from {{ ref('base_sav__ticket_messages') }}
 
 )
 
@@ -32,4 +16,4 @@ select
     cast(created_at                         as timestamp) as sent_at,
     cast(created_at                         as timestamp) as created_at,
     cast(latest_extracted_at                as timestamp) as _etl_loaded_at
-from deduped
+from base

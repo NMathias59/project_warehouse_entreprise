@@ -22,4 +22,20 @@ renamed as (
     from source
 )
 
-select * from renamed
+select
+    credit_note__airbyte_raw_id,
+    credit_note__airbyte_extracted_at,
+    credit_note__airbyte_meta,
+    credit_note__airbyte_generation_id,
+    credit_note_id,
+    credit_note_amount,
+    credit_note_number,
+    credit_note_reason,
+    credit_note_pdf_url,
+    credit_note_order_id,
+    credit_note_issued_at,
+    credit_note_return_id,
+    credit_note__ab_cdc_lsn,
+    credit_note__ab_cdc_deleted_at,
+    credit_note__ab_cdc_updated_at
+from renamed

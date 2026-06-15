@@ -19,4 +19,17 @@ renamed as (
     from source
 )
 
-select * from renamed
+select
+    newsletter_subscription__airbyte_raw_id,
+    newsletter_subscription__airbyte_extracted_at,
+    newsletter_subscription__airbyte_meta,
+    newsletter_subscription__airbyte_generation_id,
+    newsletter_subscription_id,
+    newsletter_subscription_email,
+    newsletter_subscription_is_active,
+    newsletter_subscription__ab_cdc_lsn,
+    newsletter_subscription_subscribed_at,
+    newsletter_subscription_unsubscribed_at,
+    newsletter_subscription__ab_cdc_deleted_at,
+    newsletter_subscription__ab_cdc_updated_at
+from renamed

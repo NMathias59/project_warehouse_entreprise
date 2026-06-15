@@ -21,4 +21,19 @@ renamed as (
     from source
 )
 
-select * from renamed
+select
+    product_image__airbyte_raw_id,
+    product_image__airbyte_extracted_at,
+    product_image__airbyte_meta,
+    product_image__airbyte_generation_id,
+    product_image_id,
+    product_image_alt,
+    product_image_url,
+    product_image_position,
+    product_image_created_at,
+    product_image_is_primary,
+    product_image_product_id,
+    product_image__ab_cdc_lsn,
+    product_image__ab_cdc_deleted_at,
+    product_image__ab_cdc_updated_at
+from renamed

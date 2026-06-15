@@ -25,4 +25,23 @@ renamed as (
     from source
 )
 
-select * from renamed
+select
+    order_line__airbyte_raw_id,
+    order_line__airbyte_extracted_at,
+    order_line__airbyte_meta,
+    order_line__airbyte_generation_id,
+    order_line_id,
+    order_line_order_id,
+    order_line_quantity,
+    order_line_vat_rate,
+    order_line_total_ttc,
+    order_line_created_at,
+    order_line_product_id,
+    order_line__ab_cdc_lsn,
+    order_line_product_sku,
+    order_line_product_name,
+    order_line_unit_price_ht,
+    order_line_unit_price_ttc,
+    order_line__ab_cdc_deleted_at,
+    order_line__ab_cdc_updated_at
+from renamed

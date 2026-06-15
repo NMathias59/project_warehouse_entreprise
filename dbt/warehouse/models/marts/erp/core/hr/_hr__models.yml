@@ -1,64 +1,124 @@
 version: 2
 
 models:
-  - name: dim_departments
-    description: "Dimension des départements / services de l'entreprise."
+
+  - name: dim_departement
+    description: "Dimension des départements de l'entreprise."
     columns:
       - name: id_department
         description: "Clé primaire du département."
         tests:
           - unique
           - not_null
+      - name: code
+        description: "Code court identifiant le département."
+      - name: name
+        description: "Nom complet du département."
 
-  - name: dim_employees
-    description: >
-      Dimension des employés — vue dénormalisée incluant contrat actif,
-      département et poste. Un enregistrement par employé.
+  - name: dim_employee
+    description: "Dimension des employés enrichie avec poste, département et informations contractuelles actives."
     columns:
       - name: id_employee
         description: "Clé primaire de l'employé."
         tests:
           - unique
           - not_null
+      - name: first_name
+        description: "Prénom de l'employé."
+      - name: last_name
+        description: "Nom de famille de l'employé."
+      - name: email
+        description: "Adresse e-mail professionnelle de l'employé."
+      - name: hired_at
+        description: "Date d'embauche de l'employé."
+      - name: left_at
+        description: "Date de départ de l'employé (NULL si toujours en poste)."
+      - name: position_title
+        description: "Intitulé du poste occupé par l'employé."
+      - name: department_name
+        description: "Nom du département auquel appartient l'employé."
+      - name: contract_type
+        description: "Type de contrat de travail (CDI, CDD, etc.)."
+      - name: salary
+        description: "Salaire contractuel de l'employé."
+      - name: currency
+        description: "Devise du salaire (ex : EUR, USD)."
+      - name: contract_start
+        description: "Date de début du contrat actif."
+      - name: contract_end
+        description: "Date de fin du contrat (NULL si contrat à durée indéterminée)."
+      - name: contract_active
+        description: "Indique si le contrat est actuellement actif (1) ou terminé (0)."
 
-  - name: dim_positions
-    description: "Dimension des postes / intitulés de fonctions."
+  - name: dim_position
+    description: "Dimension des postes de travail définis dans l'organisation."
     columns:
       - name: id_position
         description: "Clé primaire du poste."
         tests:
           - unique
           - not_null
+      - name: title
+        description: "Intitulé officiel du poste."
 
-  - name: fct_employee_contracts
-    description: "Statistiques contractuelles par employé (min/max/avg salaire, nombre de contrats)."
+  - name: fct_employee_cotracts
+    description: "Fait agrégé des statistiques salariales par employé sur l'ensemble de ses contrats."
     columns:
       - name: employee_id
-        description: "Référence de l'employé (FK vers dim_employees)."
+        description: "Clé primaire et FK vers dim_employee — employé concerné."
         tests:
           - unique
           - not_null
+      - name: max_salary
+        description: "Salaire maximum perçu par l'employé sur l'ensemble de ses contrats."
+      - name: min_salary
+        description: "Salaire minimum perçu par l'employé sur l'ensemble de ses contrats."
+      - name: avg_salary
+        description: "Salaire moyen calculé sur l'ensemble des contrats de l'employé."
+      - name: nb_contracts
+        description: "Nombre total de contrats enregistrés pour l'employé."
 
   - name: fct_leaves
-    description: "Congés et absences — un enregistrement par demande de congé."
+    description: "Fait des congés et absences des employés."
     columns:
       - name: id_leave
-        description: "Clé primaire du congé."
+        description: "Clé primaire de la demande de congé."
         tests:
           - unique
           - not_null
+      - name: employee_id
+        description: "FK vers dim_employee — employé concerné par le congé."
+      - name: leave_type_id
+        description: "Identifiant du type de congé (maladie, RTT, congé payé, etc.)."
+      - name: starts_at
+        description: "Date de début du congé."
+      - name: ends_at
+        description: "Date de fin du congé."
+      - name: status
+        description: "Statut de la demande de congé (en attente, approuvé, refusé)."
 
   - name: fct_timesheets
-    description: >
-      Feuilles de temps des employés — grain : une ligne par ligne de feuille de temps (jour).
-      Une feuille (id_timesheet) peut contenir plusieurs lignes journalières.
+    description: "Fait des feuilles de temps avec le détail quotidien par ligne de timesheet."
     columns:
-      - name: id_timesheet_line
-        description: "Clé de grain — identifiant unique de la ligne journalière."
-        tests:
-          - unique
-          - not_null
       - name: id_timesheet
-        description: "Référence de la feuille de temps parente."
+        description: "Identifiant de la feuille de temps hebdomadaire."
         tests:
           - not_null
+      - name: employee_id
+        description: "FK vers dim_employee — employé ayant soumis la feuille de temps."
+      - name: week_start
+        description: "Date de début de la semaine couverte par la feuille de temps."
+      - name: status
+        description: "Statut de la feuille de temps (brouillon, soumis, validé)."
+      - name: total_hours
+        description: "Nombre total d'heures déclarées sur la semaine."
+      - name: id_timesheet_line
+        description: "Clé primaire de la ligne de détail de la feuille de temps."
+      - name: day
+        description: "Jour calendaire de la ligne de temps."
+      - name: type
+        description: "Type d'activité de la ligne (travail normal, heures sup, etc.)."
+      - name: hours
+        description: "Nombre d'heures déclarées pour cette ligne."
+      - name: notes
+        description: "Notes ou commentaires libres associés à la ligne de temps."

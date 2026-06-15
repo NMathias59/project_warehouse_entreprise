@@ -23,4 +23,21 @@ renamed as (
     from source
 )
 
-select * from renamed
+select
+    support_ticket__airbyte_raw_id,
+    support_ticket__airbyte_extracted_at,
+    support_ticket__airbyte_meta,
+    support_ticket__airbyte_generation_id,
+    support_ticket_id,
+    support_ticket_status,
+    support_ticket_subject,
+    support_ticket_order_id,
+    support_ticket_priority,
+    support_ticket_created_at,
+    support_ticket_deleted_at,
+    support_ticket__ab_cdc_lsn,
+    support_ticket_customer_id,
+    support_ticket_resolved_at,
+    support_ticket__ab_cdc_deleted_at,
+    support_ticket__ab_cdc_updated_at
+from renamed

@@ -1,25 +1,8 @@
 {{ config(tags=['staging', 'mes']) }}
 
-with source as (
+with base as (
 
-    select * from {{ source('mes', 'work_centers') }}
-    where id is not null
-
-),
-
-deduped as (
-
-    select
-        id,
-        argMax(code,               _airbyte_extracted_at) as code,
-        argMax(name,               _airbyte_extracted_at) as name,
-        argMax(center_type,        _airbyte_extracted_at) as work_center_type,
-        argMax(capacity_per_shift, _airbyte_extracted_at) as capacity_per_hour,
-        argMax(is_active,          _airbyte_extracted_at) as is_active,
-        argMax(created_at,         _airbyte_extracted_at) as created_at,
-        max(_airbyte_extracted_at)                        as latest_extracted_at
-    from source
-    group by id
+    select * from {{ ref('base_mes__work_centers') }}
 
 )
 
@@ -33,5 +16,5 @@ select
     cast(coalesce(is_active, false)           as boolean)       as is_active,
     cast(created_at                           as timestamp)     as created_at,
     cast(null as Nullable(DateTime64(3)))                       as updated_at,
-    cast(latest_extracted_at                  as timestamp)     as _etl_loaded_at
-from deduped
+    cast(latest_extracted_at                as timestamp)     as _etl_loaded_at
+from base

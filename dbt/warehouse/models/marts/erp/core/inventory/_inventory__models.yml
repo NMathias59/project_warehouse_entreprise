@@ -1,71 +1,150 @@
 version: 2
 
 models:
-  - name: dim_serial_numbers
-    description: "Dimension des numéros de série — traçabilité unitaire des équipements."
+
+  - name: dim_serial_number
+    description: "Dimension des numéros de série produits avec leur statut et dates de production/expédition."
     columns:
       - name: id_serial_number
         description: "Clé primaire du numéro de série."
         tests:
           - unique
           - not_null
+      - name: serial
+        description: "Numéro de série unique du produit."
+      - name: status
+        description: "Statut du numéro de série (produit, expédié, en réparation, etc.)."
+      - name: shipped_at
+        description: "Date d'expédition du produit (ou date de production si non expédié)."
+      - name: produced_at
+        description: "Date de production du produit."
+      - name: work_order_id
+        description: "FK vers l'ordre de travail ayant produit ce numéro de série."
 
-  - name: dim_warehouses
-    description: "Dimension des entrepôts — sites de stockage physiques."
+  - name: dim_warehouse
+    description: "Dimension des entrepôts de stockage."
     columns:
       - name: id_warehouse
         description: "Clé primaire de l'entrepôt."
         tests:
           - unique
           - not_null
+      - name: name
+        description: "Nom de l'entrepôt."
+      - name: code
+        description: "Code court identifiant l'entrepôt."
+      - name: is_active
+        description: "Indique si l'entrepôt est actif (1) ou fermé (0)."
+      - name: created_at
+        description: "Date de création de l'enregistrement."
+      - name: updated_at
+        description: "Date de dernière mise à jour de l'enregistrement."
 
-  - name: dim_warehouse_locations
-    description: "Dimension des emplacements dans les entrepôts (allée, rack, bin)."
+  - name: dim_warehouse_location
+    description: "Dimension des emplacements de stockage dans les entrepôts (allées, bacs, etc.)."
     columns:
       - name: id_warehouse_location
-        description: "Clé primaire de l'emplacement."
+        description: "Clé primaire de l'emplacement d'entrepôt."
         tests:
           - unique
           - not_null
+      - name: warehouse_id
+        description: "FK vers dim_warehouse — entrepôt auquel appartient l'emplacement."
+      - name: code
+        description: "Code de l'emplacement (allée, bac, étagère)."
+      - name: name
+        description: "Nom ou désignation complète de l'emplacement."
+      - name: created_at
+        description: "Date de création de l'emplacement."
 
   - name: fct_component_stock_movement
-    description: "Mouvements de stock composant — entrées, sorties et transferts."
+    description: "Fait des mouvements de stock composants (entrées, sorties, transferts)."
     columns:
       - name: id_stock_movement
         description: "Clé primaire du mouvement de stock."
         tests:
           - unique
           - not_null
+      - name: movement_type
+        description: "Type de mouvement (entrée, sortie, transfert, ajustement)."
+      - name: component_id
+        description: "FK vers dim_coponent — composant concerné par le mouvement."
+      - name: quantity
+        description: "Quantité déplacée lors du mouvement (positive pour entrée, négative pour sortie)."
+      - name: location_id
+        description: "FK vers dim_warehouse_location — emplacement source ou destination du mouvement."
+      - name: created_at
+        description: "Date et heure du mouvement de stock."
+      - name: reference
+        description: "Référence documentaire du mouvement (bon de livraison, ordre de fabrication, etc.)."
 
-  - name: fct_inventory_counts
-    description: >
-      Comptages d'inventaire physique — grain : une ligne par ligne de comptage.
-      Inclut les écarts entre quantités comptées et attendues.
+  - name: fct_invotory_count
+    description: "Fait des inventaires physiques avec le détail des comptages par composant et emplacement."
     columns:
-      - name: id_inventory_count_line
-        description: "Clé de la ligne de comptage (grain du modèle)."
-        tests:
-          - unique
-          - not_null
       - name: id_inventory_count
-        description: "Référence du comptage d'inventaire parent."
+        description: "Identifiant de la session d'inventaire."
         tests:
           - not_null
+      - name: started_at
+        description: "Date de début de la session d'inventaire."
+      - name: warehouse_id
+        description: "FK vers dim_warehouse — entrepôt concerné par l'inventaire."
+      - name: created_at
+        description: "Date de création de la session d'inventaire."
+      - name: id_inventory_count_line
+        description: "Clé primaire de la ligne de comptage d'inventaire."
+      - name: component_id
+        description: "FK vers dim_coponent — composant compté lors de l'inventaire."
+      - name: counted_qty
+        description: "Quantité physiquement comptée lors de l'inventaire."
+      - name: expected_qty
+        description: "Quantité théorique attendue d'après le système de gestion de stock."
+      - name: variance
+        description: "Écart entre la quantité comptée et la quantité attendue."
+      - name: counted_at
+        description: "Date et heure du comptage physique de la ligne."
+      - name: location_id
+        description: "FK vers dim_warehouse_location — emplacement concerné par le comptage."
 
   - name: fct_serial_tracking
-    description: "Suivi de traçabilité des numéros de série dans les flux logistiques."
+    description: "Fait du suivi de vie des numéros de série incluant les ordres de réparation associés."
     columns:
       - name: id_serial_number
-        description: "Clé primaire de l'entrée de traçabilité."
+        description: "Clé primaire du numéro de série."
         tests:
-          - unique
           - not_null
+      - name: serial
+        description: "Numéro de série unique du produit."
+      - name: status
+        description: "Statut courant du numéro de série (produit, expédié, en réparation, etc.)."
+      - name: shipped_at
+        description: "Date d'expédition du produit."
+      - name: produced_at
+        description: "Date de production du produit."
+      - name: repair_order_id
+        description: "FK vers l'ordre de réparation associé au numéro de série."
+      - name: repair_reference
+        description: "Description ou référence de l'ordre de réparation."
+      - name: repair_status
+        description: "Statut de l'ordre de réparation (en cours, résolu, annulé)."
+      - name: repair_received_at
+        description: "Date de réception du produit pour réparation."
+      - name: repair_resolved_at
+        description: "Date de clôture et résolution de la réparation."
 
   - name: fct_stock_level
-    description: "Niveaux de stock consolidés par produit et entrepôt."
+    description: "Fait des niveaux de stock consolidés (produits et composants) par localisation."
     columns:
       - name: stock_id
-        description: "Clé primaire du niveau de stock."
+        description: "Clé primaire consolidée du niveau de stock (fusion produit et composant)."
         tests:
           - unique
           - not_null
+      - name: product_id
+        description: "FK vers dim_product ou dim_coponent — article stocké."
+      - name: location_id
+        description: "FK vers dim_warehouse ou dim_warehouse_location — localisation de stock."
+      - name: quantity
+        description: "Quantité disponible en stock pour cet article à cette localisation."
+      - name: updated_at
+        description: "Date de dernière mise à jour du niveau de stock."

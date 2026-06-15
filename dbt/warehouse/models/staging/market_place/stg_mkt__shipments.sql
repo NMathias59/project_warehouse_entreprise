@@ -22,4 +22,20 @@ renamed as (
     from source
 )
 
-select * from renamed
+select
+    shipment__airbyte_raw_id,
+    shipment__airbyte_extracted_at,
+    shipment__airbyte_meta,
+    shipment__airbyte_generation_id,
+    shipment_id,
+    shipment_status,
+    shipment_order_id,
+    shipment_carrier_id,
+    shipment_created_at,
+    shipment_shipped_at,
+    shipment__ab_cdc_lsn,
+    shipment_delivered_at,
+    shipment_tracking_number,
+    shipment__ab_cdc_deleted_at,
+    shipment__ab_cdc_updated_at
+from renamed

@@ -20,4 +20,18 @@ renamed as (
     from source
 )
 
-select * from renamed
+select
+    loyalty_transaction__airbyte_raw_id,
+    loyalty_transaction__airbyte_extracted_at,
+    loyalty_transaction__airbyte_meta,
+    loyalty_transaction__airbyte_generation_id,
+    loyalty_transaction_id,
+    loyalty_transaction_type,
+    loyalty_transaction_points,
+    loyalty_transaction_reference,
+    loyalty_transaction_created_at,
+    loyalty_transaction__ab_cdc_lsn,
+    loyalty_transaction_customer_id,
+    loyalty_transaction__ab_cdc_deleted_at,
+    loyalty_transaction__ab_cdc_updated_at
+from renamed

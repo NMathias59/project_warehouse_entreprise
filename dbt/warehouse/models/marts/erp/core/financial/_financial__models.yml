@@ -1,16 +1,21 @@
 version: 2
 
 models:
-  - name: dim_accounts
-    description: "Dimension des comptes comptables — plan comptable de l'entreprise."
+
+  - name: dim_account
+    description: "Dimension du plan comptable — référentiel des comptes utilisés dans les écritures financières."
     columns:
       - name: id_account
         description: "Clé primaire du compte comptable."
         tests:
           - unique
           - not_null
+      - name: account_code
+        description: "Numéro de compte selon le plan comptable."
+      - name: account_type
+        description: "Type de compte (actif, passif, charges, produits, etc.)."
 
-  - name: dim_bank_accounts
+  - name: dim_bank_account
     description: "Dimension des comptes bancaires de l'entreprise."
     columns:
       - name: id_bank_account
@@ -18,62 +23,123 @@ models:
         tests:
           - unique
           - not_null
+      - name: name
+        description: "Libellé du compte bancaire."
+      - name: iban
+        description: "IBAN du compte bancaire."
+      - name: currency
+        description: "Devise du compte bancaire (ex : EUR, USD)."
+      - name: is_active
+        description: "Indique si le compte bancaire est actif (1) ou clôturé (0)."
+      - name: created_at
+        description: "Date de création de l'enregistrement."
 
-  - name: dim_budget_lines
-    description: "Dimension des lignes budgétaires — détail des allocations par compte."
+  - name: dim_buget_line
+    description: "Dimension des lignes budgétaires détaillant les montants par compte et budget."
     columns:
       - name: id_budget_line
         description: "Clé primaire de la ligne budgétaire."
         tests:
           - unique
           - not_null
+      - name: budget_id
+        description: "FK vers fct_budget — budget auquel appartient cette ligne."
+      - name: account_number
+        description: "Numéro du compte comptable associé à la ligne budgétaire."
+      - name: amount
+        description: "Montant alloué pour cette ligne budgétaire."
 
-  - name: dim_cost_centers
-    description: "Dimension des centres de coûts — unités organisationnelles budgétaires."
+  - name: dim_cost_center
+    description: "Dimension des centres de coûts permettant l'imputation analytique des dépenses."
     columns:
       - name: id_cost_center
-        description: "Clé primaire du centre de coût."
+        description: "Clé primaire du centre de coûts."
         tests:
           - unique
           - not_null
+      - name: name
+        description: "Nom du centre de coûts."
+      - name: code
+        description: "Code court du centre de coûts."
+      - name: created_at
+        description: "Date de création de l'enregistrement."
+
+  - name: fct__journal_entries
+    description: "Fait des écritures comptables avec le détail des lignes débit/crédit par compte."
+    columns:
+      - name: id_journal_entry
+        description: "Clé primaire de l'écriture comptable."
+        tests:
+          - not_null
+      - name: created_at
+        description: "Date de création de l'écriture comptable."
+      - name: reference
+        description: "Référence documentaire de l'écriture (numéro de facture, etc.)."
+      - name: journal_entry_line_id
+        description: "Clé primaire de la ligne d'écriture comptable."
+      - name: account_number
+        description: "Numéro du compte comptable débité ou crédité."
+      - name: debit
+        description: "Montant au débit pour cette ligne d'écriture."
+      - name: credit
+        description: "Montant au crédit pour cette ligne d'écriture."
 
   - name: fct_bank_reconciliations
-    description: "Rapprochements bancaires — correspondance entre transactions et écritures."
+    description: "Fait des rapprochements bancaires reliant les transactions bancaires aux écritures comptables."
     columns:
       - name: id_bank_reconciliation
         description: "Clé primaire du rapprochement bancaire."
         tests:
           - unique
           - not_null
+      - name: reconciled_at
+        description: "Date à laquelle le rapprochement a été effectué."
+      - name: reconciled_by
+        description: "Identifiant de l'utilisateur ayant réalisé le rapprochement."
+      - name: bank_account_id
+        description: "FK vers dim_bank_account — compte bancaire concerné par le rapprochement."
+      - name: bank_transaction_id
+        description: "FK vers fct_bank_transactions — transaction bancaire rapprochée."
+      - name: journal_entry_line_id
+        description: "FK vers fct__journal_entries — ligne d'écriture comptable associée."
 
   - name: fct_bank_transactions
-    description: "Transactions bancaires enregistrées dans le système ERP."
+    description: "Fait des transactions bancaires avec leur statut de rapprochement."
     columns:
       - name: id_bank_transaction
         description: "Clé primaire de la transaction bancaire."
         tests:
           - unique
           - not_null
+      - name: transaction_date
+        description: "Date de la transaction bancaire."
+      - name: amount
+        description: "Montant de la transaction (positif pour un crédit, négatif pour un débit)."
+      - name: balance
+        description: "Solde du compte après la transaction."
+      - name: bank_account_id
+        description: "FK vers dim_bank_account — compte bancaire concerné par la transaction."
+      - name: reference
+        description: "Libellé ou référence de la transaction bancaire."
+      - name: is_reconciled
+        description: "Indique si la transaction a été rapprochée avec une écriture comptable (1) ou non (0)."
 
   - name: fct_budget
-    description: "Fait budgétaire — agrégation des budgets avec leurs lignes par exercice."
+    description: "Fait budgétaire consolidant les budgets et leurs lignes avec les montants par compte."
     columns:
       - name: id_budget
         description: "Clé primaire du budget."
         tests:
           - not_null
-
-  - name: fct_journal_entries
-    description: >
-      Écritures comptables du journal — grain : une ligne par ligne d'écriture.
-      Modèle incrémental : fenêtre glissante de 7 jours.
-    columns:
-      - name: id_journal_entry
-        description: "Identifiant de l'écriture comptable parente."
-        tests:
-          - not_null
-      - name: journal_entry_line_id
-        description: "Clé de la ligne d'écriture (grain du modèle)."
-        tests:
-          - unique
-          - not_null
+      - name: name
+        description: "Libellé du budget."
+      - name: created_at
+        description: "Date de création du budget."
+      - name: is_active
+        description: "Indique si le budget est actif (1) ou clôturé (0)."
+      - name: id_budget_line
+        description: "Clé primaire de la ligne budgétaire associée."
+      - name: account_number
+        description: "Numéro du compte comptable de la ligne budgétaire."
+      - name: amount
+        description: "Montant alloué pour la ligne budgétaire."

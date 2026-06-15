@@ -1,23 +1,8 @@
 {{ config(tags=['staging', 'mes']) }}
 
-with source as (
+with base as (
 
-    select * from {{ source('mes', 'material_consumptions') }}
-    where id is not null
-
-),
-
-deduped as (
-
-    select
-        id,
-        argMax(production_order_id, _airbyte_extracted_at) as production_order_id,
-        argMax(component_sku,       _airbyte_extracted_at) as component_id,
-        argMax(qty_issued,          _airbyte_extracted_at) as quantity_consumed,
-        argMax(issued_at,           _airbyte_extracted_at) as consumed_at,
-        max(_airbyte_extracted_at)                         as latest_extracted_at
-    from source
-    group by id
+    select * from {{ ref('base_mes__material_consumptions') }}
 
 )
 
@@ -31,5 +16,5 @@ select
     cast(''                                     as varchar)       as lot_number,
     toDateTimeOrNull(toString(consumed_at))                       as consumed_at,
     cast(null as Nullable(DateTime64(3)))                         as created_at,
-    cast(latest_extracted_at                    as timestamp)     as _etl_loaded_at
-from deduped
+    cast(latest_extracted_at                as timestamp)     as _etl_loaded_at
+from base

@@ -1,24 +1,8 @@
 {{ config(tags=['staging', 'sav']) }}
 
-with source as (
+with base as (
 
-    select * from {{ source('sav', 'customer_satisfaction') }}
-    where id is not null
-
-),
-
-deduped as (
-
-    select
-        id,
-        argMax(ticket_id,     _airbyte_extracted_at) as ticket_id,
-        argMax(customer_ref,  _airbyte_extracted_at) as customer_id,
-        argMax(csat_score,    _airbyte_extracted_at) as score,
-        argMax(comment,       _airbyte_extracted_at) as comment,
-        argMax(submitted_at,  _airbyte_extracted_at) as surveyed_at,
-        max(_airbyte_extracted_at)                   as latest_extracted_at
-    from source
-    group by id
+    select * from {{ ref('base_sav__customer_satisfaction') }}
 
 )
 
@@ -32,5 +16,5 @@ select
     cast(coalesce(comment, '')               as varchar)   as comment,
     cast(surveyed_at                         as timestamp) as surveyed_at,
     cast(surveyed_at                         as timestamp) as created_at,
-    cast(latest_extracted_at                 as timestamp) as _etl_loaded_at
-from deduped
+    cast(latest_extracted_at                as timestamp) as _etl_loaded_at
+from base

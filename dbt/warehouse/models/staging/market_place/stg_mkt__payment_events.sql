@@ -20,4 +20,18 @@ renamed as (
     from source
 )
 
-select * from renamed
+select
+    payment_event__airbyte_raw_id,
+    payment_event__airbyte_extracted_at,
+    payment_event__airbyte_meta,
+    payment_event__airbyte_generation_id,
+    payment_event_id,
+    payment_event_processed,
+    payment_event_event_type,
+    payment_event_payment_id,
+    payment_event__ab_cdc_lsn,
+    payment_event_raw_payload,
+    payment_event_received_at,
+    payment_event__ab_cdc_deleted_at,
+    payment_event__ab_cdc_updated_at
+from renamed

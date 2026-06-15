@@ -24,4 +24,22 @@ renamed as (
     from source
 )
 
-select * from renamed
+select
+    warehouse__airbyte_raw_id,
+    warehouse__airbyte_extracted_at,
+    warehouse__airbyte_meta,
+    warehouse__airbyte_generation_id,
+    warehouse_id,
+    warehouse_city,
+    warehouse_code,
+    warehouse_name,
+    warehouse_address,
+    warehouse_country,
+    warehouse_is_active,
+    warehouse_created_at,
+    warehouse_deleted_at,
+    warehouse_updated_at,
+    warehouse__ab_cdc_lsn,
+    warehouse__ab_cdc_deleted_at,
+    warehouse__ab_cdc_updated_at
+from renamed

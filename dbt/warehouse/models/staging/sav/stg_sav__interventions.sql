@@ -1,26 +1,8 @@
 {{ config(tags=['staging', 'sav']) }}
 
-with source as (
+with base as (
 
-    select * from {{ source('sav', 'interventions') }}
-    where id is not null
-
-),
-
-deduped as (
-
-    select
-        id,
-        argMax(technician_id,  _airbyte_extracted_at) as technician_id,
-        argMax(status,         _airbyte_extracted_at) as status,
-        argMax(diagnosis,      _airbyte_extracted_at) as diagnostic,
-        argMax(repair_actions, _airbyte_extracted_at) as resolution,
-        argMax(started_at,     _airbyte_extracted_at) as started_at,
-        argMax(completed_at,   _airbyte_extracted_at) as completed_at,
-        argMax(labor_minutes,  _airbyte_extracted_at) as duration_minutes,
-        max(_airbyte_extracted_at)                    as latest_extracted_at
-    from source
-    group by id
+    select * from {{ ref('base_sav__interventions') }}
 
 )
 
@@ -42,5 +24,5 @@ select
     cast(coalesce(duration_minutes, 0)         as decimal(18,2)) as duration_minutes,
     cast(null as Nullable(DateTime64(3)))                        as created_at,
     cast(null as Nullable(DateTime64(3)))                        as updated_at,
-    cast(latest_extracted_at                   as timestamp)     as _etl_loaded_at
-from deduped
+    cast(latest_extracted_at                as timestamp)     as _etl_loaded_at
+from base

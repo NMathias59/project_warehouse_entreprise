@@ -20,4 +20,18 @@ renamed as (
     from source
 )
 
-select * from renamed
+select
+    return__airbyte_raw_id,
+    return__airbyte_extracted_at,
+    return__airbyte_meta,
+    return__airbyte_generation_id,
+    return_id,
+    return_reason,
+    return_status,
+    return_order_id,
+    return__ab_cdc_lsn,
+    return_resolved_at,
+    return_requested_at,
+    return__ab_cdc_deleted_at,
+    return__ab_cdc_updated_at
+from renamed

@@ -1,24 +1,8 @@
 {{ config(tags=['staging', 'sav']) }}
 
-with source as (
+with base as (
 
-    select * from {{ source('sav', 'ticket_history') }}
-    where id is not null
-
-),
-
-deduped as (
-
-    select
-        id,
-        argMax(ticket_id,  _airbyte_extracted_at) as ticket_id,
-        argMax(old_value,  _airbyte_extracted_at) as status_from,
-        argMax(new_value,  _airbyte_extracted_at) as status_to,
-        argMax(actor_ref,  _airbyte_extracted_at) as changed_by,
-        argMax(occurred_at, _airbyte_extracted_at) as changed_at,
-        max(_airbyte_extracted_at)                as latest_extracted_at
-    from source
-    group by id
+    select * from {{ ref('base_sav__ticket_history') }}
 
 )
 
@@ -30,5 +14,5 @@ select
     cast(coalesce(changed_by, '')        as varchar)   as changed_by,
     cast(changed_at                      as timestamp) as changed_at,
     cast(changed_at                      as timestamp) as created_at,
-    cast(latest_extracted_at             as timestamp) as _etl_loaded_at
-from deduped
+    cast(latest_extracted_at                as timestamp) as _etl_loaded_at
+from base

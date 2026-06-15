@@ -17,4 +17,15 @@ renamed as (
     from source
 )
 
-select * from renamed
+select
+    product_tag__airbyte_raw_id,
+    product_tag__airbyte_extracted_at,
+    product_tag__airbyte_meta,
+    product_tag__airbyte_generation_id,
+    product_tag_id,
+    product_tag_tag_id,
+    product_tag_product_id,
+    product_tag__ab_cdc_lsn,
+    product_tag__ab_cdc_deleted_at,
+    product_tag__ab_cdc_updated_at
+from renamed

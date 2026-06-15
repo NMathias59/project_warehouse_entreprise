@@ -1,73 +1,139 @@
 version: 2
 
 models:
-  - name: dim_brands
-    description: "Dimension des marques — référentiel complet des marques du catalogue."
+
+  - name: dim_brand
+    description: "Dimension des marques de produits ERP."
     columns:
       - name: id_brand
         description: "Clé primaire de la marque."
         tests:
           - unique
           - not_null
+      - name: brand_name
+        description: "Nom commercial de la marque."
+      - name: created_at
+        description: "Date de création de l'enregistrement."
 
-  - name: dim_categories
-    description: "Dimension des catégories produits et leur hiérarchie."
+  - name: dim_category
+    description: "Dimension des catégories de produits ERP."
     columns:
       - name: id_category
         description: "Clé primaire de la catégorie."
         tests:
           - unique
           - not_null
+      - name: name
+        description: "Nom de la catégorie."
+      - name: created_at
+        description: "Date de création de l'enregistrement."
 
-  - name: dim_components
-    description: "Dimension des composants matériels (pièces, assemblages)."
+  - name: dim_coponent
+    description: "Dimension des composants avec leur état de stock courant."
     columns:
       - name: id_component
         description: "Clé primaire du composant."
         tests:
           - unique
           - not_null
+      - name: component_name
+        description: "Nom du composant."
+      - name: unit
+        description: "Unité de mesure du composant (pièce, kg, etc.)."
+      - name: is_active
+        description: "Indique si le composant est actif (1) ou archivé (0)."
+      - name: max_stock
+        description: "Seuil maximum de stock défini pour le composant."
+      - name: min_stock
+        description: "Seuil minimum de stock déclenchant une alerte."
+      - name: current_stock
+        description: "Quantité en stock actuelle du composant."
+      - name: location_id
+        description: "FK vers dim_warehouse_location — emplacement de stockage du composant."
+      - name: stock_updated_at
+        description: "Date de la dernière mise à jour du stock."
 
-  - name: dim_pc_models
-    description: "Dimension des modèles de PC assemblables ou vendus."
+  - name: dim_pc_model
+    description: "Dimension des modèles de PC référencés dans le catalogue ERP."
     columns:
       - name: id_pc_model
-        description: "Clé primaire du modèle PC."
+        description: "Clé primaire du modèle de PC."
         tests:
           - unique
           - not_null
+      - name: code
+        description: "Code interne du modèle de PC."
+      - name: name
+        description: "Nom commercial du modèle de PC."
+      - name: product_id
+        description: "FK vers dim_product — produit associé à ce modèle."
+      - name: is_active
+        description: "Indique si le modèle est actif (1) ou archivé (0)."
+      - name: created_at
+        description: "Date de création de l'enregistrement."
 
-  - name: dim_products
-    description: "Dimension des produits du catalogue — un enregistrement par produit."
+  - name: dim_product
+    description: "Dimension des produits du catalogue ERP avec résumé de stock."
     columns:
       - name: id_product
         description: "Clé primaire du produit."
         tests:
           - unique
           - not_null
+      - name: product_name
+        description: "Nom commercial du produit."
+      - name: sku
+        description: "Référence unique du produit (Stock Keeping Unit)."
+      - name: is_active
+        description: "Indique si le produit est actif (1) ou archivé (0)."
+      - name: weight_kg
+        description: "Poids du produit en kilogrammes."
+      - name: category_id
+        description: "FK vers dim_category — catégorie du produit."
+      - name: total_stock
+        description: "Stock total disponible toutes localisations confondues."
 
-  - name: dim_product_compatibilities
-    description: "Relations de compatibilité entre composants et produits."
+  - name: dim_product_compatibility
+    description: "Dimension des compatibilités entre produits (relation produit A / produit B)."
     columns:
       - name: id_product_compatibility
         description: "Clé primaire de la relation de compatibilité."
         tests:
           - unique
           - not_null
+      - name: product_id
+        description: "FK vers dim_product — produit source de la compatibilité."
+      - name: compatible_product_id
+        description: "FK vers dim_product — produit compatible avec le produit source."
 
-  - name: dim_product_specifications
-    description: "Attributs techniques des produits (poids, dimensions, specs)."
+  - name: dim_product_specifiction
+    description: "Dimension des spécifications techniques des produits (paires clé / valeur)."
     columns:
       - name: id_product_specification
         description: "Clé primaire de la spécification produit."
         tests:
           - unique
           - not_null
+      - name: product_id
+        description: "FK vers dim_product — produit auquel appartient la spécification."
+      - name: spec_name
+        description: "Nom de la caractéristique technique (ex : RAM, Processeur)."
+      - name: spec_value
+        description: "Valeur de la caractéristique technique (ex : 16 Go, Intel i7)."
 
-  - name: fct_component_stock_alerts
-    description: "Alertes de stock composant — composants sous le seuil minimal configuré."
+  - name: fct_component_stock_alert
+    description: "Fait des alertes de rupture de stock composants (stock en dessous du seuil minimum)."
     columns:
       - name: component_id
-        description: "Référence du composant en alerte."
+        description: "Clé primaire et FK vers dim_coponent — composant en alerte."
         tests:
+          - unique
           - not_null
+      - name: component_name
+        description: "Nom du composant en alerte."
+      - name: min_stock
+        description: "Seuil minimum de stock défini pour le composant."
+      - name: total_stock
+        description: "Quantité totale en stock actuelle du composant."
+      - name: is_below_min
+        description: "Indique si le stock est en dessous du seuil minimum (1 = alerte active)."

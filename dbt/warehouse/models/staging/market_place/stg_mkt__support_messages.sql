@@ -19,4 +19,17 @@ renamed as (
     from source
 )
 
-select * from renamed
+select
+    support_message__airbyte_raw_id,
+    support_message__airbyte_extracted_at,
+    support_message__airbyte_meta,
+    support_message__airbyte_generation_id,
+    support_message_id,
+    support_message_body,
+    support_message_sender,
+    support_message_sent_at,
+    support_message_ticket_id,
+    support_message__ab_cdc_lsn,
+    support_message__ab_cdc_deleted_at,
+    support_message__ab_cdc_updated_at
+from renamed

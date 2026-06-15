@@ -22,4 +22,20 @@ renamed as (
     from source
 )
 
-select * from renamed
+select
+    product_compatibility__airbyte_raw_id,
+    product_compatibility__airbyte_extracted_at,
+    product_compatibility__airbyte_meta,
+    product_compatibility__airbyte_generation_id,
+    product_compatibility_id,
+    product_compatibility_note,
+    product_compatibility_level,
+    product_compatibility_created_at,
+    product_compatibility__ab_cdc_lsn,
+    product_compatibility_specs_match,
+    product_compatibility_product_a_id,
+    product_compatibility_product_b_id,
+    product_compatibility__ab_cdc_deleted_at,
+    product_compatibility__ab_cdc_updated_at,
+    product_compatibility_compatibility_type
+from renamed

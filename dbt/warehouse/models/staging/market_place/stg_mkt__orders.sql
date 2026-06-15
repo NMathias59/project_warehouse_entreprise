@@ -29,4 +29,27 @@ renamed as (
     from source
 )
 
-select * from renamed
+select
+    order__airbyte_raw_id,
+    order__airbyte_extracted_at,
+    order__airbyte_meta,
+    order__airbyte_generation_id,
+    order_id,
+    order_notes,
+    order_status,
+    order_currency,
+    order_reference,
+    order_total_ttc,
+    order_deleted_at,
+    order_ordered_at,
+    order_updated_at,
+    order__ab_cdc_lsn,
+    order_customer_id,
+    order_discount_ttc,
+    order_shipping_ttc,
+    order_subtotal_ttc,
+    order_billing_address,
+    order_shipping_address,
+    order__ab_cdc_deleted_at,
+    order__ab_cdc_updated_at
+from renamed

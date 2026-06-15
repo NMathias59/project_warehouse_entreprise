@@ -27,4 +27,25 @@ renamed as (
     from source
 )
 
-select * from renamed
+select
+    flash_sale__airbyte_raw_id,
+    flash_sale__airbyte_extracted_at,
+    flash_sale__airbyte_meta,
+    flash_sale__airbyte_generation_id,
+    flash_sale_id,
+    flash_sale_name,
+    flash_sale_ends_at,
+    flash_sale_vat_rate,
+    flash_sale_is_active,
+    flash_sale_starts_at,
+    flash_sale_created_at,
+    flash_sale_deleted_at,
+    flash_sale_product_id,
+    flash_sale_stock_sold,
+    flash_sale__ab_cdc_lsn,
+    flash_sale_price_flash_ht,
+    flash_sale_price_flash_ttc,
+    flash_sale_stock_allocated,
+    flash_sale__ab_cdc_deleted_at,
+    flash_sale__ab_cdc_updated_at
+from renamed

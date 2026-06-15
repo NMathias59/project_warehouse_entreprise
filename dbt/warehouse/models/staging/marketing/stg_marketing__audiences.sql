@@ -1,26 +1,8 @@
 {{ config(tags=['staging', 'marketing']) }}
 
-with source as (
+with base as (
 
-    select * from {{ source('marketing', 'audiences') }}
-    where id is not null
-
-),
-
-deduped as (
-
-    select
-        id,
-        argMax(name,           _airbyte_extracted_at) as name,
-        argMax(description,    _airbyte_extracted_at) as description,
-        argMax(audience_type,  _airbyte_extracted_at) as segment_type,
-        argMax(criteria,       _airbyte_extracted_at) as criteria,
-        argMax(member_count,   _airbyte_extracted_at) as estimated_size,
-        argMax(is_active,      _airbyte_extracted_at) as is_active,
-        argMax(created_at,     _airbyte_extracted_at) as created_at,
-        max(_airbyte_extracted_at)                    as latest_extracted_at
-    from source
-    group by id
+    select * from {{ ref('base_marketing__audiences') }}
 
 )
 
@@ -34,5 +16,5 @@ select
     cast(coalesce(is_active, false)       as boolean)   as is_active,
     cast(created_at                       as timestamp) as created_at,
     cast(null as Nullable(DateTime64(3)))               as updated_at,
-    cast(latest_extracted_at              as timestamp) as _etl_loaded_at
-from deduped
+    cast(latest_extracted_at                as timestamp) as _etl_loaded_at
+from base

@@ -20,4 +20,18 @@ renamed as (
     from source
 )
 
-select * from renamed
+select
+    shipping_zone__airbyte_raw_id,
+    shipping_zone__airbyte_extracted_at,
+    shipping_zone__airbyte_meta,
+    shipping_zone__airbyte_generation_id,
+    shipping_zone_id,
+    shipping_zone_code,
+    shipping_zone_name,
+    shipping_zone_countries,
+    shipping_zone_is_active,
+    shipping_zone_created_at,
+    shipping_zone__ab_cdc_lsn,
+    shipping_zone__ab_cdc_deleted_at,
+    shipping_zone__ab_cdc_updated_at
+from renamed

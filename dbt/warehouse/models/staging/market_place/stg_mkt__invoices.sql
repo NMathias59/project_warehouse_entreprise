@@ -21,4 +21,19 @@ renamed as (
     from source
 )
 
-select * from renamed
+select
+    invoice__airbyte_raw_id,
+    invoice__airbyte_extracted_at,
+    invoice__airbyte_meta,
+    invoice__airbyte_generation_id,
+    invoice_id,
+    invoice_due_at,
+    invoice_number,
+    invoice_pdf_url,
+    invoice_order_id,
+    invoice_issued_at,
+    invoice_total_ttc,
+    invoice__ab_cdc_lsn,
+    invoice__ab_cdc_deleted_at,
+    invoice__ab_cdc_updated_at
+from renamed

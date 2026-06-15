@@ -1,17 +1,21 @@
 {{ config(tags=['staging', 'wms']) }}
 
+with base as (
+
+    select * from {{ ref('base_wms__receipt_lines') }}
+
+)
+
 select
-    cast(id                                                                        as varchar)       as id_receipt_line,
-    cast(coalesce(argMax(receipt_id,      _airbyte_extracted_at), '')              as varchar)       as receipt_id,
-    cast(coalesce(argMax(product_sku,     _airbyte_extracted_at), '')              as varchar)       as product_id,
-    cast(coalesce(argMax(put_location_id, _airbyte_extracted_at), '')              as varchar)       as location_id,
-    cast(coalesce(argMax(qty_expected,    _airbyte_extracted_at), 0)               as decimal(18,2)) as quantity_expected,
-    cast(coalesce(argMax(qty_received,    _airbyte_extracted_at), 0)               as decimal(18,2)) as quantity_received,
-    cast(0                                                                         as decimal(18,2)) as unit_cost,
-    cast(coalesce(argMax(lot_number,      _airbyte_extracted_at), '')              as varchar)       as lot_number,
-    cast(null                                                                      as Nullable(DateTime64(3))) as expiry_date,
-    cast(argMax(created_at,               _airbyte_extracted_at)                   as timestamp)     as created_at,
-    cast(max(_airbyte_extracted_at)                                                as timestamp)     as _etl_loaded_at
-from {{ source('wms', 'receipt_lines') }}
-where id is not null
-group by id
+    cast(id                                      as varchar)       as id_receipt_line,
+    cast(coalesce(receipt_id,      '')           as varchar)       as receipt_id,
+    cast(coalesce(product_sku,     '')           as varchar)       as product_id,
+    cast(coalesce(put_location_id, '')           as varchar)       as location_id,
+    cast(coalesce(qty_expected,    0)            as decimal(18,2)) as quantity_expected,
+    cast(coalesce(qty_received,    0)            as decimal(18,2)) as quantity_received,
+    cast(0                                       as decimal(18,2)) as unit_cost,
+    cast(coalesce(lot_number,      '')           as varchar)       as lot_number,
+    cast(null as Nullable(DateTime64(3)))                          as expiry_date,
+    cast(created_at                              as timestamp)     as created_at,
+    cast(latest_extracted_at                as timestamp)     as _etl_loaded_at
+from base

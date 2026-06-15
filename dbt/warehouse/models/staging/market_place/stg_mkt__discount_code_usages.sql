@@ -19,4 +19,17 @@ renamed as (
     from source
 )
 
-select * from renamed
+select
+    discount_code_usage__airbyte_raw_id,
+    discount_code_usage__airbyte_extracted_at,
+    discount_code_usage__airbyte_meta,
+    discount_code_usage__airbyte_generation_id,
+    discount_code_usage_id,
+    discount_code_usage_used_at,
+    discount_code_usage_order_id,
+    discount_code_usage__ab_cdc_lsn,
+    discount_code_usage_discount_amount,
+    discount_code_usage_discount_code_id,
+    discount_code_usage__ab_cdc_deleted_at,
+    discount_code_usage__ab_cdc_updated_at
+from renamed

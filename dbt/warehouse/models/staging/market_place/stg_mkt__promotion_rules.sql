@@ -21,4 +21,19 @@ renamed as (
     from source
 )
 
-select * from renamed
+select
+    promotion_rule__airbyte_raw_id,
+    promotion_rule__airbyte_extracted_at,
+    promotion_rule__airbyte_meta,
+    promotion_rule__airbyte_generation_id,
+    promotion_rule_id,
+    promotion_rule_rule_type,
+    promotion_rule_created_at,
+    promotion_rule__ab_cdc_lsn,
+    promotion_rule_promotion_id,
+    promotion_rule_applies_to_brand,
+    promotion_rule_min_order_amount,
+    promotion_rule__ab_cdc_deleted_at,
+    promotion_rule__ab_cdc_updated_at,
+    promotion_rule_applies_to_category
+from renamed

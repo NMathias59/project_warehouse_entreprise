@@ -1,29 +1,8 @@
 {{ config(tags=['staging', 'plm']) }}
 
-with source as (
+with base as (
 
-    select * from {{ source('plm', 'change_requests') }}
-    where id is not null
-
-),
-
-deduped as (
-
-    select
-        id,
-        argMax(eco_number,           _airbyte_extracted_at) as reference,
-        argMax(title,                _airbyte_extracted_at) as title,
-        argMax(description,          _airbyte_extracted_at) as description,
-        argMax(product_id,           _airbyte_extracted_at) as product_id,
-        argMax(priority,             _airbyte_extracted_at) as priority,
-        argMax(status,               _airbyte_extracted_at) as status,
-        argMax(requested_by,         _airbyte_extracted_at) as requested_by,
-        argMax(approved_by,          _airbyte_extracted_at) as approved_by,
-        argMax(implementation_date,  _airbyte_extracted_at) as implemented_at,
-        argMax(created_at,           _airbyte_extracted_at) as created_at,
-        max(_airbyte_extracted_at)                          as latest_extracted_at
-    from source
-    group by id
+    select * from {{ ref('base_plm__change_requests') }}
 
 )
 
@@ -43,5 +22,5 @@ select
     toDateTimeOrNull(toString(implemented_at))              as implemented_at,
     cast(created_at                           as timestamp) as created_at,
     cast(null as Nullable(DateTime64(3)))                   as updated_at,
-    cast(latest_extracted_at                  as timestamp) as _etl_loaded_at
-from deduped
+    cast(latest_extracted_at                as timestamp) as _etl_loaded_at
+from base

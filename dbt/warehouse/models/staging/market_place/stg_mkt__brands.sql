@@ -22,4 +22,20 @@ renamed as (
     from source
 )
 
-select * from renamed
+select
+    brand__airbyte_raw_id,
+    brand__airbyte_extracted_at,
+    brand__airbyte_meta,
+    brand__airbyte_generation_id,
+    brand_id,
+    brand_name,
+    brand_slug,
+    brand_country,
+    brand_logo_url,
+    brand_created_at,
+    brand_deleted_at,
+    brand_updated_at,
+    brand__ab_cdc_lsn,
+    brand__ab_cdc_deleted_at,
+    brand__ab_cdc_updated_at
+from renamed

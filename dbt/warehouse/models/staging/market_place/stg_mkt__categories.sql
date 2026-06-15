@@ -23,4 +23,21 @@ renamed as (
     from source
 )
 
-select * from renamed
+select
+    categorie__airbyte_raw_id,
+    categorie__airbyte_extracted_at,
+    categorie__airbyte_meta,
+    categorie__airbyte_generation_id,
+    categorie_id,
+    categorie_name,
+    categorie_slug,
+    categorie_position,
+    categorie_parent_id,
+    categorie_created_at,
+    categorie_deleted_at,
+    categorie_updated_at,
+    categorie__ab_cdc_lsn,
+    categorie_description,
+    categorie__ab_cdc_deleted_at,
+    categorie__ab_cdc_updated_at
+from renamed

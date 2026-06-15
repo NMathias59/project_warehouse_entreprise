@@ -1,27 +1,8 @@
 {{ config(tags=['staging', 'procurement']) }}
 
-with source as (
+with base as (
 
-    select * from {{ source('procurement', 'suppliers') }}
-    where id is not null
-
-),
-
-deduped as (
-
-    select
-        id,
-        argMax(supplier_ref,        _airbyte_extracted_at) as code,
-        argMax(name,                _airbyte_extracted_at) as name,
-        argMax(tier,                _airbyte_extracted_at) as supplier_type,
-        argMax(is_active,           _airbyte_extracted_at) as is_active,
-        argMax(country,             _airbyte_extracted_at) as country_code,
-        argMax(payment_terms_days,  _airbyte_extracted_at) as payment_terms_days,
-        argMax(currency,            _airbyte_extracted_at) as currency,
-        argMax(created_at,          _airbyte_extracted_at) as created_at,
-        max(_airbyte_extracted_at)                         as latest_extracted_at
-    from source
-    group by id
+    select * from {{ ref('base_procurement__suppliers') }}
 
 )
 
@@ -39,5 +20,5 @@ select
     cast(coalesce(is_active, false)               as boolean)   as is_active,
     cast(created_at                               as timestamp) as created_at,
     cast(null as Nullable(DateTime64(3)))                       as updated_at,
-    cast(latest_extracted_at                      as timestamp) as _etl_loaded_at
-from deduped
+    cast(latest_extracted_at                as timestamp) as _etl_loaded_at
+from base

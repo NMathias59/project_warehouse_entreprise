@@ -20,4 +20,18 @@ renamed as (
     from source
 )
 
-select * from renamed
+select
+    carrier__airbyte_raw_id,
+    carrier__airbyte_extracted_at,
+    carrier__airbyte_meta,
+    carrier__airbyte_generation_id,
+    carrier_id,
+    carrier_code,
+    carrier_name,
+    carrier_is_active,
+    carrier_created_at,
+    carrier__ab_cdc_lsn,
+    carrier_tracking_url,
+    carrier__ab_cdc_deleted_at,
+    carrier__ab_cdc_updated_at
+from renamed

@@ -1,23 +1,8 @@
 {{ config(tags=['staging', 'marketing']) }}
 
-with source as (
+with base as (
 
-    select * from {{ source('marketing', 'email_sends') }}
-    where id is not null
-
-),
-
-deduped as (
-
-    select
-        id,
-        argMax(campaign_id,    _airbyte_extracted_at) as campaign_id,
-        argMax(email_address,  _airbyte_extracted_at) as recipient_email,
-        argMax(status,         _airbyte_extracted_at) as status,
-        argMax(sent_at,        _airbyte_extracted_at) as sent_at,
-        max(_airbyte_extracted_at)                    as latest_extracted_at
-    from source
-    group by id
+    select * from {{ ref('base_marketing__email_sends') }}
 
 )
 
@@ -30,5 +15,5 @@ select
     cast(''                                    as varchar)   as subject,
     toDateTimeOrNull(toString(sent_at))                      as sent_at,
     cast(null as Nullable(DateTime64(3)))                    as created_at,
-    cast(latest_extracted_at                   as timestamp) as _etl_loaded_at
-from deduped
+    cast(latest_extracted_at                as timestamp) as _etl_loaded_at
+from base

@@ -23,4 +23,21 @@ renamed as (
     from source
 )
 
-select * from renamed
+select
+    customer__airbyte_raw_id,
+    customer__airbyte_extracted_at,
+    customer__airbyte_meta,
+    customer__airbyte_generation_id,
+    customer_id,
+    customer_phone,
+    customer_user_id,
+    customer_birthdate,
+    customer_last_name,
+    customer_created_at,
+    customer_deleted_at,
+    customer_first_name,
+    customer_updated_at,
+    customer__ab_cdc_lsn,
+    customer__ab_cdc_deleted_at,
+    customer__ab_cdc_updated_at
+from renamed

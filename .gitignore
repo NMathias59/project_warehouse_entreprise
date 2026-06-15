@@ -1,5 +1,8 @@
 # dbt-specific
-dbt/warehouse/logs/*
+dbt/warehouse/logs/
+dbt/warehouse/target/
+dbt/warehouse/dbt_packages/
+dbt/warehouse/package-lock.yml
 dbt_best_practices.md
 airflow_airbyte_dbt_best_practices.md
 

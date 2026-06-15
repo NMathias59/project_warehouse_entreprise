@@ -12,7 +12,7 @@ with ad_performance as (
         clicks,
         conversions,
         cost,
-        revenue
+        revenue_attributed
     from {{ ref('fct_marketing_ad_performance') }}
 ),
 
@@ -32,7 +32,7 @@ joined as (
         ap.clicks,
         ap.conversions,
         ap.cost,
-        ap.revenue,
+        ap.revenue_attributed,
         c.roi
     from ad_performance as ap
     left join campaigns as c on c.id_campaign = ap.campaign_id
@@ -41,14 +41,14 @@ joined as (
 final as (
     select
         channel,
-        countDistinct(id_campaign)          as nb_campaigns,
-        sum(impressions)                    as total_impressions,
-        sum(clicks)                         as total_clicks,
-        sum(conversions)                    as total_conversions,
-        sum(cost)                           as total_cost,
-        sum(revenue)                        as total_revenue,
-        sum(cost) / nullIf(sum(clicks), 0)  as avg_cpc,
-        avg(roi)                            as avg_roi
+        countDistinct(id_campaign)              as nb_campaigns,
+        sum(impressions)                        as total_impressions,
+        sum(clicks)                             as total_clicks,
+        sum(conversions)                        as total_conversions,
+        sum(cost)                               as total_cost,
+        sum(revenue_attributed)                 as total_revenue,
+        sum(cost) / nullIf(sum(clicks), 0)      as avg_cpc,
+        avg(roi)                                as avg_roi
     from joined
     group by channel
 )

@@ -11,16 +11,14 @@ deduped as (
 
     select
         id,
-        argMax(product_id,       _airbyte_extracted_at) as product_id,
-        argMax(version_number,   _airbyte_extracted_at) as version_number,
-        argMax(status,           _airbyte_extracted_at) as status,
-        argMax(change_summary,   _airbyte_extracted_at) as change_summary,
-        argMax(approved_by,      _airbyte_extracted_at) as approved_by,
-        argMax(approved_at,      _airbyte_extracted_at) as approved_at,
-        argMax(effective_date,   _airbyte_extracted_at) as effective_date,
-        argMax(created_at,       _airbyte_extracted_at) as created_at,
-        argMax(updated_at,       _airbyte_extracted_at) as updated_at,
-        max(_airbyte_extracted_at)                      as latest_extracted_at
+        argMax(product_id,     _airbyte_extracted_at) as product_id,
+        argMax(revision,       _airbyte_extracted_at) as version_number,
+        argMax(status,         _airbyte_extracted_at) as status,
+        argMax(reason,         _airbyte_extracted_at) as change_summary,
+        argMax(approved_by,    _airbyte_extracted_at) as approved_by,
+        argMax(revision_date,  _airbyte_extracted_at) as effective_date,
+        argMax(created_at,     _airbyte_extracted_at) as created_at,
+        max(_airbyte_extracted_at)                    as latest_extracted_at
     from source
     group by id
 
@@ -33,9 +31,9 @@ select
     cast(coalesce(status, '')               as varchar)   as status,
     cast(coalesce(change_summary, '')       as varchar)   as change_summary,
     cast(coalesce(approved_by, '')          as varchar)   as approved_by,
-    toDateTimeOrNull(toString(approved_at))               as approved_at,
+    cast(null as Nullable(DateTime64(3)))                 as approved_at,
     cast(effective_date                     as date)      as effective_date,
     cast(created_at                         as timestamp) as created_at,
-    toDateTimeOrNull(toString(updated_at))                as updated_at,
+    cast(null as Nullable(DateTime64(3)))                 as updated_at,
     cast(latest_extracted_at                as timestamp) as _etl_loaded_at
 from deduped

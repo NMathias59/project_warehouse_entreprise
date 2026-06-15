@@ -2,6 +2,7 @@
     materialized='table',
     engine='MergeTree()',
     order_by='(created_at)',
+    settings={'allow_nullable_key': 1},
     tags=['reports', 'marketing', 'performance']
 ) }}
 

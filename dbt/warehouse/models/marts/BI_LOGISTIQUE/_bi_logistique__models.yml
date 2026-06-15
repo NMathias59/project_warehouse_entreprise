@@ -14,7 +14,8 @@ models:
         tests:
           - not_null
           - accepted_values:
-              values: ['ERP', 'MKT']
+              arguments:
+                values: ['ERP', 'MKT']
       - name: product_id
         description: "Identifiant du produit/composant (PK relative au domaine)."
       - name: product_name

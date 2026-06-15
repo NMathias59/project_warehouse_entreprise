@@ -1,41 +1,17 @@
 {{ config(tags=['staging', 'wms']) }}
 
-with source as (
-
-    select * from {{ source('wms', 'picking_orders') }}
-    where id is not null
-
-),
-
-deduped as (
-
-    select
-        id,
-        argMax(reference,     _airbyte_extracted_at) as reference,
-        argMax(status,        _airbyte_extracted_at) as status,
-        argMax(shipment_id,   _airbyte_extracted_at) as shipment_id,
-        argMax(warehouse_id,  _airbyte_extracted_at) as warehouse_id,
-        argMax(assigned_to,   _airbyte_extracted_at) as assigned_to,
-        argMax(started_at,    _airbyte_extracted_at) as started_at,
-        argMax(completed_at,  _airbyte_extracted_at) as completed_at,
-        argMax(created_at,    _airbyte_extracted_at) as created_at,
-        argMax(updated_at,    _airbyte_extracted_at) as updated_at,
-        max(_airbyte_extracted_at)                   as latest_extracted_at
-    from source
-    group by id
-
-)
-
 select
-    cast(id                                as varchar)   as id_picking_order,
-    cast(coalesce(reference, '')           as varchar)   as reference,
-    cast(coalesce(status, '')              as varchar)   as status,
-    cast(coalesce(shipment_id, '')         as varchar)   as shipment_id,
-    cast(coalesce(warehouse_id, '')        as varchar)   as warehouse_id,
-    cast(coalesce(assigned_to, '')         as varchar)   as assigned_to,
-    toDateTimeOrNull(toString(started_at))               as started_at,
-    toDateTimeOrNull(toString(completed_at))             as completed_at,
-    cast(created_at                        as timestamp) as created_at,
-    toDateTimeOrNull(toString(updated_at))               as updated_at,
-    cast(latest_extracted_at               as timestamp) as _etl_loaded_at
-from deduped
+    cast(id                                                                        as varchar)   as id_picking_order,
+    cast(coalesce(argMax(pick_order_number,      _airbyte_extracted_at), '')       as varchar)   as reference,
+    cast(coalesce(argMax(status,                 _airbyte_extracted_at), '')       as varchar)   as status,
+    cast(coalesce(argMax(marketplace_order_ref,  _airbyte_extracted_at), '')       as varchar)   as shipment_id,
+    cast(''                                                                        as varchar)   as warehouse_id,
+    cast(coalesce(argMax(assigned_to_ref,        _airbyte_extracted_at), '')       as varchar)   as assigned_to,
+    toDateTimeOrNull(toString(argMax(started_at,   _airbyte_extracted_at)))                     as started_at,
+    toDateTimeOrNull(toString(argMax(completed_at, _airbyte_extracted_at)))                     as completed_at,
+    cast(argMax(created_at,                        _airbyte_extracted_at)          as timestamp) as created_at,
+    cast(null                                                                      as Nullable(DateTime64(3))) as updated_at,
+    cast(max(_airbyte_extracted_at)                                                as timestamp) as _etl_loaded_at
+from {{ source('wms', 'picking_orders') }}
+where id is not null
+group by id

@@ -14,11 +14,17 @@ sources:
 
     tables:
       - name: locations
-      - name: stock_movements
       - name: receipts
       - name: receipt_lines
-      - name: shipments
-      - name: shipment_lines
       - name: picking_orders
+        identifier: pick_orders
       - name: picking_lines
+        identifier: pick_order_lines
+      - name: shipments
+        identifier: transfer_orders
+      - name: shipment_lines
+        identifier: transfer_order_lines
+      - name: stock_movements
+        identifier: inventory_positions
       - name: inventory_adjustments
+        identifier: cycle_count_lines

@@ -11,18 +11,17 @@ deduped as (
 
     select
         id,
-        argMax(employee_id,       _airbyte_extracted_at) as employee_id,
-        argMax(absence_type_id,   _airbyte_extracted_at) as absence_type_id,
-        argMax(status,            _airbyte_extracted_at) as status,
-        argMax(start_date,        _airbyte_extracted_at) as start_date,
-        argMax(end_date,          _airbyte_extracted_at) as end_date,
-        argMax(duration_days,     _airbyte_extracted_at) as duration_days,
-        argMax(reason,            _airbyte_extracted_at) as reason,
-        argMax(approved_by,       _airbyte_extracted_at) as approved_by,
-        argMax(approved_at,       _airbyte_extracted_at) as approved_at,
-        argMax(created_at,        _airbyte_extracted_at) as created_at,
-        argMax(updated_at,        _airbyte_extracted_at) as updated_at,
-        max(_airbyte_extracted_at)                       as latest_extracted_at
+        argMax(employee_id,    _airbyte_extracted_at) as employee_id,
+        argMax(leave_type,     _airbyte_extracted_at) as absence_type_id,
+        argMax(status,         _airbyte_extracted_at) as status,
+        argMax(start_date,     _airbyte_extracted_at) as start_date,
+        argMax(end_date,       _airbyte_extracted_at) as end_date,
+        argMax(days,           _airbyte_extracted_at) as duration_days,
+        argMax(reason,         _airbyte_extracted_at) as reason,
+        argMax(approved_by_id, _airbyte_extracted_at) as approved_by,
+        argMax(decided_at,     _airbyte_extracted_at) as approved_at,
+        argMax(submitted_at,   _airbyte_extracted_at) as created_at,
+        max(_airbyte_extracted_at)                    as latest_extracted_at
     from source
     group by id
 
@@ -40,6 +39,6 @@ select
     cast(coalesce(approved_by, '')            as varchar)       as approved_by,
     toDateTimeOrNull(toString(approved_at))                     as approved_at,
     cast(created_at                           as timestamp)     as created_at,
-    toDateTimeOrNull(toString(updated_at))                      as updated_at,
+    cast(null as Nullable(DateTime64(3)))                       as updated_at,
     cast(latest_extracted_at                  as timestamp)     as _etl_loaded_at
 from deduped

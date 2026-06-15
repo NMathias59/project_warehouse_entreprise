@@ -6,7 +6,6 @@ sources:
     database: DB_WH_MKT
     schema: DB_WH_MKT
     tables:
-      - name: alembic_version
       - name: brands
       - name: carriers
       - name: cart_items

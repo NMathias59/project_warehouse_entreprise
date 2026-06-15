@@ -6,15 +6,6 @@ version: 2
 # not_null sur la clé métier (_id).
 
 models:
-  - name: stg_mkt__alembic_version
-    description: "Table de version Alembic — métadonnée technique de migration."
-    columns:
-      - name: alembic_version__airbyte_raw_id
-        description: "Identifiant unique Airbyte (CDC raw PK)."
-        tests:
-          - unique
-          - not_null
-
   - name: stg_mkt__brands
     description: "Marques du catalogue marketplace."
     columns:

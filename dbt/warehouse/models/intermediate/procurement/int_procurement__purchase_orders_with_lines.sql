@@ -1,16 +1,4 @@
-{{ config(materialized='ephemeral', tags=['intermediate', 'procurement']) }}
-
-with purchase_orders as (
-    select * from {{ ref('stg_procurement__purchase_orders') }}
-),
-
-purchase_order_lines as (
-    select * from {{ ref('stg_procurement__purchase_order_lines') }}
-),
-
-suppliers as (
-    select * from {{ ref('stg_procurement__suppliers') }}
-)
+{{ config(materialized='view', tags=['intermediate', 'procurement']) }}
 
 select
     pol.id_purchase_order_line,
@@ -30,10 +18,10 @@ select
     pol.unit_price,
     pol.quantity_ordered * pol.unit_price                               as line_total,
     pol.quantity_received / nullIf(pol.quantity_ordered, 0)             as receipt_rate
-from purchase_orders as po
-left join purchase_order_lines as pol
+from {{ ref('stg_procurement__purchase_orders') }} as po
+left join {{ ref('stg_procurement__purchase_order_lines') }} as pol
     on pol.purchase_order_id = po.id_purchase_order
-left join suppliers as s
+left join {{ ref('stg_procurement__suppliers') }} as s
     on s.id_supplier = po.supplier_id
 group by
     pol.id_purchase_order_line,

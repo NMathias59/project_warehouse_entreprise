@@ -1,41 +1,25 @@
-{{ config(materialized='table', engine='MergeTree()', order_by='(entry_date, account_number)', tags=['reports','finance','financial']) }}
-with journal as (
-    select
-        id_journal_line, journal_entry_id, reference, journal_type, entry_date,
-        description, status, account_id, account_number, account_label, account_type,
-        cost_center_id, cost_center_code, cost_center_label,
-        debit_amount, credit_amount, net_amount, currency
-    from {{ ref('fct_finance_journal_lines') }}
-),
-accounts as (
-    select id_account, account_number, label as account_label, account_type
-    from {{ ref('dim_finance_accounts') }}
-),
-cost_centers as (
-    select id_cost_center, code as cc_code, label as cc_label
-    from {{ ref('dim_finance_cost_centers') }}
-),
-final as (
-    select
-        j.id_journal_line,
-        j.journal_entry_id,
-        j.reference,
-        j.journal_type,
-        j.entry_date,
-        j.description,
-        j.account_id,
-        coalesce(a.account_number, j.account_number)    as account_number,
-        coalesce(a.account_label, j.account_label)      as account_label,
-        coalesce(a.account_type, j.account_type)        as account_type,
-        j.cost_center_id,
-        coalesce(cc.cc_code, j.cost_center_code)        as cost_center_code,
-        coalesce(cc.cc_label, j.cost_center_label)      as cost_center_label,
-        j.debit_amount,
-        j.credit_amount,
-        j.net_amount,
-        j.currency
-    from journal as j
-    left join accounts    as a  on a.id_account     = j.account_id
-    left join cost_centers as cc on cc.id_cost_center = j.cost_center_id
-)
-select * from final
+{{ config(materialized='table', engine='MergeTree()', order_by='(entry_date, account_number)', settings={'allow_nullable_key': 1}, tags=['reports','finance','financial']) }}
+
+select
+    jl.id_journal_line                                              as id_journal_line,
+    jl.id_journal_entry                                             as id_journal_entry,
+    jl.reference                                                    as reference,
+    jl.journal_type                                                 as journal_type,
+    jl.entry_date                                                   as entry_date,
+    jl.description                                                  as description,
+    jl.account_id                                                   as account_id,
+    coalesce(a.account_number, jl.account_number)                   as account_number,
+    coalesce(a.label, jl.account_label)                             as account_label,
+    coalesce(a.account_type, jl.account_type)                       as account_type,
+    jl.cost_center_id                                               as cost_center_id,
+    coalesce(cc.code, jl.cost_center_code)                          as cost_center_code,
+    coalesce(cc.label, jl.cost_center_label)                        as cost_center_label,
+    jl.debit_amount                                                 as debit_amount,
+    jl.credit_amount                                                as credit_amount,
+    jl.net_amount                                                   as net_amount,
+    jl.currency                                                     as currency
+from {{ ref('fct_finance_journal_lines') }} as jl
+left join {{ ref('dim_finance_accounts') }} as a
+    on a.id_account = jl.account_id
+left join {{ ref('dim_finance_cost_centers') }} as cc
+    on cc.id_cost_center = jl.cost_center_id

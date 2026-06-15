@@ -20,13 +20,14 @@
 8. [Macros personnalisées](#8-macros-personnalisées)
 9. [Orchestration Airflow](#9-orchestration-airflow)
 10. [Bonnes pratiques appliquées](#10-bonnes-pratiques-appliquées)
-11. [Troubleshooting ClickHouse](#11-troubleshooting-clickhouse)
+11. [Sécurité — Credentials](#11-sécurité--credentials)
+12. [Troubleshooting ClickHouse](#12-troubleshooting-clickhouse)
 
 ---
 
 ## 1. Vue d'ensemble
 
-Ce projet implémente un entrepôt de données analytique pour **trois systèmes sources** : un ERP, une marketplace e-commerce et un CRM.
+Ce projet implémente un entrepôt de données analytique pour **trois systèmes sources** : un ERP, une marketplace e-commerce et un CRM, plus un domaine **WMS** (Warehouse Management System).
 
 **Domaines ERP** (source `DB_WH_ERP`) :
 
@@ -47,6 +48,16 @@ Ce projet implémente un entrepôt de données analytique pour **trois systèmes
 | 🏷️ **Catalogue**       | Produits, marques, catégories, prix, bundles PC   |
 | 🚚 **Logistique**      | Expéditions, transporteurs, méthodes/zones de livraison, stock |
 | 🎧 **Service client**  | Tickets support, avis produits                    |
+
+**Domaine WMS** (source `DB_WH_WMS`) :
+
+| Domaine métier         | Description                                                   |
+|------------------------|---------------------------------------------------------------|
+| 📍 **Emplacements**    | Locations d'entrepôt (allées, racks, niveaux, zones)          |
+| 📥 **Réceptions**      | Réceptions marchandises, lignes de réception                  |
+| 📤 **Expéditions**     | Expéditions, lignes d'expédition                              |
+| 🛒 **Picking**         | Ordres de picking, lignes de picking                          |
+| 📦 **Stock**           | Mouvements de stock, ajustements d'inventaire                 |
 
 **Domaines CRM** (source `DB_WH_CRM`) :
 
@@ -137,11 +148,14 @@ ERP (PostgreSQL)   Marketplace (PostgreSQL)   CRM (PostgreSQL)
 
 ### Schémas ClickHouse
 
-| Target dbt | Schéma ClickHouse | Usage                       |
-|------------|-------------------|-----------------------------|
-| `erp`      | `DB_WH_ERP`       | Entrepôt ERP (par défaut)   |
-| `mkt`      | `DB_WH_MKT`       | Entrepôt Marketplace        |
-| `crm`      | `DB_WH_CRM`       | Entrepôt CRM                |
+| Target dbt       | Schéma ClickHouse      | Usage                         |
+|------------------|------------------------|-------------------------------|
+| `erp`            | `DB_WH_ERP`            | Entrepôt ERP (par défaut)     |
+| `mkt`            | `DB_WH_MKT`            | Entrepôt Marketplace          |
+| `crm`            | `DB_WH_CRM`            | Entrepôt CRM                  |
+| `wms`            | `DB_WH_WMS`            | Entrepôt WMS                  |
+| `mes/marketing/sav/plm/sirh/qms/finance/procurement` | `DB_WH_*` | Domaines étendus |
+| `bi_*`           | `DB_WH_BI_*`           | Datamarts BI cross-domaines   |
 
 ### Matérialisations par couche
 
@@ -673,24 +687,62 @@ Utilitaire pour supprimer une table ClickHouse (usage en hooks ou scripts de mai
 
 ## 9. Orchestration Airflow
 
-Le fichier `dags/example_dbt_cosmos.py` définit un DAG Airflow qui exécute le projet dbt via [Astronomer Cosmos](https://astronomer.github.io/astronomer-cosmos/).
+Le DAG principal est `dags/warehouse_pipeline.py`.
 
-**Configuration :**
+### Pipeline en 3 phases
 
-| Paramètre          | Valeur                        |
-|--------------------|-------------------------------|
-| Schedule           | `@daily`                      |
-| Start date         | 2025-04-01                    |
-| Max active tasks   | 1                             |
-| Max active runs    | 1                             |
-| Is paused          | False (démarre immédiatement) |
+```
+Phase 1+2 — 12 domaines en parallèle (limité par airbyte_pool)
+  airbyte_trigger_<d> → airbyte_wait_<d> → dbt_run_<d> → dbt_test_<d>
+
+Phase 3 — BI datamarts (déclenchés après les 12 dbt_test_*)
+  dbt_run_bi_production → dbt_test_bi_production → dbt_run_bi_logistique
+  dbt_run_bi_marketing / bi_finance / bi_rh / bi_sav  (parallèles)
+```
+
+### Configuration DAG
+
+| Paramètre       | Valeur                                     |
+|-----------------|--------------------------------------------|
+| Schedule        | `0 3 * * *` (chaque nuit à 3h)            |
+| Start date      | 2026-06-01                                 |
+| Max active runs | 1                                          |
+| Catchup         | False                                      |
+| Notifications   | `on_failure_callback` sur toutes les tâches|
+
+### Pool Airflow — concurrence Airbyte
+
+Pour éviter de saturer Docker Desktop avec trop de syncs Airbyte simultanées, les tâches `airbyte_trigger_*` et `airbyte_wait_*` utilisent un pool dédié :
+
+```bash
+# À créer une fois après astro dev start (ou configurer dans Admin > Pools)
+docker exec <scheduler-container> airflow pools set airbyte_pool 3 "Limite syncs Airbyte Docker local"
+```
+
+Le pool est aussi déclaré dans `airflow_settings.yaml` (recréé automatiquement au démarrage).
+
+### Sensor Airbyte — résilience aux crashs transitoires
+
+Le `AirbyteSyncSensor` gère les erreurs transitoires d'Airbyte (OOM, restart Docker) :
+
+| Erreur                  | Comportement         |
+|-------------------------|----------------------|
+| `ConnectionError`       | reschedule (30s)     |
+| `Timeout`               | reschedule (30s)     |
+| `HTTPError` 5xx         | reschedule (30s)     |
+| `HTTPError` 4xx         | échec immédiat       |
+| Job Airbyte `failed`    | échec immédiat       |
+
+### Auth Airbyte
+
+OAuth2 `client_credentials` — token renouvelé à chaque poke. Si un job est déjà en cours (409), le trigger récupère son ID et le transmet au sensor.
 
 **Chemins configurés** (`include/constants.py`) :
 
-| Constante            | Valeur                                    |
-|----------------------|-------------------------------------------|
-| `warehouse_path`     | `/usr/local/airflow/dbt/warehouse`        |
-| `dbt_executable`     | `/usr/local/airflow/dbt_venv/bin/dbt`     |
+| Constante        | Valeur                                |
+|------------------|---------------------------------------|
+| `WAREHOUSE_DIR`  | `/usr/local/airflow/dbt/warehouse`    |
+| `DBT_BIN`        | `/usr/local/airflow/dbt_venv/bin/dbt` |
 
 **Volume Docker** — `docker-compose.override.yml` :
 ```yaml
@@ -734,7 +786,39 @@ Ce projet suit les recommandations dbt documentées dans `dbt_best_practices.md`
 
 ---
 
-## 11. Troubleshooting ClickHouse
+## 11. Sécurité — Credentials
+
+### Fichiers sensibles
+
+| Fichier         | Statut git   | Contenu                            |
+|-----------------|--------------|------------------------------------|
+| `.env`          | ignoré ✅    | Credentials réels (Airbyte, ClickHouse) |
+| `.env.example`  | tracké ✅    | Template vide (pas de secrets)     |
+| `profiles.yml`  | tracké ✅    | `env_var()` uniquement — pas de mot de passe en dur |
+
+### Variables d'environnement requises
+
+```bash
+# ClickHouse
+CLICKHOUSE_USER=admin
+CLICKHOUSE_PASSWORD=<votre-mot-de-passe>
+
+# Airbyte OAuth2
+AIRBYTE_CLIENT_ID=<uuid>
+AIRBYTE_CLIENT_SECRET=<secret>
+
+# Connexions Airbyte (UUIDs)
+AIRBYTE_CONN_ERP=<uuid>
+AIRBYTE_CONN_CRM=<uuid>
+AIRBYTE_CONN_MKT=<uuid>
+# + optionnels : AIRBYTE_CONN_WMS, _MES, _MARKETING, _SAV, _PLM, _SIRH, _QMS, _FINANCE, _PROCUREMENT
+```
+
+> ⚠️ Si le repo a été public avec l'ancien `profiles.yml` (password en dur), changer le mot de passe ClickHouse et utiliser `git filter-branch` ou BFG Repo-Cleaner pour purger l'historique.
+
+---
+
+## 12. Troubleshooting ClickHouse
 
 ### ❌ Airbyte : tables non visibles dans ClickHouse après sync
 

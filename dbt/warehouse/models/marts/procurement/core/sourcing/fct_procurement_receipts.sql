@@ -1,4 +1,4 @@
-{{ config(materialized='table', engine='MergeTree()', order_by='(purchase_order_id, received_at)', tags=['marts','procurement','fct']) }}
+{{ config(materialized='table', engine='MergeTree()', order_by='(purchase_order_id, received_at)', settings={'allow_nullable_key': 1}, tags=['marts','procurement','fct']) }}
 with receipts as (
     select
         id_receipt, reference, purchase_order_id, warehouse_id,

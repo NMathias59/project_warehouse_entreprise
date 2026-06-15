@@ -44,9 +44,12 @@ Pipeline principal warehouse — déclenché chaque nuit à 3h.
 
 from __future__ import annotations
 
+import logging
 from datetime import datetime, timedelta
 
 import requests
+
+log = logging.getLogger(__name__)
 
 from airflow.decorators import dag
 from airflow.exceptions import AirflowException
@@ -124,7 +127,7 @@ def _on_failure_callback(context: dict) -> None:
     )
 
     # TODO: remplacer ces deux lignes par l'appel au vrai notifier ci-dessus
-    ti.log.error("FAILURE NOTIFICATION (simulated) — %s", msg)
+    log.error("FAILURE NOTIFICATION (simulated) — %s", msg)
     print(msg)
 
 
@@ -203,13 +206,27 @@ class AirbyteSyncSensor(BaseSensorOperator):
         self.job_id = job_id
 
     def poke(self, context: dict) -> bool:
-        token = _get_airbyte_token()
-        resp  = requests.get(
-            f"{AIRBYTE_API_URL}/api/public/v1/jobs/{self.job_id}",
-            headers={"Authorization": f"Bearer {token}"},
-            timeout=30,
-        )
-        resp.raise_for_status()
+        try:
+            token = _get_airbyte_token()
+            resp  = requests.get(
+                f"{AIRBYTE_API_URL}/api/public/v1/jobs/{self.job_id}",
+                headers={"Authorization": f"Bearer {token}"},
+                timeout=30,
+            )
+            resp.raise_for_status()
+        except requests.exceptions.ConnectionError as exc:
+            log.warning("Airbyte unreachable (transient) — reschedule. %s", exc)
+            return False
+        except requests.exceptions.Timeout as exc:
+            log.warning("Airbyte timeout (transient) — reschedule. %s", exc)
+            return False
+        except requests.exceptions.HTTPError as exc:
+            # 5xx = crash/restart transitoire → reschedule ; 4xx = erreur réelle → raise
+            if exc.response is not None and exc.response.status_code < 500:
+                raise
+            log.warning("Airbyte HTTP %s (transient) — reschedule. %s",
+                        exc.response.status_code if exc.response else "?", exc)
+            return False
         status = resp.json()["status"]
         if status == "succeeded":
             return True
@@ -275,11 +292,13 @@ def _domain_pipeline(
             op_kwargs={"connection_id": conn_id},
             retries=0,
             execution_timeout=timedelta(minutes=5),
+            pool="airbyte_pool",
         )
         sensor = AirbyteSyncSensor(
             task_id=f"airbyte_wait_{domain}",
             job_id=f"{{{{ task_instance.xcom_pull(task_ids='airbyte_trigger_{domain}') }}}}",
             execution_timeout=timedelta(hours=3),
+            pool="airbyte_pool",
         )
         trigger >> sensor >> run
 

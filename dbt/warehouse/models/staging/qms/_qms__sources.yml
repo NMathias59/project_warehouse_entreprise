@@ -14,10 +14,16 @@ sources:
 
     tables:
       - name: non_conformities
+        identifier: non_conformances
       - name: corrective_actions
       - name: audits
+        identifier: audit_plans
       - name: audit_findings
       - name: control_plans
+        identifier: audit_plans
       - name: control_points
+        identifier: audit_findings
       - name: certifications
+        identifier: supplier_qualifications
       - name: supplier_evaluations
+        identifier: supplier_qualifications

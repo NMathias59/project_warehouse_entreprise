@@ -15,12 +15,15 @@ sources:
     tables:
       - name: fiscal_years
       - name: accounting_periods
+        identifier: fiscal_years
       - name: accounts
       - name: cost_centers
       - name: journal_entries
       - name: journal_lines
       - name: budgets
       - name: budget_lines
+        identifier: budgets
       - name: bank_accounts
       - name: bank_transactions
       - name: payment_terms
+        identifier: fiscal_years

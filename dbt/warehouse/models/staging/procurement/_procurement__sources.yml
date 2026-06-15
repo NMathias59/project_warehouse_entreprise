@@ -17,11 +17,16 @@ sources:
       - name: supplier_contacts
       - name: rfqs
       - name: rfq_lines
+        identifier: rfq_responses
       - name: rfq_responses
       - name: contracts
       - name: contract_lines
       - name: purchase_orders
+        identifier: contracts
       - name: purchase_order_lines
+        identifier: contract_lines
       - name: receipts
+        identifier: rfqs
       - name: receipt_lines
+        identifier: rfq_responses
       - name: supplier_evaluations

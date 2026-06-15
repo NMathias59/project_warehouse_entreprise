@@ -69,16 +69,84 @@ models:
         description: "Référence de la ligne d'écriture comptable liée."
   - name: stg_erp__bank_transactions
     description: "{{ doc('stg_erp__bank_transactions') }}"
-    # TODO: ajouter les colonnes + tests (unique/not_null sur la PK)
+    columns:
+      - name: id_bank_transaction
+        description: "Identifiant unique de la transaction bancaire (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: amount
+        description: "Montant de la transaction (decimal)."
+      - name: balance
+        description: "Solde après transaction (decimal)."
+      - name: reference
+        description: "Référence externe de la transaction."
+      - name: value_date
+        description: "Date de valeur de la transaction."
+      - name: description
+        description: "Description de la transaction."
+      - name: imported_at
+        description: "Horodatage d'import dans le système."
+      - name: is_reconciled
+        description: "Indique si la transaction est réconciliée (booléen)."
+      - name: bank_account_id
+        description: "Référence du compte bancaire."
+      - name: transaction_date
+        description: "Date de la transaction."
   - name: stg_erp__bom_headers
     description: "{{ doc('stg_erp__bom_headers') }}"
-    # TODO: ajouter les colonnes + tests (unique/not_null sur la PK)
+    columns:
+      - name: id_bom_header
+        description: "Identifiant unique de l'en-tête nomenclature (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: notes
+        description: "Notes associées à la nomenclature."
+      - name: version
+        description: "Version de la nomenclature."
+      - name: created_at
+        description: "Date de création."
+      - name: is_current
+        description: "Indique si cette version est la version courante (booléen)."
+      - name: pc_model_id
+        description: "Référence du modèle PC associé."
   - name: stg_erp__bom_lines
     description: "{{ doc('stg_erp__bom_lines') }}"
-    # TODO: ajouter les colonnes + tests (unique/not_null sur la PK)
+    columns:
+      - name: id_bom_line
+        description: "Identifiant unique de la ligne de nomenclature (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: notes
+        description: "Notes sur la ligne."
+      - name: position
+        description: "Position / ordre dans la nomenclature (int)."
+      - name: quantity
+        description: "Quantité du composant dans la nomenclature (decimal)."
+      - name: component_id
+        description: "Référence du composant."
+      - name: bom_header_id
+        description: "Référence de l'en-tête nomenclature parent."
   - name: stg_erp__bom_versions
     description: "{{ doc('stg_erp__bom_versions') }}"
-    # TODO: ajouter les colonnes + tests (unique/not_null sur la PK)
+    columns:
+      - name: id_bom_version
+        description: "Identifiant unique de la version de nomenclature (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: snapshot
+        description: "Snapshot JSON de la nomenclature à cette version."
+      - name: changelog
+        description: "Description des changements apportés."
+      - name: created_at
+        description: "Date de création de la version."
+      - name: created_by
+        description: "Utilisateur ayant créé la version."
+      - name: version_label
+        description: "Label lisible de la version (ex: v1.2)."
   - name: stg_erp__brands
     description: "{{ doc('stg_erp__brands') }}"
     columns:
@@ -103,7 +171,22 @@ models:
         description: "URL du logo de la marque."
   - name: stg_erp__budget_lines
     description: "{{ doc('stg_erp__budget_lines') }}"
-    # TODO: ajouter les colonnes + tests (unique/not_null sur la PK)
+    columns:
+      - name: id_budget_line
+        description: "Identifiant unique de la ligne de budget (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: budget_id
+        description: "Référence du budget parent."
+      - name: notes
+        description: "Notes / commentaires sur la ligne."
+      - name: amount
+        description: "Montant budgété (decimal)."
+      - name: created_at
+        description: "Date de création."
+      - name: account_number
+        description: "Numéro de compte associé à la ligne."
   - name: stg_erp__budgets
     description: "{{ doc('stg_erp__budgets') }}"
     columns:
@@ -148,40 +231,254 @@ models:
         description: "Description longue de la catégorie."
   - name: stg_erp__chart_of_accounts
     description: "{{ doc('stg_erp__chart_of_accounts') }}"
-    # TODO: ajouter les colonnes + tests (unique/not_null sur la PK)
+    columns:
+      - name: id_chart_of_account
+        description: "Identifiant unique du compte du plan comptable (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: label
+        description: "Libellé du compte."
+      - name: is_active
+        description: "Indique si le compte est actif (booléen)."
+      - name: parent_id
+        description: "Référence du compte parent (hiérarchie)."
+      - name: created_at
+        description: "Date de création."
+      - name: account_type
+        description: "Type de compte (actif, passif, charge, produit…)."
+      - name: account_number
+        description: "Numéro de compte."
   - name: stg_erp__component_categories
     description: "{{ doc('stg_erp__component_categories') }}"
-    # TODO: ajouter les colonnes + tests (unique/not_null sur la PK)
+    columns:
+      - name: id_component_category
+        description: "Identifiant unique de la catégorie de composant (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: code
+        description: "Code interne de la catégorie."
+      - name: name
+        description: "Nom de la catégorie."
+      - name: parent_id
+        description: "Référence de la catégorie parente."
+      - name: created_at
+        description: "Date de création."
   - name: stg_erp__component_stock
     description: "{{ doc('stg_erp__component_stock') }}"
-    # TODO: ajouter les colonnes + tests (unique/not_null sur la PK)
+    columns:
+      - name: id_component_stock
+        description: "Identifiant unique du stock composant (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: quantity
+        description: "Quantité en stock (entier)."
+      - name: updated_at
+        description: "Horodatage de la dernière mise à jour."
+      - name: location_id
+        description: "Référence de l'emplacement de stockage."
+      - name: component_id
+        description: "Référence du composant stocké."
   - name: stg_erp__component_stock_movements
     description: "{{ doc('stg_erp__component_stock_movements') }}"
-    # TODO: ajouter les colonnes + tests (unique/not_null sur la PK)
+    columns:
+      - name: id_component_stock_movement
+        description: "Identifiant unique du mouvement de stock composant (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: type
+        description: "Type de mouvement (entrée, sortie, transfert…)."
+      - name: moved_at
+        description: "Horodatage du mouvement."
+      - name: quantity
+        description: "Quantité déplacée (entier)."
+      - name: reference
+        description: "Référence externe du mouvement."
+      - name: location_id
+        description: "Emplacement source ou destination."
+      - name: component_id
+        description: "Référence du composant concerné."
   - name: stg_erp__components
     description: "{{ doc('stg_erp__components') }}"
-    # TODO: ajouter les colonnes + tests (unique/not_null sur la PK)
+    columns:
+      - name: id_components
+        description: "Identifiant unique du composant (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: name
+        description: "Nom du composant."
+      - name: unit
+        description: "Unité de mesure du composant."
+      - name: is_active
+        description: "Indique si le composant est actif (booléen)."
+      - name: max_stock
+        description: "Seuil maximum de stock (entier)."
+      - name: min_stock
+        description: "Seuil minimum de stock (entier)."
+      - name: created_at
+        description: "Date de création."
+      - name: updated_at
+        description: "Date de dernière modification."
+      - name: category_id
+        description: "Référence de la catégorie du composant."
+      - name: sku_internal
+        description: "Référence interne SKU du composant."
   - name: stg_erp__cost_centers
     description: "{{ doc('stg_erp__cost_centers') }}"
-    # TODO: ajouter les colonnes + tests (unique/not_null sur la PK)
+    columns:
+      - name: id_cost_center
+        description: "Identifiant unique du centre de coût (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: code
+        description: "Code interne du centre de coût."
+      - name: name
+        description: "Nom du centre de coût."
+      - name: is_active
+        description: "Indique si le centre de coût est actif (booléen)."
+      - name: created_at
+        description: "Date de création."
   - name: stg_erp__defect_reports
     description: "{{ doc('stg_erp__defect_reports') }}"
-    # TODO: ajouter les colonnes + tests (unique/not_null sur la PK)
+    columns:
+      - name: id_defect_report
+        description: "Identifiant unique du rapport de défaut (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: created_at
+        description: "Date de création du rapport."
+      - name: defect_type
+        description: "Type de défaut constaté."
+      - name: reported_at
+        description: "Date de signalement du défaut."
+      - name: resolved_at
+        description: "Date de résolution du défaut."
+      - name: action_taken
+        description: "Action corrective prise."
+      - name: component_id
+        description: "Référence du composant défectueux."
+      - name: serial_number
+        description: "Numéro de série de l'équipement concerné."
+      - name: work_order_id
+        description: "Référence de l'ordre de travail associé."
   - name: stg_erp__departments
     description: "{{ doc('stg_erp__departments') }}"
-    # TODO: ajouter les colonnes + tests (unique/not_null sur la PK)
+    columns:
+      - name: id_department
+        description: "Identifiant unique du département (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: code
+        description: "Code interne du département."
+      - name: name
+        description: "Nom du département."
+      - name: created_at
+        description: "Date de création."
+      - name: updated_at
+        description: "Date de dernière mise à jour (CDC)."
   - name: stg_erp__employee_contracts
     description: "{{ doc('stg_erp__employee_contracts') }}"
-    # TODO: ajouter les colonnes + tests (unique/not_null sur la PK)
+    columns:
+      - name: id_employee_contract
+        description: "Identifiant unique du contrat employé (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: type
+        description: "Type de contrat (CDI, CDD, stage…)."
+      - name: salary
+        description: "Salaire brut (decimal)."
+      - name: currency
+        description: "Devise du salaire."
+      - name: is_active
+        description: "Indique si le contrat est actif (booléen)."
+      - name: reference
+        description: "Référence interne du contrat."
+      - name: ends_at
+        description: "Date de fin de contrat (sentinel 2099-12-31 si null)."
+      - name: starts_at
+        description: "Date de début de contrat (sentinel 1970-01-01 si null)."
+      - name: created_at
+        description: "Date de création."
+      - name: employee_id
+        description: "Référence de l'employé."
   - name: stg_erp__employees
     description: "{{ doc('stg_erp__employees') }}"
-    # TODO: ajouter les colonnes + tests (unique/not_null sur la PK)
+    columns:
+      - name: id_employee
+        description: "Identifiant unique de l'employé (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: email
+        description: "Adresse email professionnelle."
+      - name: left_at
+        description: "Date de départ (sentinel 1970-01-01 si toujours présent)."
+      - name: hired_at
+        description: "Date d'embauche."
+      - name: is_active
+        description: "Indique si l'employé est actif (booléen)."
+      - name: last_name
+        description: "Nom de famille."
+      - name: first_name
+        description: "Prénom."
+      - name: created_at
+        description: "Date de création."
+      - name: deleted_at
+        description: "Date de suppression (soft delete)."
+      - name: position_id
+        description: "Référence du poste occupé."
+      - name: department_id
+        description: "Référence du département."
   - name: stg_erp__fiscal_years
     description: "{{ doc('stg_erp__fiscal_years') }}"
-    # TODO: ajouter les colonnes + tests (unique/not_null sur la PK)
+    columns:
+      - name: id_fiscal_year
+        description: "Identifiant unique de l'exercice fiscal (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: label
+        description: "Libellé de l'exercice fiscal (ex: FY2025)."
+      - name: ends_at
+        description: "Date de fin de l'exercice."
+      - name: is_closed
+        description: "Indique si l'exercice est clôturé (booléen)."
+      - name: starts_at
+        description: "Date de début de l'exercice."
+      - name: created_at
+        description: "Date de création."
   - name: stg_erp__inventory_count_adjustments
     description: "{{ doc('stg_erp__inventory_count_adjustments') }}"
-    # TODO: ajouter les colonnes + tests (unique/not_null sur la PK)
+    columns:
+      - name: id_inventory_count_adjustment
+        description: "Identifiant unique de l'ajustement d'inventaire (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: inventory_count_id
+        description: "Référence du comptage d'inventaire parent."
+      - name: component_id
+        description: "Référence du composant ajusté."
+      - name: location_id
+        description: "Référence de l'emplacement."
+      - name: reason
+        description: "Motif de l'ajustement."
+      - name: variance_qty
+        description: "Écart de quantité ajusté (entier)."
+      - name: validated_at
+        description: "Horodatage de validation."
+      - name: validated_by
+        description: "Utilisateur ayant validé l'ajustement."
+      - name: updated_at
+        description: "Horodatage de mise à jour (CDC)."
   - name: stg_erp__inventory_count_lines
     description: "{{ doc('stg_erp__inventory_count_lines') }}"
     columns:
@@ -206,7 +503,28 @@ models:
         description: "Emplacement où le comptage a été réalisé."
   - name: stg_erp__inventory_counts
     description: "{{ doc('stg_erp__inventory_counts') }}"
-    # TODO: ajouter les colonnes + tests (unique/not_null sur la PK)
+    columns:
+      - name: id_inventory_count
+        description: "Identifiant unique du comptage d'inventaire (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: status
+        description: "Statut du comptage (en cours, validé, annulé…)."
+      - name: reference
+        description: "Référence interne du comptage."
+      - name: counted_by
+        description: "Utilisateur ayant effectué le comptage."
+      - name: started_at
+        description: "Horodatage de début de comptage."
+      - name: completed_at
+        description: "Horodatage de fin de comptage."
+      - name: validated_at
+        description: "Horodatage de validation."
+      - name: warehouse_id
+        description: "Référence de l'entrepôt concerné."
+      - name: created_at
+        description: "Date de création."
   - name: stg_erp__journal_entries
     description: "{{ doc('stg_erp__journal_entries') }}"
     columns:
@@ -249,7 +567,24 @@ models:
         description: "Horodatage de la dernière modification (CDC)."
   - name: stg_erp__leave_types
     description: "{{ doc('stg_erp__leave_types') }}"
-    # TODO: ajouter les colonnes + tests (unique/not_null sur la PK)
+    columns:
+      - name: id_leave_type
+        description: "Identifiant unique du type de congé (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: code
+        description: "Code interne du type de congé."
+      - name: label
+        description: "Libellé du type de congé (ex: Congés payés)."
+      - name: is_paid
+        description: "Indique si le congé est rémunéré (booléen)."
+      - name: requires_approval
+        description: "Indique si une approbation est requise (booléen)."
+      - name: created_at
+        description: "Date de création."
+      - name: updated_at
+        description: "Date de dernière mise à jour (CDC)."
   - name: stg_erp__leaves
     description: "{{ doc('stg_erp__leaves') }}"
     columns:
@@ -278,13 +613,62 @@ models:
         description: "Horodatage de la dernière mise à jour (CDC)."
   - name: stg_erp__pc_models
     description: "{{ doc('stg_erp__pc_models') }}"
-    # TODO: ajouter les colonnes + tests (unique/not_null sur la PK)
+    columns:
+      - name: id_pc_model
+        description: "Identifiant unique du modèle PC (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: code
+        description: "Code interne du modèle."
+      - name: name
+        description: "Nom du modèle PC."
+      - name: is_active
+        description: "Indique si le modèle est actif (booléen)."
+      - name: created_at
+        description: "Date de création."
+      - name: deleted_at
+        description: "Date de suppression (soft delete)."
+      - name: product_id
+        description: "Référence du produit catalogue associé."
+      - name: description
+        description: "Description du modèle PC."
   - name: stg_erp__positions
     description: "{{ doc('stg_erp__positions') }}"
-    # TODO: ajouter les colonnes + tests (unique/not_null sur la PK)
+    columns:
+      - name: id_position
+        description: "Identifiant unique du poste (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: title
+        description: "Intitulé du poste."
+      - name: created_at
+        description: "Date de création."
+      - name: department_id
+        description: "Référence du département auquel appartient le poste."
   - name: stg_erp__product_compatibility
     description: "{{ doc('stg_erp__product_compatibility') }}"
-    # TODO: ajouter les colonnes + tests (unique/not_null sur la PK)
+    columns:
+      - name: id_product_compatibility
+        description: "Identifiant unique de la relation de compatibilité (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: note
+        description: "Note sur la compatibilité."
+      - name: level
+        description: "Niveau de compatibilité (ex: full, partial)."
+      - name: specs_match
+        description: "Indication sur la correspondance des specs."
+      - name: product_a_id
+        description: "Référence du premier produit."
+      - name: product_b_id
+        description: "Référence du second produit."
+      - name: compatibility_type
+        description: "Type de compatibilité."
+      - name: created_at
+        description: "Date de création."
   - name: stg_erp__product_images
     description: "{{ doc('stg_erp__product_images') }}"
     columns:
@@ -341,31 +725,204 @@ models:
         description: "Référence du produit."
   - name: stg_erp__products
     description: "{{ doc('stg_erp__products') }}"
-    # TODO: ajouter les colonnes + tests (unique/not_null sur la PK)
+    columns:
+      - name: id_product
+        description: "Identifiant unique du produit (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: sku
+        description: "Référence SKU du produit."
+      - name: name
+        description: "Nom du produit."
+      - name: slug
+        description: "Slug URL du produit."
+      - name: specs
+        description: "Spécifications techniques (JSON/string)."
+      - name: brand_id
+        description: "Référence de la marque."
+      - name: is_active
+        description: "Indique si le produit est actif (booléen)."
+      - name: weight_kg
+        description: "Poids en kilogrammes (decimal, 0 si null)."
+      - name: created_at
+        description: "Date de création."
+      - name: deleted_at
+        description: "Date de suppression (soft delete)."
+      - name: updated_at
+        description: "Date de dernière modification."
+      - name: category_id
+        description: "Référence de la catégorie produit."
+      - name: description
+        description: "Description longue du produit."
   - name: stg_erp__purchase_order_lines
     description: "{{ doc('stg_erp__purchase_order_lines') }}"
-    # TODO: ajouter les colonnes + tests (unique/not_null sur la PK)
+    columns:
+      - name: id_purchase_order_line
+        description: "Identifiant unique de la ligne de commande d'achat (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: quantity
+        description: "Quantité commandée (entier)."
+      - name: total_ht
+        description: "Montant total HT de la ligne (decimal)."
+      - name: unit_price
+        description: "Prix unitaire HT (decimal)."
+      - name: created_at
+        description: "Date de création."
+      - name: component_id
+        description: "Référence du composant commandé."
+      - name: purchase_order_id
+        description: "Référence de la commande d'achat parente."
   - name: stg_erp__purchase_orders
     description: "{{ doc('stg_erp__purchase_orders') }}"
-    # TODO: ajouter les colonnes + tests (unique/not_null sur la PK)
+    columns:
+      - name: id_purchase_order
+        description: "Identifiant unique de la commande d'achat (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: status
+        description: "Statut de la commande (draft, confirmed, received…)."
+      - name: currency
+        description: "Devise de la commande."
+      - name: total_ht
+        description: "Montant total HT (decimal)."
+      - name: reference
+        description: "Référence externe de la commande."
+      - name: created_at
+        description: "Date de création."
+      - name: deleted_at
+        description: "Date de suppression (soft delete)."
+      - name: ordered_at
+        description: "Date de passage de la commande."
+      - name: updated_at
+        description: "Date de dernière modification."
+      - name: expected_at
+        description: "Date de livraison attendue."
+      - name: supplier_id
+        description: "Référence du fournisseur."
   - name: stg_erp__purchase_receipt_lines
     description: "{{ doc('stg_erp__purchase_receipt_lines') }}"
-    # TODO: ajouter les colonnes + tests (unique/not_null sur la PK)
+    columns:
+      - name: id_purchase_receipt_line
+        description: "Identifiant unique de la ligne de réception (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: quantity
+        description: "Quantité reçue (entier)."
+      - name: condition
+        description: "État de la marchandise reçue."
+      - name: created_at
+        description: "Date de création."
+      - name: receipt_id
+        description: "Référence du bon de réception parent."
+      - name: component_id
+        description: "Référence du composant reçu."
   - name: stg_erp__purchase_receipts
     description: "{{ doc('stg_erp__purchase_receipts') }}"
-    # TODO: ajouter les colonnes + tests (unique/not_null sur la PK)
+    columns:
+      - name: id_purchase_receipt
+        description: "Identifiant unique du bon de réception (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: reference
+        description: "Référence interne du bon de réception."
+      - name: created_at
+        description: "Date de création."
+      - name: received_at
+        description: "Date de réception physique."
+      - name: purchase_order_id
+        description: "Référence de la commande d'achat associée."
   - name: stg_erp__purchase_returns
     description: "{{ doc('stg_erp__purchase_returns') }}"
-    # TODO: ajouter les colonnes + tests (unique/not_null sur la PK)
+    columns:
+      - name: id_purchase_return
+        description: "Identifiant unique du retour fournisseur (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: reason
+        description: "Motif du retour."
+      - name: status
+        description: "Statut du retour (pending, resolved…)."
+      - name: quantity
+        description: "Quantité retournée (entier)."
+      - name: reference
+        description: "Référence du retour."
+      - name: created_at
+        description: "Date de création."
+      - name: resolved_at
+        description: "Date de résolution."
+      - name: returned_at
+        description: "Date de retour physique."
+      - name: supplier_id
+        description: "Référence du fournisseur."
+      - name: component_id
+        description: "Référence du composant retourné."
+      - name: purchase_order_id
+        description: "Référence de la commande d'achat d'origine."
   - name: stg_erp__quality_check_items
     description: "{{ doc('stg_erp__quality_check_items') }}"
-    # TODO: ajouter les colonnes + tests (unique/not_null sur la PK)
+    columns:
+      - name: id_quality_check_item
+        description: "Identifiant unique de l'item de contrôle qualité (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: notes
+        description: "Notes sur l'item de contrôle."
+      - name: result
+        description: "Résultat du contrôle (pass, fail…)."
+      - name: check_name
+        description: "Nom du contrôle effectué."
+      - name: checked_at
+        description: "Horodatage du contrôle."
+      - name: actual_value
+        description: "Valeur mesurée lors du contrôle."
+      - name: expected_value
+        description: "Valeur attendue pour le contrôle."
+      - name: quality_check_id
+        description: "Référence du contrôle qualité parent."
   - name: stg_erp__quality_checks
     description: "{{ doc('stg_erp__quality_checks') }}"
-    # TODO: ajouter les colonnes + tests (unique/not_null sur la PK)
+    columns:
+      - name: id_quality_check
+        description: "Identifiant unique du contrôle qualité (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: notes
+        description: "Notes générales sur le contrôle."
+      - name: result
+        description: "Résultat global du contrôle (pass, fail…)."
+      - name: operator
+        description: "Opérateur ayant réalisé le contrôle."
+      - name: checked_at
+        description: "Horodatage du contrôle."
+      - name: work_order_id
+        description: "Référence de l'ordre de travail associé."
   - name: stg_erp__repair_order_lines
     description: "{{ doc('stg_erp__repair_order_lines') }}"
-    # TODO: ajouter les colonnes + tests (unique/not_null sur la PK)
+    columns:
+      - name: id_repair_order_line
+        description: "Identifiant unique de la ligne d'ordre de réparation (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: notes
+        description: "Notes sur la ligne de réparation."
+      - name: action
+        description: "Action effectuée (remplacement, réparation…)."
+      - name: quantity
+        description: "Quantité de composants utilisés (entier)."
+      - name: component_id
+        description: "Référence du composant utilisé."
+      - name: repair_order_id
+        description: "Référence de l'ordre de réparation parent."
   - name: stg_erp__repair_orders
     description: "{{ doc('stg_erp__repair_orders') }}"
     columns:
@@ -388,7 +945,22 @@ models:
         description: "Numéro de série de l'équipement."
   - name: stg_erp__serial_numbers
     description: "{{ doc('stg_erp__serial_numbers') }}"
-    # TODO: ajouter les colonnes + tests (unique/not_null sur la PK)
+    columns:
+      - name: id_serial_number
+        description: "Identifiant unique du numéro de série (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: serial
+        description: "Valeur du numéro de série."
+      - name: status
+        description: "Statut du numéro de série (en production, expédié…)."
+      - name: shipped_at
+        description: "Horodatage d'expédition (sentinel 1970-01-01 si null)."
+      - name: produced_at
+        description: "Horodatage de production (sentinel 1970-01-01 si null)."
+      - name: work_order_id
+        description: "Référence de l'ordre de travail ayant produit ce numéro de série."
   - name: stg_erp__stock_alerts
     description: "{{ doc('stg_erp__stock_alerts') }}"
     columns:
@@ -429,10 +1001,50 @@ models:
         description: "Référence de l'entrepôt."
   - name: stg_erp__supplier_contacts
     description: "{{ doc('stg_erp__supplier_contacts') }}"
-    # TODO: ajouter les colonnes + tests (unique/not_null sur la PK)
+    columns:
+      - name: id_supplier_contact
+        description: "Identifiant unique du contact fournisseur (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: role
+        description: "Rôle du contact chez le fournisseur."
+      - name: email
+        description: "Adresse email du contact."
+      - name: phone
+        description: "Numéro de téléphone."
+      - name: last_name
+        description: "Nom de famille du contact."
+      - name: created_at
+        description: "Date de création."
+      - name: first_name
+        description: "Prénom du contact."
+      - name: supplier_id
+        description: "Référence du fournisseur."
   - name: stg_erp__supplier_contracts
     description: "{{ doc('stg_erp__supplier_contracts') }}"
-    # TODO: ajouter les colonnes + tests (unique/not_null sur la PK)
+    columns:
+      - name: id_supplier_contract
+        description: "Identifiant unique du contrat fournisseur (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: supplier_id
+        description: "Référence du fournisseur."
+      - name: reference
+        description: "Référence interne du contrat."
+      - name: currency
+        description: "Devise du contrat."
+      - name: incoterm
+        description: "Incoterm appliqué (EXW, DDP…)."
+      - name: valid_from
+        description: "Date de début de validité."
+      - name: valid_until
+        description: "Date de fin de validité (sentinel 9999-12-31 si null)."
+      - name: payment_days
+        description: "Délai de paiement en jours (entier)."
+      - name: created_at
+        description: "Date de création."
   - name: stg_erp__supplier_evaluations
     description: "{{ doc('stg_erp__supplier_evaluations') }}"
     columns:
@@ -457,19 +1069,102 @@ models:
         description: "Date de création de l'enregistrement."
   - name: stg_erp__supplier_product_refs
     description: "{{ doc('stg_erp__supplier_product_refs') }}"
-    # TODO: ajouter les colonnes + tests (unique/not_null sur la PK)
+    columns:
+      - name: id_supplier_product_ref
+        description: "Identifiant unique de la référence produit fournisseur (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: ean13
+        description: "Code-barres EAN13 du composant."
+      - name: created_at
+        description: "Date de création."
+      - name: unit_price
+        description: "Prix unitaire fournisseur (decimal)."
+      - name: supplier_id
+        description: "Référence du fournisseur."
+      - name: component_id
+        description: "Référence du composant."
+      - name: supplier_sku
+        description: "Référence SKU du fournisseur."
+      - name: lead_time_days
+        description: "Délai de livraison en jours (entier)."
   - name: stg_erp__suppliers
     description: "{{ doc('stg_erp__suppliers') }}"
-    # TODO: ajouter les colonnes + tests (unique/not_null sur la PK)
+    columns:
+      - name: id_supplier
+        description: "Identifiant unique du fournisseur (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: code
+        description: "Code interne du fournisseur."
+      - name: name
+        description: "Nom du fournisseur."
+      - name: country
+        description: "Pays du fournisseur."
+      - name: website
+        description: "Site web du fournisseur."
+      - name: is_active
+        description: "Indique si le fournisseur est actif (booléen)."
+      - name: created_at
+        description: "Date de création."
+      - name: deleted_at
+        description: "Date de suppression (soft delete)."
+      - name: updated_at
+        description: "Date de dernière modification."
   - name: stg_erp__tags
     description: "{{ doc('stg_erp__tags') }}"
-    # TODO: ajouter les colonnes + tests (unique/not_null sur la PK)
+    columns:
+      - name: id_tag
+        description: "Identifiant unique du tag (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: name
+        description: "Nom du tag."
+      - name: slug
+        description: "Slug unique du tag."
+      - name: created_at
+        description: "Date de création."
   - name: stg_erp__timesheet_lines
     description: "{{ doc('stg_erp__timesheet_lines') }}"
-    # TODO: ajouter les colonnes + tests (unique/not_null sur la PK)
+    columns:
+      - name: id_timesheet_line
+        description: "Identifiant unique de la ligne de feuille de temps (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: timesheet_id
+        description: "Référence de la feuille de temps parente."
+      - name: day
+        description: "Jour de la ligne (date)."
+      - name: type
+        description: "Type d'activité (projet, formation, absence…)."
+      - name: hours
+        description: "Nombre d'heures travaillées (decimal)."
+      - name: notes
+        description: "Notes / commentaires (nullable)."
+      - name: updated_at
+        description: "Horodatage de mise à jour (CDC)."
   - name: stg_erp__timesheets
     description: "{{ doc('stg_erp__timesheets') }}"
-    # TODO: ajouter les colonnes + tests (unique/not_null sur la PK)
+    columns:
+      - name: id_timesheet
+        description: "Identifiant unique de la feuille de temps (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: employee_id
+        description: "Référence de l'employé."
+      - name: week_start
+        description: "Date de début de la semaine (lundi)."
+      - name: status
+        description: "Statut de la feuille (draft, submitted, approved…)."
+      - name: total_hours
+        description: "Total d'heures de la semaine (decimal)."
+      - name: created_at
+        description: "Date de création."
   - name: stg_erp__vendor_invoice_lines
     description: "{{ doc('stg_erp__vendor_invoice_lines') }}"
     columns:
@@ -492,7 +1187,34 @@ models:
         description: "Référence de la facture fournisseur associée."
   - name: stg_erp__vendor_invoices
     description: "{{ doc('stg_erp__vendor_invoices') }}"
-    # TODO: ajouter les colonnes + tests (unique/not_null sur la PK)
+    columns:
+      - name: id_vendor_invoice
+        description: "Identifiant unique de la facture fournisseur (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: due_at
+        description: "Date d'échéance de la facture."
+      - name: status
+        description: "Statut de la facture (draft, validated, paid…)."
+      - name: paid_at
+        description: "Horodatage de paiement (null si non payée)."
+      - name: currency
+        description: "Devise de la facture."
+      - name: total_ht
+        description: "Montant total HT (decimal)."
+      - name: issued_at
+        description: "Date d'émission de la facture."
+      - name: reference
+        description: "Référence / numéro de facture fournisseur."
+      - name: total_ttc
+        description: "Montant total TTC (decimal)."
+      - name: created_at
+        description: "Date de création dans le système."
+      - name: supplier_id
+        description: "Référence du fournisseur."
+      - name: purchase_order_id
+        description: "Référence de la commande d'achat associée."
   - name: stg_erp__warehouse_locations
     description: "{{ doc('stg_erp__warehouse_locations') }}"
     columns:
@@ -555,13 +1277,95 @@ models:
         description: "Durée de la garantie en mois."
   - name: stg_erp__work_order_lines
     description: "{{ doc('stg_erp__work_order_lines') }}"
-    # TODO: ajouter les colonnes + tests (unique/not_null sur la PK)
+    columns:
+      - name: id_work_order_line
+        description: "Identifiant unique de la ligne d'ordre de travail (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: work_order_id
+        description: "Référence de l'ordre de travail parent."
+      - name: component_id
+        description: "Référence du composant requis."
+      - name: qty_planned
+        description: "Quantité planifiée (entier)."
+      - name: qty_consumed
+        description: "Quantité réellement consommée (entier)."
+      - name: created_at
+        description: "Date de création."
+      - name: updated_at
+        description: "Date de mise à jour (CDC)."
   - name: stg_erp__work_order_step_logs
     description: "{{ doc('stg_erp__work_order_step_logs') }}"
-    # TODO: ajouter les colonnes + tests (unique/not_null sur la PK)
+    columns:
+      - name: id_work_order_step_log
+        description: "Identifiant unique du log d'étape (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: notes
+        description: "Notes sur l'action réalisée."
+      - name: action
+        description: "Action effectuée à cette étape."
+      - name: step_id
+        description: "Référence de l'étape de l'ordre de travail."
+      - name: created_at
+        description: "Horodatage de l'action (sentinel 1970-01-01 si null)."
+      - name: employee_id
+        description: "Référence de l'employé ayant réalisé l'action."
+      - name: duration_minutes
+        description: "Durée de l'action en minutes (entier)."
   - name: stg_erp__work_order_steps
     description: "{{ doc('stg_erp__work_order_steps') }}"
-    # TODO: ajouter les colonnes + tests (unique/not_null sur la PK)
+    columns:
+      - name: id_work_order_step
+        description: "Identifiant unique de l'étape d'ordre de travail (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: seq
+        description: "Numéro de séquence de l'étape (entier)."
+      - name: name
+        description: "Nom de l'étape."
+      - name: status
+        description: "Statut de l'étape (pending, in_progress, done…)."
+      - name: created_at
+        description: "Date de création."
+      - name: started_at
+        description: "Horodatage de début de l'étape."
+      - name: assigned_to
+        description: "Employé assigné à l'étape."
+      - name: description
+        description: "Description détaillée de l'étape."
+      - name: completed_at
+        description: "Horodatage de fin de l'étape."
+      - name: work_order_id
+        description: "Référence de l'ordre de travail parent."
   - name: stg_erp__work_orders
     description: "{{ doc('stg_erp__work_orders') }}"
-    # TODO: ajouter les colonnes + tests (unique/not_null sur la PK)
+    columns:
+      - name: id_work_order
+        description: "Identifiant unique de l'ordre de travail (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: status
+        description: "Statut de l'ordre (draft, in_progress, completed…)."
+      - name: quantity
+        description: "Quantité à produire (entier)."
+      - name: reference
+        description: "Référence interne de l'ordre."
+      - name: created_at
+        description: "Date de création (sentinel 1970-01-01 si null)."
+      - name: deleted_at
+        description: "Date de suppression (sentinel 1970-01-01 si null)."
+      - name: planned_at
+        description: "Date de production planifiée."
+      - name: started_at
+        description: "Horodatage de début (sentinel 1970-01-01 si null)."
+      - name: updated_at
+        description: "Horodatage de mise à jour (sentinel 1970-01-01 si null)."
+      - name: pc_model_id
+        description: "Référence du modèle PC à produire."
+      - name: completed_at
+        description: "Horodatage de fin (sentinel 1970-01-01 si null)."

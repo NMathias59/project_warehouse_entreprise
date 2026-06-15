@@ -19,9 +19,9 @@ with work_centers as (
 time_records as (
     select
         work_center_id,
-        production_minutes,
-        setup_minutes,
-        downtime_minutes
+        if(record_type = 'production', duration_minutes, 0) as production_minutes,
+        if(record_type = 'setup',      duration_minutes, 0) as setup_minutes,
+        if(record_type = 'downtime',   duration_minutes, 0) as downtime_minutes
     from {{ ref('fct_mes_time_records') }}
 ),
 

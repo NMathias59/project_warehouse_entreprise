@@ -14,9 +14,13 @@ sources:
 
     tables:
       - name: products
+        identifier: product_definitions
       - name: product_versions
+        identifier: product_revisions
       - name: bom_headers
       - name: bom_lines
       - name: documents
       - name: change_requests
+        identifier: change_orders
       - name: certifications
+        identifier: documents

@@ -79,4 +79,3 @@ sources:
       - name: work_order_step_logs
       - name: work_order_steps
       - name: work_orders
-      - name: alembic_version

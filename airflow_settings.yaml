@@ -1,0 +1,5 @@
+airflow:
+  pools:
+    - pool_name: airbyte_pool
+      pool_slot: 3
+      pool_description: "Limite syncs Airbyte Docker local"

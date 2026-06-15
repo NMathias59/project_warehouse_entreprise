@@ -15,8 +15,13 @@ sources:
     tables:
       - name: campaigns
       - name: leads
+        identifier: audiences
       - name: email_sends
+        identifier: sends
       - name: email_events
+        identifier: send_events
       - name: ad_performance
+        identifier: campaigns
       - name: utm_links
+        identifier: campaigns
       - name: audiences

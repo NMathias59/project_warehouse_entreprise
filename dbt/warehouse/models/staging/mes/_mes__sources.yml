@@ -15,9 +15,14 @@ sources:
     tables:
       - name: work_centers
       - name: shifts
+        identifier: work_centers
       - name: production_orders
       - name: production_operations
+        identifier: operations
       - name: time_records
+        identifier: job_card_events
       - name: material_consumptions
+        identifier: material_issues
       - name: defects
       - name: machine_downtime
+        identifier: downtime_events

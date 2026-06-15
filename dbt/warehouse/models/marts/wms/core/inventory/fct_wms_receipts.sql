@@ -2,6 +2,7 @@
     materialized='table',
     engine='MergeTree()',
     order_by='(id_receipt_line, received_at)',
+    settings={'allow_nullable_key': 1},
     tags=['marts', 'wms', 'fct']
 ) }}
 

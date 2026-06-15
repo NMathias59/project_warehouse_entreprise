@@ -2,57 +2,21 @@
     materialized='table',
     engine='MergeTree()',
     order_by='(shipped_at)',
+    settings={'allow_nullable_key': 1},
     tags=['reports', 'wms', 'operations']
 ) }}
 
-with shipments as (
-    select
-        id_shipment,
-        id_shipment_line,
-        reference,
-        status,
-        warehouse_id,
-        shipped_at
-    from {{ ref('fct_wms_shipments') }}
-),
-
-picking as (
-    select
-        shipment_id,
-        completion_rate,
-        duration_minutes
-    from {{ ref('fct_wms_picking_orders') }}
-),
-
-shipment_agg as (
-    select
-        id_shipment,
-        reference,
-        status,
-        warehouse_id,
-        shipped_at,
-        count() as nb_lines
-    from shipments
-    group by
-        id_shipment,
-        reference,
-        status,
-        warehouse_id,
-        shipped_at
-),
-
-final as (
-    select
-        s.id_shipment,
-        s.reference,
-        s.status,
-        s.warehouse_id,
-        s.shipped_at,
-        s.nb_lines,
-        p.completion_rate,
-        p.duration_minutes
-    from shipment_agg as s
-    left join picking as p on p.shipment_id = s.id_shipment
-)
-
-select * from final
+select
+    s.id_shipment,
+    any(s.reference)            as reference,
+    any(s.status)               as status,
+    any(s.warehouse_id)         as warehouse_id,
+    any(s.shipped_at)           as shipped_at,
+    count()                     as nb_lines,
+    any(p.completion_rate)      as completion_rate,
+    any(p.duration_minutes)     as duration_minutes
+from {{ ref('fct_wms_shipments') }} as s
+left join {{ ref('fct_wms_picking_orders') }} as p
+    on p.shipment_id = s.id_shipment
+group by
+    s.id_shipment

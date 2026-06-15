@@ -17,10 +17,16 @@ sources:
       - name: positions
       - name: employees
       - name: contracts
+        identifier: employees
       - name: payslips
+        identifier: payroll
       - name: payslip_lines
+        identifier: payroll
       - name: absence_types
+        identifier: leave_requests
       - name: absences
+        identifier: leave_requests
       - name: training_sessions
+        identifier: training_courses
       - name: training_enrollments
       - name: performance_reviews

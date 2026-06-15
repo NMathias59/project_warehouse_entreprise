@@ -14,10 +14,16 @@ sources:
 
     tables:
       - name: technicians
+        identifier: agents
       - name: tickets
       - name: ticket_messages
+        identifier: ticket_comments
       - name: ticket_history
+        identifier: ticket_events
       - name: interventions
+        identifier: repairs
       - name: spare_parts_used
+        identifier: rma_lines
       - name: warranties
       - name: customer_satisfaction
+        identifier: satisfaction_surveys

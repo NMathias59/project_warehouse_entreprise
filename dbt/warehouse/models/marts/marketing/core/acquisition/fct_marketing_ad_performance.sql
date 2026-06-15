@@ -2,6 +2,7 @@
     materialized='table',
     engine='MergeTree()',
     order_by='(campaign_id, date)',
+    settings={'allow_nullable_key': 1},
     tags=['marts', 'marketing', 'fct']
 ) }}
 

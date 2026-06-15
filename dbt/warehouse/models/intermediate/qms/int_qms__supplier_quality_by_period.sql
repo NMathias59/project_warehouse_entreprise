@@ -1,4 +1,4 @@
-{{ config(materialized='ephemeral', tags=['intermediate', 'qms']) }}
+{{ config(materialized='view', tags=['intermediate', 'qms']) }}
 
 with supplier_evaluations as (
     select * from {{ ref('stg_qms__supplier_evaluations') }}
@@ -6,7 +6,7 @@ with supplier_evaluations as (
 
 select
     supplier_id,
-    evaluation_year,
+    evaluation_period_year,
     count(id_supplier_evaluation)          as nb_evaluations,
     avg(overall_score)                     as avg_overall_score,
     avg(quality_score)                     as avg_quality_score,
@@ -17,4 +17,4 @@ select
 from supplier_evaluations
 group by
     supplier_id,
-    evaluation_year
+    evaluation_period_year

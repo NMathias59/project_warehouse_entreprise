@@ -11,18 +11,12 @@ deduped as (
 
     select
         id,
-        argMax(supplier_id,                _airbyte_extracted_at) as supplier_id,
-        argMax(evaluation_period_year,     _airbyte_extracted_at) as evaluation_period_year,
-        argMax(evaluation_period_quarter,  _airbyte_extracted_at) as evaluation_period_quarter,
-        argMax(overall_score,              _airbyte_extracted_at) as overall_score,
-        argMax(delivery_score,             _airbyte_extracted_at) as delivery_score,
-        argMax(quality_score,              _airbyte_extracted_at) as quality_score,
-        argMax(responsiveness_score,       _airbyte_extracted_at) as responsiveness_score,
-        argMax(status,                     _airbyte_extracted_at) as status,
-        argMax(evaluated_by,               _airbyte_extracted_at) as evaluated_by,
-        argMax(created_at,                 _airbyte_extracted_at) as created_at,
-        argMax(updated_at,                 _airbyte_extracted_at) as updated_at,
-        max(_airbyte_extracted_at)                                as latest_extracted_at
+        argMax(supplier_ref,  _airbyte_extracted_at) as supplier_id,
+        argMax(overall_score, _airbyte_extracted_at) as overall_score,
+        argMax(supplier_ref,  _airbyte_extracted_at) as evaluated_by,
+        argMax(created_at,    _airbyte_extracted_at) as created_at,
+        argMax(updated_at,    _airbyte_extracted_at) as updated_at,
+        max(_airbyte_extracted_at)                   as latest_extracted_at
     from source
     group by id
 
@@ -31,13 +25,13 @@ deduped as (
 select
     cast(id                                        as varchar)       as id_supplier_evaluation,
     cast(coalesce(supplier_id, '')                 as varchar)       as supplier_id,
-    coalesce(evaluation_period_year, 0)                              as evaluation_period_year,
-    coalesce(evaluation_period_quarter, 0)                           as evaluation_period_quarter,
+    0                                                                as evaluation_period_year,
+    0                                                                as evaluation_period_quarter,
     cast(coalesce(overall_score, 0)                as decimal(18,2)) as overall_score,
-    cast(coalesce(delivery_score, 0)               as decimal(18,2)) as delivery_score,
-    cast(coalesce(quality_score, 0)                as decimal(18,2)) as quality_score,
-    cast(coalesce(responsiveness_score, 0)         as decimal(18,2)) as responsiveness_score,
-    cast(coalesce(status, '')                      as varchar)       as status,
+    cast(0                                         as decimal(18,2)) as delivery_score,
+    cast(0                                         as decimal(18,2)) as quality_score,
+    cast(0                                         as decimal(18,2)) as responsiveness_score,
+    cast(''                                        as varchar)       as status,
     cast(coalesce(evaluated_by, '')                as varchar)       as evaluated_by,
     cast(created_at                                as timestamp)     as created_at,
     toDateTimeOrNull(toString(updated_at))                           as updated_at,

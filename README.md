@@ -1,920 +1,1182 @@
-# 🏭 Project Warehouse Entreprise — Data Platform ERP + Marketplace + CRM
+# Data Warehouse Entreprise — Pipeline ERP/CRM/Marketplace vers ClickHouse
 
-> Pipeline de données complet d'un ERP, d'une marketplace e-commerce **et d'un CRM** vers un Data Warehouse ClickHouse — ingestion via **Airbyte** (self-hosted Docker), orchestration **Apache Airflow** (Astronomer Cosmos) et transformations **dbt**.
+> Plateforme analytique complète couvrant **12 domaines métier** d'une entreprise industrielle : ingestion via **Airbyte** (self-hosted), orchestration via **Apache Airflow**, transformations via **dbt Core**, stockage dans **ClickHouse 25.7**.
+> **436 modèles · 878 tests · 12 sources · 6 BI datamarts cross-domaines**
 
 ---
 
-## 📋 Table des matières
+## Table des matières
 
 1. [Vue d'ensemble](#1-vue-densemble)
-2. [Architecture technique](#2-architecture-technique)
-3. [Structure du projet](#3-structure-du-projet)
-4. [Prérequis](#4-prérequis)
-5. [Installation et démarrage](#5-installation-et-démarrage)
-6. [Projet dbt — Détail](#6-projet-dbt--détail)
-   - [Couche Staging](#61-couche-staging)
-   - [Couche Intermediate](#62-couche-intermediate)
-   - [Couche Marts](#63-couche-marts)
-   - [Couche Reports](#64-couche-reports)
-7. [Commandes dbt courantes](#7-commandes-dbt-courantes)
-8. [Macros personnalisées](#8-macros-personnalisées)
-9. [Orchestration Airflow](#9-orchestration-airflow)
-10. [Bonnes pratiques appliquées](#10-bonnes-pratiques-appliquées)
-11. [Sécurité — Credentials](#11-sécurité--credentials)
-12. [Troubleshooting ClickHouse](#12-troubleshooting-clickhouse)
+2. [Stack technique](#2-stack-technique)
+3. [Architecture](#3-architecture)
+4. [Domaines métier couverts](#4-domaines-métier-couverts)
+5. [Structure du projet](#5-structure-du-projet)
+6. [Couche Staging](#6-couche-staging)
+7. [Couche Intermediate](#7-couche-intermediate)
+8. [Couche Marts — Core](#8-couche-marts--core)
+9. [Couche Marts — Reports](#9-couche-marts--reports)
+10. [BI Datamarts cross-domaines](#10-bi-datamarts-cross-domaines)
+11. [Orchestration Airflow](#11-orchestration-airflow)
+12. [Spécificités ClickHouse 25.7](#12-spécificités-clickhouse-257)
+13. [Commandes dbt](#13-commandes-dbt)
+14. [Installation et démarrage](#14-installation-et-démarrage)
+15. [Macros personnalisées](#15-macros-personnalisées)
+16. [Bonnes pratiques appliquées](#16-bonnes-pratiques-appliquées)
+17. [Troubleshooting](#17-troubleshooting)
 
 ---
 
 ## 1. Vue d'ensemble
 
-Ce projet implémente un entrepôt de données analytique pour **trois systèmes sources** : un ERP, une marketplace e-commerce et un CRM, plus un domaine **WMS** (Warehouse Management System).
+Ce projet implémente un entrepôt de données analytique pour une **entreprise industrielle** disposant de plusieurs systèmes sources hétérogènes. L'objectif est de centraliser, nettoyer et modéliser les données pour alimenter des outils BI et des analyses décisionnelles.
 
-**Domaines ERP** (source `DB_WH_ERP`) :
+### Périmètre fonctionnel
 
-| Domaine métier      | Description                                         |
-|---------------------|-----------------------------------------------------|
-| 💰 **Finance**      | Budgets, rapprochements bancaires, journaux comptables, transactions |
-| 👤 **RH**           | Employés, contrats, congés, feuilles de temps        |
-| 📦 **Inventaire**   | Stock composants, alertes, mouvements, n° de série, inventaires |
-| 🛒 **Achats**       | Bons de commande, fournisseurs, réceptions, retours, factures fournisseurs |
-| 🏷️ **Catalogue**    | Produits, marques, catégories, composants, modèles PC, BOM |
-| ⚙️ **Opérations**   | Ordres de fabrication, réparations, qualité (staging uniquement) |
+| # | Domaine | Système source | Base ClickHouse |
+|---|---------|---------------|-----------------|
+| 1 | **ERP** | PostgreSQL ERP | `DB_WH_ERP` |
+| 2 | **CRM** | PostgreSQL CRM | `DB_WH_CRM` |
+| 3 | **Marketplace** | PostgreSQL MKT | `DB_WH_MKT` |
+| 4 | **WMS** — Warehouse Management | PostgreSQL WMS | `DB_WH_WMS` |
+| 5 | **MES** — Manufacturing Execution | PostgreSQL MES | `DB_WH_MES` |
+| 6 | **Marketing** — Campagnes & leads | PostgreSQL MKG | `DB_WH_MARKETING` |
+| 7 | **SAV** — Service Après-Vente | PostgreSQL SAV | `DB_WH_SAV` |
+| 8 | **PLM** — Product Lifecycle Mgmt | PostgreSQL PLM | `DB_WH_PLM` |
+| 9 | **SIRH** — RH & paie | PostgreSQL SIRH | `DB_WH_SIRH` |
+| 10 | **QMS** — Quality Management | PostgreSQL QMS | `DB_WH_QMS` |
+| 11 | **Finance** — Comptabilité & budget | PostgreSQL FIN | `DB_WH_FINANCE` |
+| 12 | **Procurement** — Achats | PostgreSQL PROC | `DB_WH_PROCUREMENT` |
+| + | **BI datamarts** cross-domaines | — | `DB_WH_BI_*` |
 
-**Domaines Marketplace** (source `DB_WH_MKT`) :
+### Chiffres clés
 
-| Domaine métier         | Description                                       |
-|------------------------|---------------------------------------------------|
-| 🛍️ **Commerce**        | Commandes, paiements, remboursements, retours, clients, promotions, codes remise |
-| 🏷️ **Catalogue**       | Produits, marques, catégories, prix, bundles PC   |
-| 🚚 **Logistique**      | Expéditions, transporteurs, méthodes/zones de livraison, stock |
-| 🎧 **Service client**  | Tickets support, avis produits                    |
-
-**Domaine WMS** (source `DB_WH_WMS`) :
-
-| Domaine métier         | Description                                                   |
-|------------------------|---------------------------------------------------------------|
-| 📍 **Emplacements**    | Locations d'entrepôt (allées, racks, niveaux, zones)          |
-| 📥 **Réceptions**      | Réceptions marchandises, lignes de réception                  |
-| 📤 **Expéditions**     | Expéditions, lignes d'expédition                              |
-| 🛒 **Picking**         | Ordres de picking, lignes de picking                          |
-| 📦 **Stock**           | Mouvements de stock, ajustements d'inventaire                 |
-
-**Domaines CRM** (source `DB_WH_CRM`) :
-
-| Domaine métier       | Description                                              |
-|----------------------|----------------------------------------------------------|
-| 🏢 **Comptes**       | Comptes clients/prospects, LTV, segmentation, portefeuille |
-| 👥 **Contacts**      | Contacts rattachés aux comptes, liens cross-domaine       |
-| 💼 **Ventes**        | Opportunités, pipeline, probabilité, montant estimé       |
-| 📞 **Activités**     | Appels, emails, réunions, demos — historique commercial   |
-| 📋 **Tâches**        | Tâches assignées, suivi délais, complétion               |
-| 📊 **Pipeline**      | Historique des changements d'étape, vélocité de vente    |
-
-**Stack technique :**
-
-```
-ERP (PostgreSQL)   Marketplace (PostgreSQL)   CRM (PostgreSQL)
-        │                   │                       │
-        └───────────────────┼───────────────────────┘
-                            ▼
-          Airbyte (self-hosted Docker)
-          (ingestion CDC / full refresh)
-                            │
-                            ▼ tables raw dans ClickHouse
-          Apache Airflow  ──────────────  Astronomer Cosmos
-          (orchestration)                  (DAG dbt natif)
-                            │
-                            ▼
-                       dbt Core 1.11.2
-                       (transformations)
-                            │
-                            ▼
-                    ClickHouse 25.x
-                    (Data Warehouse)
-          schemas: DB_WH_ERP / DB_WH_MKT / DB_WH_CRM
-```
+| Métrique | Valeur |
+|----------|--------|
+| Modèles dbt | **436** |
+| Tests dbt | **878** |
+| Sources déclarées | **208** |
+| Macros dbt | **900** |
+| Domaines sources | **12** |
+| BI datamarts | **6** |
+| Targets dbt | **18** (12 domaines + 6 BI) |
 
 ---
 
-## 2. Architecture technique
+## 2. Stack technique
 
-### Composants
+| Composant | Version | Rôle |
+|-----------|---------|------|
+| **ClickHouse** | 25.7.1 | Moteur OLAP — stockage analytique, moteur MergeTree |
+| **dbt Core** | 1.11.2 | Framework de transformation SQL |
+| **dbt-clickhouse** | 1.9.8 | Adapter dbt ↔ ClickHouse |
+| **Apache Airflow** | 3.x (Astronomer) | Orchestration des pipelines |
+| **astronomer-cosmos** | 1.10.0 | Intégration native dbt dans Airflow |
+| **Airbyte OSS** | self-hosted Docker | Ingestion CDC/full-refresh depuis 12 PostgreSQL |
+| **Docker** | — | Conteneurisation Airflow + Airbyte |
+| **Python** | 3.12 | Runtime Airflow + dbt venv isolé |
 
-| Composant          | Version      | Rôle                                        |
-|--------------------|--------------|---------------------------------------------|
-| **Airbyte**        | self-hosted  | Ingestion ERP → ClickHouse (raw)            |
-| dbt Core           | 1.11.2       | Transformations SQL                         |
-| dbt-clickhouse     | 1.9.8        | Adapter ClickHouse pour dbt                 |
-| ClickHouse         | 25.7.x       | Moteur OLAP, stockage analytique            |
-| Apache Airflow     | Astronomer   | Orchestration des DAGs                      |
-| astronomer-cosmos  | 1.10.0       | Intégration native dbt ↔ Airflow            |
-| Docker             | —            | Conteneurisation Airbyte + Airflow          |
+### Pourquoi ClickHouse ?
+
+ClickHouse est un moteur OLAP orienté colonnes offrant des performances de lecture analytique bien supérieures à PostgreSQL sur des volumes importants. Ses caractéristiques utilisées dans ce projet :
+
+- **MergeTree** : moteur de table principal, performant sur `ORDER BY` et `GROUP BY`
+- **Vues** : légères, toujours fraîches, sans coût de stockage
+- **`argMax(col, timestamp)`** : déduplication UPSERT sur les tables Airbyte (`_airbyte_extracted_at`)
+- **`countIf` / `sumIf`** : agrégations conditionnelles natives
+- **`toStartOfWeek` / `toMonth`** : fonctions temporelles intégrées
+- **`allow_nullable_key`** : paramètre MergeTree pour `ORDER BY` sur colonnes nullables
+
+---
+
+## 3. Architecture
 
 ### Flux de données complet
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│  SOURCES (ERP + Marketplace)                                │
-│  PostgreSQL / autre SGBDR                                   │
-└──────────────────────────┬──────────────────────────────────┘
-                           │  Airbyte Connectors
-                           │  (full refresh ou CDC)
-                           ▼
-┌─────────────────────────────────────────────────────────────┐
-│  INGESTION — Airbyte self-hosted (Docker)                   │
-│  • UI : http://localhost:8000                               │
-│  • Connecteurs : Postgres Source → ClickHouse Destination   │
-│  • Sync mode : Full Refresh / Incremental (CDC)             │
-│  • Destinations : DB_WH_ERP, DB_WH_MKT et DB_WH_CRM          │
-└──────────────────────────┬──────────────────────────────────┘
-                           │  Tables raw ClickHouse
-                           ▼
-┌─────────────────────────────────────────────────────────────┐
-│  TRANSFORMATION — dbt Core 1.11.2 (via Airflow + Cosmos)   │
-│                                                             │
-│  staging/   → views    (nettoyage, cast, rename)            │
-│  intermediate/ → ephemeral (logique métier, CTEs)           │
-│  marts/.../core/    → tables (MergeTree, dims + facts)      │
-│  marts/.../reports/ → tables (dénormalisées, prêtes BI)     │
-└──────────────────────────┬──────────────────────────────────┘
-                           │
-                           ▼
-┌─────────────────────────────────────────────────────────────┐
-│  DATA WAREHOUSE — ClickHouse 25.x                           │
-│  Schemas : DB_WH_ERP / DB_WH_MKT / DB_WH_CRM                │
-│  Consommé par : BI tools, dashboards, analyses              │
-└─────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────┐
+│  SOURCES  (12 × PostgreSQL)                                          │
+│  ERP · CRM · MKT · WMS · MES · MKG · SAV · PLM · SIRH · QMS        │
+│  FINANCE · PROCUREMENT                                               │
+└─────────────────────────────┬────────────────────────────────────────┘
+                              │  Connecteurs Airbyte
+                              │  Full Refresh | CDC Incremental
+                              ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│  INGESTION — Airbyte OSS (Docker, http://localhost:8000)             │
+│  • Auth OAuth2 client_credentials                                    │
+│  • 12 connexions PostgreSQL → ClickHouse                             │
+│  • Tables raw dans ClickHouse (colonnes Airbyte : _airbyte_*)        │
+│  • Déduplication gérée côté dbt (argMax sur _airbyte_extracted_at)   │
+└─────────────────────────────┬────────────────────────────────────────┘
+                              │  Tables raw ClickHouse
+                              ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│  ORCHESTRATION — Apache Airflow (Astronomer, http://localhost:8080)  │
+│                                                                      │
+│  Phase 1+2 — 12 domaines en parallèle (pool airbyte_pool=3) :       │
+│    airbyte_trigger_<d> → airbyte_wait_<d>                            │
+│                        → dbt_run_<d> → dbt_test_<d>                 │
+│                                                                      │
+│  Phase 3 — BI datamarts (après tous les dbt_test_*) :               │
+│    dbt_run_bi_production → dbt_test_bi_production                    │
+│                         → dbt_run_bi_logistique                     │
+│    dbt_run_bi_marketing / bi_finance / bi_rh / bi_sav               │
+└─────────────────────────────┬────────────────────────────────────────┘
+                              │  BashOperator → dbt venv isolé
+                              ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│  TRANSFORMATION — dbt Core 1.11.2                                    │
+│                                                                      │
+│  staging/      → VIEW        nettoyage, cast, rename, dédup          │
+│  intermediate/ → VIEW        logique métier, enrichissement, JOINs   │
+│  marts/core/   → TABLE       MergeTree, dims + faits, BI-ready       │
+│  marts/reports/→ TABLE       MergeTree, large dénormalisé BI         │
+│  marts/BI_*/   → TABLE       Cross-domaines, datamarts analytiques   │
+└─────────────────────────────┬────────────────────────────────────────┘
+                              │
+                              ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│  DATA WAREHOUSE — ClickHouse 25.7                                    │
+│  18 schémas : DB_WH_{ERP,CRM,MKT,WMS,MES,MARKETING,SAV,PLM,         │
+│               SIRH,QMS,FINANCE,PROCUREMENT}                          │
+│               DB_WH_BI_{PRODUCTION,LOGISTIQUE,MARKETING,             │
+│                          FINANCE,RH,SAV}                             │
+│  Consommé par : outils BI, notebooks analytiques, dashboards         │
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
-### Schémas ClickHouse
+### Matérialisations dbt par couche
 
-| Target dbt       | Schéma ClickHouse      | Usage                         |
-|------------------|------------------------|-------------------------------|
-| `erp`            | `DB_WH_ERP`            | Entrepôt ERP (par défaut)     |
-| `mkt`            | `DB_WH_MKT`            | Entrepôt Marketplace          |
-| `crm`            | `DB_WH_CRM`            | Entrepôt CRM                  |
-| `wms`            | `DB_WH_WMS`            | Entrepôt WMS                  |
-| `mes/marketing/sav/plm/sirh/qms/finance/procurement` | `DB_WH_*` | Domaines étendus |
-| `bi_*`           | `DB_WH_BI_*`           | Datamarts BI cross-domaines   |
+| Couche | Matérialisation | Moteur ClickHouse | Raison |
+|--------|----------------|-------------------|--------|
+| `staging/` | `view` | — | Toujours frais, aucun coût de stockage |
+| `intermediate/` | `view` | — | Testable directement, évite les CTEs imbriquées ClickHouse |
+| `marts/core/` | `table` | `MergeTree()` | Performant pour requêtes BI |
+| `marts/core/` (grandes tables) | `incremental` | `MergeTree()` | Append sur fenêtre glissante |
+| `marts/reports/` | `table` | `MergeTree()` | Large dénormalisé, prêt BI |
+| `marts/BI_*/` | `table` | `MergeTree()` | Cross-domaines, datamarts analytiques |
 
-### Matérialisations par couche
-
-```
-staging/        → view        (léger, toujours frais, pas d'objet physique)
-intermediate/   → ephemeral   (inline CTE, pas d'objet créé en base)
-marts/.../core/ → table       (MergeTree, performant pour la BI)
-                → incremental (grandes tables de faits, stratégie append)
-marts/.../reports/ → table    (MergeTree, large/dénormalisé pour la BI)
-```
+> **Note architecture intermédiaire** : les modèles `intermediate/` ont été migrés de `ephemeral` vers `view` pour contourner une limitation ClickHouse 25.7 avec le nouvel analyseur de requêtes (`enable_analyzer=1` par défaut). Un `ephemeral` inliné dans un mart produisait des CTEs imbriquées que ClickHouse 25.7 ne peut pas résoudre quand les sous-CTEs référencent des VIEWs.
 
 ---
 
-## 3. Structure du projet
+## 4. Domaines métier couverts
+
+### ERP (`DB_WH_ERP`)
+Système de gestion d'entreprise principal — comptabilité, RH, achats, inventaire, catalogue produits, production.
+
+**Sous-domaines :** Finance interne · Ressources Humaines · Inventaire composants · Achats fournisseurs · Catalogue produits/BOM · Production/réparations
+
+### CRM (`DB_WH_CRM`)
+Gestion de la relation client — pipeline commercial, activités, comptes, contacts.
+
+**Sous-domaines :** Comptes clients · Contacts · Opportunités · Activités commerciales · Pipeline · Tâches
+
+### Marketplace (`DB_WH_MKT`)
+Plateforme e-commerce — commandes, clients, catalogue, logistique, SAV.
+
+**Sous-domaines :** Commerce (commandes, paiements, promotions) · Catalogue (produits, prix, bundles) · Logistique (expéditions, transporteurs) · Service client (tickets, avis)
+
+### WMS (`DB_WH_WMS`)
+Warehouse Management System — gestion physique de l'entrepôt.
+
+**Entités :** Emplacements (allées, racks, zones) · Réceptions · Expéditions · Picking · Mouvements de stock · Ajustements d'inventaire
+
+### MES (`DB_WH_MES`)
+Manufacturing Execution System — suivi de la production en temps réel.
+
+**Entités :** Ordres de production · Opérations · Centres de travail · Défauts qualité · Consommations matières
+
+### Marketing (`DB_WH_MARKETING`)
+Gestion des campagnes marketing digitales et génération de leads.
+
+**Entités :** Campagnes · Performances publicitaires (impressions, clics, coût) · Envois email · Événements email (opened, clicked, bounced) · Audiences · Leads · UTM links
+
+### SAV (`DB_WH_SAV`)
+Service Après-Vente — tickets de support et résolution client.
+
+**Entités :** Tickets support · Messages · Historique des statuts
+
+### PLM (`DB_WH_PLM`)
+Product Lifecycle Management — gestion du cycle de vie des produits.
+
+**Entités :** Produits (versions, statut cycle de vie) · Nomenclatures (BOM/lignes) · Demandes de changement (CR)
+
+### SIRH (`DB_WH_SIRH`)
+Système d'Information RH — employés, contrats, postes, départements.
+
+**Entités :** Employés · Contrats · Postes · Départements
+
+### QMS (`DB_WH_QMS`)
+Quality Management System — non-conformités, audits, actions correctives.
+
+**Entités :** Non-conformités · Actions correctives · Audits · Constats d'audit · Plans de contrôle · Points de contrôle · Certifications · Évaluations fournisseurs
+
+### Finance (`DB_WH_FINANCE`)
+Comptabilité analytique — journaux, budgets, banque, comptes.
+
+**Entités :** Comptes comptables · Centres de coût · Exercices fiscaux · Périodes comptables · Écritures comptables · Lignes d'écriture · Budgets · Lignes budgétaires · Transactions bancaires · Comptes bancaires · Conditions de paiement
+
+### Procurement (`DB_WH_PROCUREMENT`)
+Achats — fournisseurs, bons de commande, réceptions, appels d'offres.
+
+**Entités :** Fournisseurs · Contacts fournisseurs · Bons de commande · Lignes de commande · Réceptions · Lignes de réception · Appels d'offres (RFQ) · Lignes RFQ · Réponses RFQ · Contrats · Lignes de contrat · Évaluations fournisseurs
+
+---
+
+## 5. Structure du projet
 
 ```
 project_warehouse_entreprise/
-├── Dockerfile                      # Image Astronomer + dbt venv
-├── docker-compose.override.yml     # Mount du dossier dbt dans Airflow
-├── requirements.txt                # Dépendances Python Airflow (astronomer-cosmos)
-├── packages.txt                    # Packages système
-├── dbt_best_practices.md           # Référence bonnes pratiques dbt (agents IA)
+├── Dockerfile                          # Image Astronomer + dbt venv Python 3.12
+├── docker-compose.override.yml         # Mount ./dbt dans /usr/local/airflow/dbt
+├── airflow_settings.yaml               # Pools Airflow (airbyte_pool=3)
 │
 ├── dags/
-│   └── example_dbt_cosmos.py       # DAG Airflow dbt via Cosmos
+│   └── warehouse_pipeline.py           # DAG principal — 3 phases, 12 domaines
 │
 ├── include/
-│   └── constants.py                # Chemins et configs partagés DAGs
+│   └── constants.py                    # Sélecteurs dbt, chemins, configs Airbyte
 │
-├── plugins/                        # Plugins Airflow custom
-│
-├── tests/
-│   └── dags/
-│       └── test_dag_integrity.py   # Tests d'intégrité des DAGs
-│
-└── dbt/
-    └── warehouse/                  # Projet dbt principal
-        ├── dbt_project.yml         # Config projet dbt
-        ├── profiles.yml            # Connexions ClickHouse (erp / mkt)
-        │
-        ├── macros/
-        │   ├── clickhouse_delete_existing_rows.sql  # Hook suppression incrémental
-        │   └── drop_table.sql                       # Utilitaire drop table
-        │
-        ├── models/
-        │   ├── staging/
-        │   │   ├── erp/            # ~67 vues de staging ERP (stg_erp__*)
-        │   │   │   ├── _erp__sources.yml
-        │   │   │   └── _erp__models.yml
-        │   │   ├── market_place/   # ~56 vues de staging Marketplace (stg_mkt__*)
-        │   │   │   ├── _market_place__sources.yml
-        │   │   │   └── _market_place__models.yml
-        │   │   └── crm/            # 7 vues de staging CRM (stg_crm__*)
-        │   │       ├── _crm__sources.yml
-        │   │       ├── _crm__models.yml
-        │   │       └── _crm__docs.md
-        │   │
-        │   ├── intermediate/
-        │   │   ├── erp/            # 9 modèles ephemeral (int_erp__*)
-        │   │   ├── market_place/   # 3 modèles ephemeral (int_mkt__*)
-        │   │   └── crm/            # 3 modèles ephemeral (int_crm__*)
-        │   │
-        │   └── marts/
-        │       ├── erp/
-        │       │   ├── core/                # Dims + facts ERP
-        │       │   │   ├── catalog/         # Produits, marques, composants, PC models
-        │       │   │   ├── financial/       # Comptabilité, banques, budgets
-        │       │   │   ├── hr/              # Employés, contrats, congés, timesheets
-        │       │   │   ├── inventory/       # Stock, entrepôts, n° de série
-        │       │   │   └── procurement/     # Commandes achats, fournisseurs, factures
-        │       │   └── reports/             # Tables reporting dénormalisées (rpt_erp__*)
-        │       │       ├── financial/ ├── hr/ ├── inventory/ └── procurement/
-        │       │
-        │       ├── market_place/
-        │       │   ├── core/                # Dims + facts Marketplace
-        │       │   │   ├── catalog/         # Produits, marques, catégories
-        │       │   │   ├── commerce/        # Commandes, paiements, clients, promos
-        │       │   │   ├── customer_service/ # Avis, tickets support
-        │       │   │   └── logistics/       # Expéditions, transporteurs, stock
-        │       │   └── reports/             # Tables reporting dénormalisées (rpt_mkt__*)
-        │       │       ├── catalog/ ├── commerce/ ├── customer_service/ └── logistics/
-        │       │
-        │       └── crm/
-        │           ├── core/
-        │           │   └── sales/           # Comptes, contacts, reps, opps, activités
-        │           └── reports/             # Tables reporting dénormalisées (rpt_crm__*)
-        │               ├── pipeline/        # Vue pipeline par opportunité
-        │               └── sales/           # Performance par commercial
-        │
-        ├── seeds/                  # CSVs de référence statique
-        └── target/                 # Artefacts compilés (gitignorés)
+├── dbt/
+│   └── warehouse/
+│       ├── dbt_project.yml             # Config projet, matérialisations par défaut
+│       ├── profiles.yml                # 18 targets ClickHouse (12 domaines + 6 BI)
+│       │
+│       ├── macros/
+│       │   ├── clickhouse_delete_existing_rows.sql
+│       │   └── drop_table.sql
+│       │
+│       └── models/
+│           ├── staging/                # 12 sous-dossiers (1 par domaine)
+│           │   ├── erp/                # ~67 vues stg_erp__*
+│           │   ├── market_place/       # ~56 vues stg_mkt__*
+│           │   ├── crm/                # 7 vues stg_crm__*
+│           │   ├── wms/                # stg_wms__*
+│           │   ├── mes/                # stg_mes__*
+│           │   ├── marketing/          # stg_marketing__*
+│           │   ├── sav/                # stg_sav__*
+│           │   ├── plm/                # stg_plm__*
+│           │   ├── sirh/               # stg_sirh__*
+│           │   ├── qms/                # stg_qms__*
+│           │   ├── finance/            # stg_finance__*
+│           │   └── procurement/        # stg_procurement__*
+│           │
+│           ├── intermediate/           # 12 sous-dossiers (1 par domaine)
+│           │   ├── erp/               # int_erp__* (9 modèles)
+│           │   ├── market_place/      # int_mkt__* (3 modèles)
+│           │   ├── crm/               # int_crm__* (3 modèles)
+│           │   ├── wms/               # int_wms__*
+│           │   ├── mes/               # int_mes__*
+│           │   ├── marketing/         # int_marketing__*
+│           │   ├── sav/               # int_sav__*
+│           │   ├── plm/               # int_plm__*
+│           │   ├── sirh/              # int_sirh__*
+│           │   ├── qms/               # int_qms__*
+│           │   ├── finance/           # int_finance__*
+│           │   └── procurement/       # int_procurement__*
+│           │
+│           ├── marts/
+│           │   ├── erp/core/{catalog,financial,hr,inventory,procurement,production}/
+│           │   ├── erp/reports/{catalog,financial,hr,inventory,procurement}/
+│           │   ├── market_place/core/{catalog,commerce,customer_service,logistics}/
+│           │   ├── market_place/reports/{catalog,commerce,conversion,customer_service,logistics,marketing}/
+│           │   ├── crm/core/sales/
+│           │   ├── crm/reports/{pipeline,sales}/
+│           │   ├── wms/core/inventory/  + wms/reports/operations/
+│           │   ├── mes/core/production/ + mes/reports/production/
+│           │   ├── marketing/core/acquisition/ + marketing/reports/performance/
+│           │   ├── sav/core/support/    + sav/reports/support/
+│           │   ├── plm/core/product/    + plm/reports/product/
+│           │   ├── sirh/core/hr/        + sirh/reports/workforce/
+│           │   ├── qms/core/quality/    + qms/reports/quality/
+│           │   ├── finance/core/accounting/ + finance/reports/financial/
+│           │   ├── procurement/core/sourcing/ + procurement/reports/sourcing/
+│           │   ├── BI_PRODUCTION/
+│           │   ├── BI_LOGISTIQUE/
+│           │   ├── BI_MARKETING/
+│           │   ├── BI_FINANCE/
+│           │   ├── BI_RH/
+│           │   └── BI_SAV/
+│           │
+│           └── seeds/
 ```
 
 ---
 
-## 4. Prérequis
+## 6. Couche Staging
 
-- **Docker Desktop** (pour Airflow **et** Airbyte)
-- **Python 3.11+** (pour exécuter dbt en local)
-- **ClickHouse** accessible sur `host.docker.internal:8123` (HTTP)
-- **dbt-core** 1.11.x + **dbt-clickhouse** 1.9.8
+**Matérialisation :** `view`  
+**Convention :** `stg_<source>__<entité>` (double underscore séparateur source/entité)  
+**Principe :** 1 modèle = 1 table source. Transformations limitées au nettoyage.
 
-```powershell
-# Installation locale dbt
-pip install dbt-core==1.11.2 dbt-clickhouse==1.9.8
-```
+### Transformations appliquées dans chaque staging
 
----
-
-## 5. Installation et démarrage
-
-### 5.0 Démarrer Airbyte (self-hosted Docker)
-
-```powershell
-# Cloner Airbyte (si pas déjà fait)
-git clone https://github.com/airbytehq/airbyte.git
-Set-Location airbyte
-
-# Lancer Airbyte
-.\run-ab-platform.ps1
-# ou sur Linux/Mac : ./run-ab-platform.sh
-```
-
-- **UI Airbyte :** http://localhost:8000 (user: `airbyte` / pass: `password`)
-- **Configurer deux connexions** (une par source) :
-
-  | Connexion         | Source                   | Destination ClickHouse |
-  |-------------------|--------------------------|------------------------|
-  | ERP               | PostgreSQL ERP           | Database : `DB_WH_ERP` |
-  | Marketplace       | PostgreSQL Marketplace   | Database : `DB_WH_MKT` |
-  | CRM               | PostgreSQL CRM           | Database : `DB_WH_CRM` |
-
-  Paramètres communs de la destination ClickHouse :
-  - Host : `host.docker.internal` (ou l'IP de ton ClickHouse)
-  - Port : `8123`
-  - Username / Password : selon ton `profiles.yml`
-
-- **Sync mode recommandé :**
-  - `Full Refresh | Overwrite` pour les petites tables de référence
-  - `Incremental | Append` ou CDC pour les grandes tables transactionnelles
-
-> ℹ️ Les tables créées par Airbyte dans ClickHouse seront préfixées `_airbyte_raw_` par défaut (selon la version). Les modèles `stg_erp__*` et `stg_mkt__*` de dbt pointent sur les tables **normalisées** créées par Airbyte (Basic Normalization désactivée = raw uniquement, les stagings dbt font la normalisation).
-
----
-
-### 5.1 Démarrer la stack Airflow (Docker)
-
-```powershell
-# Depuis la racine du projet
-docker compose up -d
-```
-
-Le `docker-compose.override.yml` monte automatiquement `./dbt` dans le conteneur Airflow sous `/usr/local/airflow/dbt`.
-
-### 5.2 Installer les dépendances dbt
-
-```powershell
-Set-Location 'C:\data_erp\project_warehouse_entreprise\dbt\warehouse'
-dbt deps
-```
-
-### 5.3 Vérifier les connexions ClickHouse
-
-```powershell
-dbt debug --project-dir 'C:\data_erp\project_warehouse_entreprise\dbt\warehouse' --target erp
-dbt debug --project-dir 'C:\data_erp\project_warehouse_entreprise\dbt\warehouse' --target mkt
-```
-
-### 5.4 Lancer un build complet
-
-```powershell
-# ERP (target par défaut)
-dbt build --project-dir 'C:\data_erp\project_warehouse_entreprise\dbt\warehouse' --target erp
-
-# Marketplace
-dbt build --project-dir 'C:\data_erp\project_warehouse_entreprise\dbt\warehouse' --target mkt
-```
-
----
-
-## 6. Projet dbt — Détail
-
-### 6.1 Couche Staging
-
-**Matérialisation :** `view`
-**Localisation :** `models/staging/erp/` et `models/staging/market_place/`
-**Préfixes :** `stg_erp__` (source `erp`) et `stg_mkt__` (source `marketplace`)
-
-Chaque modèle = un mapping 1-to-1 avec une table source. Les transformations se limitent à :
-- Renommage et cast des colonnes
-- Gestion des NULLs (`coalesce(col, '')` pour les colonnes texte non-nullables ClickHouse)
-- Normalisation des types (dates, booléens, montants)
-
-**ERP — ~67 modèles** couvrant : comptabilité (journaux, plan comptable, exercices fiscaux, banques, budgets), RH (employés, contrats, congés, timesheets), achats (commandes, réceptions, retours, fournisseurs, factures fournisseurs), inventaire (stock, entrepôts, emplacements, n° de série, inventaires), catalogue (produits, marques, composants, BOM, modèles PC), production (ordres de fabrication, réparations, qualité, garanties).
-
-**Marketplace — ~56 modèles** couvrant : commerce (commandes, lignes, paiements, remboursements, retours, factures, avoirs), clients (comptes, adresses, paniers, wishlists, fidélité, newsletters), catalogue (produits, prix, historique prix, bundles PC, Q&A produits), logistique (expéditions, tracking, transporteurs, zones/méthodes/tarifs de livraison, stock), promotions (promos, codes remise, flash sales), SAV (tickets, messages, avis, votes).
-
-**CRM — 7 modèles** couvrant : comptes (`accounts`), contacts, commerciaux (`sales_reps`), opportunités, activités commerciales, événements pipeline et tâches.
-
-> ℹ️ **Note ClickHouse :** certaines colonnes source peuvent être NULL. Les colonnes `String` (non-Nullable) dans ClickHouse nécessitent `coalesce(col, '')` avant le CAST pour éviter `CANNOT_INSERT_NULL_IN_ORDINARY_COLUMN`.
-
----
-
-### 6.2 Couche Intermediate
-
-**Matérialisation :** `ephemeral` (CTEs inlinés, aucun objet créé en base ClickHouse)
-**Localisation :** `models/intermediate/erp/`, `models/intermediate/market_place/` et `models/intermediate/crm/`
-**Préfixes :** `int_erp__`, `int_mkt__` et `int_crm__`
-
-> ⚠️ **Compatibilité ClickHouse :** les modèles `ephemeral` ne doivent **pas** contenir de blocs `WITH` internes. ClickHouse ne supporte pas les WITH imbriqués générés par l'inlining dbt. Utiliser des `ref()` directs avec JOINs.
-
-**ERP :**
-
-| Modèle                                  | Description                                             |
-|-----------------------------------------|---------------------------------------------------------|
-| `int_erp__employee_overview`            | Vue consolidée employé + poste + département + contrat  |
-| `int_erp__employee_contracts_stats`     | Stats salaire (min/max/avg) par employé                 |
-| `int_erp__employee_with_contract_stats` | Employés enrichis avec statistiques contrats            |
-| `int_erp__component_stock_status`       | État courant stock composants par emplacement           |
-| `int_erp__component_stock_alerts`       | Alertes de stock (en-dessous du seuil minimum)          |
-| `int_erp__product_stock_summary`        | Récapitulatif stock produit                             |
-| `int_erp__purchase_orders_details`      | Détail lignes commandes + fournisseurs + produits       |
-| `int_erp__purchase_order_status_stats`  | Stats commandes par statut                              |
-| `int_erp__supplier_stats`               | Stats achats par fournisseur                            |
-
-**Marketplace :**
-
-| Modèle                                   | Description                                  |
-|------------------------------------------|----------------------------------------------|
-| `int_mkt__orders_joined_to_lines`        | Commandes jointes à leurs lignes             |
-| `int_mkt__customers_aggregated_to_orders`| Agrégats commandes par client (LTV, volume)  |
-| `int_mkt__products_aggregated_to_sales`  | Agrégats ventes par produit                  |
-
-**CRM :**
-
-| Modèle                                    | Description                                              |
-|-------------------------------------------|----------------------------------------------------------|
-| `int_crm__opportunities_with_pipeline`    | Opportunités enrichies avec vélocité pipeline (âge, nb changements d'étape, jours dans l'étape courante) |
-| `int_crm__accounts_activity_stats`        | Agrégats activités/opps/revenus par compte               |
-| `int_crm__sales_rep_stats`                | Performance agrégée par commercial (win rate, CA, tâches)|
-
----
-
-### 6.3 Couche Marts
-
-**Matérialisation :** `table` (MergeTree) ou `incremental` (stratégie `append`)
-**Localisation :** `models/marts/erp/core/`, `models/marts/market_place/core/` et `models/marts/crm/core/`
-**Moteur ClickHouse :** `MergeTree()` (configuré globalement dans `dbt_project.yml`)
-
-#### ERP — 💰 Financial (`marts/erp/core/financial/`)
-
-| Modèle                     | Type        | Description                      |
-|----------------------------|-------------|----------------------------------|
-| `dim_accounts`             | table       | Dimension plan comptable         |
-| `dim_bank_accounts`        | table       | Dimension comptes bancaires      |
-| `dim_budget_lines`         | table       | Dimension lignes budgétaires     |
-| `dim_cost_centers`         | table       | Dimension centres de coût        |
-| `fct_budget`               | table       | Fait budgets + lignes            |
-| `fct_bank_transactions`    | incremental | Fait transactions bancaires      |
-| `fct_bank_reconciliations` | incremental | Fait rapprochements bancaires    |
-| `fct_journal_entries`      | incremental | Fait écritures comptables        |
-
-#### ERP — 👤 HR (`marts/erp/core/hr/`)
-
-| Modèle                   | Type        | Description                           |
-|--------------------------|-------------|---------------------------------------|
-| `dim_employees`          | table       | Dimension employés (enrichie)         |
-| `dim_departments`        | table       | Dimension départements                |
-| `dim_positions`          | table       | Dimension postes                      |
-| `fct_employee_contracts` | table       | Fait contrats employés                |
-| `fct_leaves`             | incremental | Fait congés (fenêtre glissante 7j)    |
-| `fct_timesheets`         | incremental | Fait feuilles de temps                |
-
-#### ERP — 📦 Inventory (`marts/erp/core/inventory/`)
-
-| Modèle                        | Type        | Description                          |
-|-------------------------------|-------------|--------------------------------------|
-| `dim_warehouses`              | table       | Dimension entrepôts                  |
-| `dim_warehouse_locations`     | table       | Dimension emplacements d'entrepôt    |
-| `dim_serial_numbers`          | table       | Dimension numéros de série           |
-| `fct_inventory_counts`        | table       | Fait inventaires physiques           |
-| `fct_stock_level`             | incremental | Fait niveaux de stock                |
-| `fct_component_stock_movement`| incremental | Fait mouvements de stock composants  |
-| `fct_serial_tracking`         | incremental | Fait traçabilité des n° de série     |
-
-#### ERP — 🏷️ Catalog (`marts/erp/core/catalog/`)
-
-| Modèle                          | Type  | Description                            |
-|---------------------------------|-------|----------------------------------------|
-| `dim_brands`                    | table | Dimension marques                      |
-| `dim_categories`                | table | Dimension catégories                   |
-| `dim_products`                  | table | Dimension produits                     |
-| `dim_components`                | table | Dimension composants                   |
-| `dim_pc_models`                 | table | Dimension modèles PC                   |
-| `dim_product_compatibilities`   | table | Compatibilités produit/composant       |
-| `dim_product_specifications`    | table | Spécifications produit                 |
-| `fct_component_stock_alerts`    | table | Fait alertes stock composants          |
-
-#### ERP — 🛒 Procurement (`marts/erp/core/procurement/`)
-
-| Modèle                      | Type        | Description                        |
-|-----------------------------|-------------|------------------------------------|
-| `dim_suppliers`             | table       | Dimension fournisseurs             |
-| `dim_supplier_contacts`     | table       | Dimension contacts fournisseurs    |
-| `fct_purchase_orders`       | incremental | Fait commandes d'achat             |
-| `fct_purchase_order_status` | table       | Fait statuts des commandes         |
-| `fct_purchase_receipt`      | incremental | Fait réceptions                    |
-| `fct_purchase_return`       | incremental | Fait retours fournisseurs          |
-| `fct_vendor_invoice`        | incremental | Fait factures fournisseurs         |
-| `fct_supplier_contracts`    | incremental | Fait contrats fournisseurs         |
-
-#### Marketplace — 🛍️ Commerce (`marts/market_place/core/commerce/`)
-
-| Modèle               | Type        | Description                          |
-|----------------------|-------------|--------------------------------------|
-| `dim_customers`      | table       | Dimension clients (enrichie LTV)     |
-| `dim_promotions`     | table       | Dimension promotions                 |
-| `dim_discount_codes` | table       | Dimension codes remise               |
-| `fct_orders`         | incremental | Fait commandes                       |
-| `fct_payments`       | incremental | Fait paiements                       |
-| `fct_refunds`        | table       | Fait remboursements                  |
-| `fct_returns`        | table       | Fait retours clients                 |
-
-#### Marketplace — 🏷️ Catalog (`marts/market_place/core/catalog/`)
-
-| Modèle               | Type  | Description                            |
-|----------------------|-------|----------------------------------------|
-| `dim_mkt_products`   | table | Dimension produits (enrichie ventes)   |
-| `dim_mkt_brands`     | table | Dimension marques                      |
-| `dim_mkt_categories` | table | Dimension catégories                   |
-
-#### Marketplace — 🚚 Logistics (`marts/market_place/core/logistics/`)
-
-| Modèle                 | Type        | Description                       |
-|------------------------|-------------|-----------------------------------|
-| `dim_carriers`         | table       | Dimension transporteurs           |
-| `dim_shipping_methods` | table       | Dimension méthodes de livraison   |
-| `dim_mkt_warehouses`   | table       | Dimension entrepôts marketplace   |
-| `fct_shipments`        | incremental | Fait expéditions                  |
-| `fct_stock_levels`     | table       | Fait niveaux de stock             |
-
-#### Marketplace — 🎧 Customer Service (`marts/market_place/core/customer_service/`)
-
-| Modèle                | Type  | Description           |
-|-----------------------|-------|-----------------------|
-| `fct_reviews`         | table | Fait avis produits    |
-| `fct_support_tickets` | table | Fait tickets support  |
-
-#### CRM — 💼 Sales (`marts/crm/core/sales/`)
-
-| Modèle                    | Type        | Description                                              |
-|---------------------------|-------------|----------------------------------------------------------|
-| `dim_crm_accounts`        | table       | Dimension comptes (enrichie activités + opps + revenus)  |
-| `dim_crm_contacts`        | table       | Dimension contacts (full_name, lien cross-domaine)       |
-| `dim_crm_sales_reps`      | table       | Dimension commerciaux (enrichie win rate, CA, pipeline)  |
-| `fct_crm_opportunities`   | incremental | Fait opportunités (vélocité pipeline, incr. sur updated_at, fenêtre 30j) |
-| `fct_crm_activities`      | incremental | Fait activités commerciales (incr. sur occurred_at, 7j)  |
-| `fct_crm_pipeline_events` | incremental | Historique changements d'étape (incr. sur occurred_at, 7j)|
-| `fct_crm_tasks`           | table       | Fait tâches (flags is_completed, is_on_time, is_overdue) |
-
----
-
-### 6.4 Couche Reports
-
-**Matérialisation :** `table` (MergeTree)
-**Localisation :** `models/marts/erp/reports/`, `models/marts/market_place/reports/` et `models/marts/crm/reports/`
-**Préfixes :** `rpt_erp__`, `rpt_mkt__` et `rpt_crm__`
-
-Couche finale large et dénormalisée, consommée directement par les outils BI. Chaque report combine plusieurs marts en un seul modèle analytique prêt à l'emploi.
-
-**ERP :**
-
-| Modèle                              | Domaine     | Description                                  |
-|-------------------------------------|-------------|----------------------------------------------|
-| `rpt_erp__journal_entries_enriched` | financial   | Écritures comptables enrichies (comptes, centres de coût) |
-| `rpt_erp__hr_workforce`             | hr          | Vue effectifs : employés + contrats + congés + temps |
-| `rpt_erp__inventory_stock_status`   | inventory   | État du stock par entrepôt/emplacement       |
-| `rpt_erp__component_movements`      | inventory   | Mouvements de stock composants enrichis      |
-| `rpt_erp__procurement_orders`       | procurement | Commandes d'achat enrichies fournisseurs     |
-
-**Marketplace :**
-
-| Modèle                            | Domaine          | Description                              |
-|-----------------------------------|------------------|------------------------------------------|
-| `rpt_mkt__revenue_daily`          | commerce         | Chiffre d'affaires journalier            |
-| `rpt_mkt__customer_ltv`           | commerce         | Lifetime value par client                |
-| `rpt_mkt__product_performance`    | catalog          | Performance produit (ventes, avis)       |
-| `rpt_mkt__logistics_performance`  | logistics        | Performance livraison (délais, transporteurs) |
-| `rpt_mkt__customer_satisfaction`  | customer_service | Satisfaction client (avis, tickets)      |
-
-**CRM :**
-
-| Modèle                              | Domaine  | Description                                                      |
-|-------------------------------------|----------|------------------------------------------------------------------|
-| `rpt_crm__pipeline_overview`        | pipeline | Vue pipeline complète : opportunités enrichies compte + commercial + activités |
-| `rpt_crm__sales_rep_performance`    | sales    | Performance par commercial : activités, win rate, CA, portefeuille, tendance 30j |
-
----
-
-## 7. Commandes dbt courantes
-
-```powershell
-# Se placer dans le dossier du projet dbt
-Set-Location 'C:\data_erp\project_warehouse_entreprise\dbt\warehouse'
-
-# --- Build & Run ---
-
-# Run complet ERP
-dbt run --target erp
-
-# Run complet Marketplace
-dbt run --target mkt
-
-# Run complet CRM
-dbt run --target crm
-
-# Build complet (run + tests) — ERP
-dbt build --target erp
-
-# Build complet (run + tests) — Marketplace
-dbt build --target mkt
-
-# Build complet (run + tests) — CRM
-dbt build --target crm
-
-# Run d'un modèle spécifique (ERP)
-dbt run --select dim_employees --target erp
-
-# Run d'un modèle spécifique (Marketplace)
-dbt run --select fct_orders --target mkt
-
-# Run d'un modèle spécifique (CRM)
-dbt run --select fct_crm_opportunities --target crm
-
-# Run d'un dossier complet
-dbt run --select path:models/marts/erp/core/financial --target erp
-dbt run --select path:models/marts/market_place/core/commerce --target mkt
-dbt run --select path:models/marts/crm/core/sales --target crm
-
-# Run uniquement la couche reports
-dbt run --select tag:reports --target erp
-dbt run --select tag:reports --target mkt
-dbt run --select tag:reports --target crm
-
-# Run avec full-refresh (rebuild incrémentaux depuis zéro)
-dbt run --full-refresh --select fct_leaves --target erp
-dbt run --full-refresh --select fct_orders --target mkt
-dbt run --full-refresh --select fct_crm_opportunities --target crm
-
-# Run des modèles modifiés + leurs dépendants
-dbt run --select state:modified+ --target erp
-
-# --- Tests ---
-
-# Lancer tous les tests
-dbt test --target erp
-dbt test --target mkt
-dbt test --target crm
-
-# Tests sur un modèle spécifique
-dbt test --select dim_employees --target erp
-dbt test --select fct_orders --target mkt
-dbt test --select dim_crm_accounts --target crm
-
-# --- Debug & Compilation ---
-
-# Compiler sans exécuter (vérifier le SQL généré)
-dbt compile --select dim_employees --target erp
-dbt compile --select fct_orders --target mkt
-dbt compile --select fct_crm_opportunities --target crm
-
-# Vérifier les connexions
-dbt debug --target erp
-dbt debug --target mkt
-dbt debug --target crm
-
-# --- Documentation ---
-
-# Générer la documentation (couvre les trois sources)
-dbt docs generate --target erp
-
-# Lancer le serveur de doc (http://localhost:8080)
-dbt docs serve --target erp
-
-# --- Nettoyage ---
-dbt clean
-```
-
----
-
-## 8. Macros personnalisées
-
-### `clickhouse_delete_existing_rows`
-
-**Fichier :** `macros/clickhouse_delete_existing_rows.sql`
-
-Génère une instruction `ALTER TABLE ... DELETE WHERE ... IN (SELECT ...)` pour supprimer les enregistrements existants avant un insert incrémental, sur une fenêtre de dates glissante.
-
-**Signature :**
 ```sql
-{{ clickhouse_delete_existing_rows(
-    source_relation,   -- ref() ou relation source
-    target_pk,         -- clé primaire dans la table cible
-    source_pk,         -- clé primaire dans la table source
-    date_col,          -- colonne de date pour filtrer la fenêtre
-    days               -- nombre de jours dans la fenêtre glissante
+-- 1. Déduplication Airbyte (argMax sur _airbyte_extracted_at)
+select
+    id,
+    argMax(col, _airbyte_extracted_at) as col,
+    max(_airbyte_extracted_at)         as _etl_loaded_at
+from {{ source('domain', 'table') }}
+where id is not null
+group by id
+
+-- 2. Cast des types avec protection NULL
+cast(coalesce(col, '')       as varchar)       as col_string
+cast(coalesce(col, 0)        as decimal(18,2)) as col_amount
+cast(col                     as timestamp)     as col_at
+cast(coalesce(col, false)    as boolean)       as is_flag
+
+-- 3. Renommage cohérent (id_ prefix pour les PKs)
+id as id_entity
+
+-- 4. Colonnes absentes de la source → valeurs par défaut typées
+cast('' as varchar)                    as missing_col
+cast(0  as decimal(18,2))              as missing_amount
+cast(null as Nullable(DateTime64(3))) as missing_timestamp
+```
+
+> **Pourquoi `argMax` et non `DISTINCT ON` ?** ClickHouse n'a pas de `DISTINCT ON`. La combinaison `GROUP BY id` + `argMax(col, timestamp)` est l'équivalent idiomatique ClickHouse pour récupérer la valeur la plus récente de chaque colonne par enregistrement.
+
+### ERP — ~67 modèles
+Comptabilité (journaux, comptes, exercices fiscaux, banques, budgets, centres de coût) · RH (employés, contrats, congés, feuilles de temps, postes, départements) · Achats ERP (commandes, réceptions, retours, fournisseurs, factures) · Inventaire (stock, entrepôts, emplacements, numéros de série, inventaires, alertes) · Catalogue (produits, marques, composants, BOM, modèles PC, compatibilités, spécifications, historique prix) · Production (ordres de fabrication, réparations, qualité)
+
+### Marketplace — ~56 modèles
+Commerce (commandes, lignes, paiements, remboursements, retours, factures, avoirs, promotions, codes remise, ventes flash) · Clients (comptes, adresses, paniers, wishlists, fidélité, newsletters) · Catalogue (produits, prix, historique prix, bundles PC, Q&A produits) · Logistique (expéditions, tracking, transporteurs, zones/méthodes/tarifs de livraison, stock) · SAV marketplace (tickets, messages, avis, votes)
+
+### CRM — 7 modèles
+Comptes · Contacts · Commerciaux (`sales_reps`) · Opportunités · Activités commerciales · Événements pipeline · Tâches
+
+### WMS — 9 modèles
+Locations · Entrepôts · Réceptions + lignes · Expéditions + lignes · Picking + lignes · Mouvements de stock · Ajustements d'inventaire
+
+### MES — 6 modèles
+Ordres de production · Opérations de production · Centres de travail · Défauts · Consommations matières · Indicateurs de performance production (KPI)
+
+### Marketing — 8 modèles
+Campagnes · Performances publicitaires · Envois email · Événements email · Audiences · Leads · Liens UTM · (Alembic version exclu)
+
+### SAV — 4 modèles
+Tickets · Messages · Historique statuts
+
+### PLM — 6 modèles
+Produits · Versions · Nomenclatures (BOM) · Lignes BOM · Demandes de changement
+
+### SIRH — 4 modèles
+Employés · Contrats · Postes · Départements
+
+### QMS — 8 modèles
+Non-conformités · Actions correctives · Audits · Constats d'audit · Plans de contrôle · Points de contrôle · Certifications · Évaluations fournisseurs
+
+### Finance — 11 modèles
+Comptes · Centres de coût · Exercices fiscaux · Périodes comptables · Écritures · Lignes d'écriture · Budgets · Lignes budgétaires · Transactions bancaires · Comptes bancaires · Conditions de paiement
+
+### Procurement — 11 modèles
+Fournisseurs · Contacts fournisseurs · Bons de commande · Lignes BC · Réceptions · Lignes réception · RFQ · Lignes RFQ · Réponses RFQ · Contrats · Lignes contrat · Évaluations fournisseurs
+
+---
+
+## 7. Couche Intermediate
+
+**Matérialisation :** `view`  
+**Convention :** `int_<domaine>__<description>` (double underscore domaine/description)  
+**Principe :** logique métier complexe, enrichissement via JOINs, agrégations préparatoires.
+
+> **Choix `view` vs `ephemeral`** : les modèles intermédiaires ont été explicitement matérialisés en `view` (au lieu de `ephemeral`) pour deux raisons : (1) compatibilité avec ClickHouse 25.7 qui ne peut pas résoudre `alias.column` dans un GROUP BY quand `alias` référence une VIEW via une CTE inlinée ; (2) testabilité directe des intermédiaires via `dbt test`.
+
+### Modèles intermédiaires par domaine
+
+**ERP (9 modèles)**
+
+| Modèle | Description |
+|--------|-------------|
+| `int_erp__employee_overview` | Employé + poste + département + contrat actif |
+| `int_erp__employee_contracts_stats` | Stats salaire (min/max/avg) par employé |
+| `int_erp__employee_with_contract_stats` | Employés enrichis avec statistiques contrats |
+| `int_erp__component_stock_status` | État courant stock composants par emplacement |
+| `int_erp__component_stock_alerts` | Alertes de stock sous le seuil minimum |
+| `int_erp__product_stock_summary` | Récapitulatif stock produit toutes variantes |
+| `int_erp__purchase_orders_details` | Lignes commandes + fournisseurs + produits |
+| `int_erp__purchase_order_status_stats` | Statistiques commandes par statut |
+| `int_erp__supplier_stats` | Performance agrégée par fournisseur |
+
+**Marketplace (3 modèles)**
+
+| Modèle | Description |
+|--------|-------------|
+| `int_mkt__orders_joined_to_lines` | Commandes jointes à leurs lignes de détail |
+| `int_mkt__customers_aggregated_to_orders` | LTV, nb commandes, panier moyen par client |
+| `int_mkt__products_aggregated_to_sales` | Ventes, revenus, avis par produit |
+
+**CRM (3 modèles)**
+
+| Modèle | Description |
+|--------|-------------|
+| `int_crm__opportunities_with_pipeline` | Opportunités + âge pipeline + nb changements étape |
+| `int_crm__accounts_activity_stats` | Agrégats activités/opps/revenus par compte |
+| `int_crm__sales_rep_stats` | Performance agrégée par commercial (win rate, CA) |
+
+**WMS (4 modèles)**
+
+| Modèle | Description |
+|--------|-------------|
+| `int_wms__receipts_with_lines` | Réceptions enrichies avec lignes de détail |
+| `int_wms__shipments_with_lines` | Expéditions enrichies avec lignes de détail |
+| `int_wms__picking_performance` | Performance de picking (délais, taux complétion) |
+| `int_wms__stock_levels_by_product_location` | Niveaux de stock par produit × emplacement |
+
+**MES (1 modèle)**
+
+| Modèle | Description |
+|--------|-------------|
+| `int_mes__production_orders_with_stats` | Ordres de production + nb opérations + défauts + consommations |
+
+**Marketing (2 modèles)**
+
+| Modèle | Description |
+|--------|-------------|
+| `int_marketing__campaigns_with_performance` | Campagnes + emails envoyés/ouverts/cliqués + impressions publicitaires |
+| `int_marketing__email_funnel_by_campaign` | Entonnoir email (envoi → délivré → ouvert → cliqué) par campagne |
+
+**SAV (1 modèle)**
+
+| Modèle | Description |
+|--------|-------------|
+| `int_sav__tickets_with_resolution_stats` | Tickets + nb messages + nb changements statut + délai résolution |
+
+**PLM (2 modèles)**
+
+| Modèle | Description |
+|--------|-------------|
+| `int_plm__products_with_latest_version` | Produits enrichis avec leur dernière version active |
+| `int_plm__change_requests_by_product` | Demandes de changement agrégées par produit |
+
+**SIRH (1 modèle)**
+
+| Modèle | Description |
+|--------|-------------|
+| `int_sirh__employees_with_contract` | Employés + poste + département + informations contrat actif |
+
+**QMS (3 modèles)**
+
+| Modèle | Description |
+|--------|-------------|
+| `int_qms__non_conformities_with_actions` | NC enrichies avec nb/statut actions correctives |
+| `int_qms__audit_results_aggregated` | Audits enrichis avec décompte constats par type et criticité |
+| `int_qms__supplier_quality_by_period` | Qualité fournisseur agrégée par fournisseur × année |
+
+**Finance (3 modèles)**
+
+| Modèle | Description |
+|--------|-------------|
+| `int_finance__journal_entries_with_lines` | Lignes d'écriture + en-tête + compte + centre de coût |
+| `int_finance__budget_vs_actuals` | Budget vs réalisé par compte × centre de coût × mois |
+| `int_finance__bank_transactions_aggregated` | Transactions bancaires agrégées par compte × mois |
+
+**Procurement (1 modèle)**
+
+| Modèle | Description |
+|--------|-------------|
+| `int_procurement__purchase_orders_with_lines` | Bons de commande enrichis avec leurs lignes de détail |
+
+---
+
+## 8. Couche Marts — Core
+
+**Matérialisation :** `table` (MergeTree) ou `incremental`  
+**Convention :** `dim_<domaine>_<entité>` / `fct_<domaine>_<entité>`  
+**Principe :** modélisation dimensionnelle classique (Kimball). Les dims contiennent les attributs descriptifs, les faits contiennent les mesures.
+
+### Moteur ClickHouse — configuration type
+
+```sql
+{{ config(
+    materialized='table',
+    engine='MergeTree()',
+    order_by='(id_entity)',
+    settings={'allow_nullable_key': 1},   -- requis si ORDER BY colonne nullable
+    tags=['marts', 'domain', 'dim']
 ) }}
 ```
 
-**Exemple d'usage dans un modèle :**
+> `allow_nullable_key = 1` : les colonnes de clé de tri peuvent être Nullable. Nécessaire quand des colonnes issues de LEFT JOINs (potentiellement NULL) entrent dans le `ORDER BY`.
+
+### Stratégie incrémentale
+
+Les grandes tables de faits utilisent une stratégie `incremental` avec fenêtre glissante et suppression des doublons via hook :
+
+```sql
+{{ config(
+    materialized='incremental',
+    engine='MergeTree()',
+    order_by='(id_fact, event_at)',
+    pre_hook="{{ clickhouse_delete_existing_rows(
+        ref('stg_domain__table'), 'id_fact', 'id_fact', 'event_at', 7
+    ) }}"
+) }}
+```
+
+### Marts par domaine
+
+**WMS**
+
+| Modèle | Type | Description |
+|--------|------|-------------|
+| `dim_wms_locations` | table | Emplacements (allée, rack, zone, entrepôt) |
+| `fct_wms_receipts` | table | Faits réceptions avec lignes |
+| `fct_wms_shipments` | table | Faits expéditions avec lignes |
+| `fct_wms_picking_orders` | table | Faits ordres de picking avec métriques |
+| `fct_wms_stock_levels` | table | Niveaux de stock par produit × emplacement |
+| `fct_wms_stock_movements` | table | Mouvements de stock (entrées, sorties, transferts) |
+
+**MES**
+
+| Modèle | Type | Description |
+|--------|------|-------------|
+| `fct_mes_production_orders` | table | Faits ordres de production avec stats opérations/défauts |
+
+**Marketing**
+
+| Modèle | Type | Description |
+|--------|------|-------------|
+| `dim_marketing_campaigns` | table | Dimension campagnes marketing enrichie |
+| `fct_marketing_email_funnel` | table | Entonnoir email par campagne |
+| `fct_marketing_ad_performance` | table | Performances publicitaires (impressions, CPC, ROI) |
+| `fct_marketing_leads` | table | Faits leads avec source et conversion |
+
+**SAV**
+
+| Modèle | Type | Description |
+|--------|------|-------------|
+| `dim_sav_tickets` | table | Dimension tickets support enrichie |
+| `fct_sav_ticket_resolution` | table | Faits résolution (délais, statuts, nb messages) |
+
+**PLM**
+
+| Modèle | Type | Description |
+|--------|------|-------------|
+| `dim_plm_products` | table | Dimension produits PLM avec dernière version + CR |
+| `fct_plm_bom` | table | Nomenclatures produits avec lignes |
+
+**SIRH**
+
+| Modèle | Type | Description |
+|--------|------|-------------|
+| `dim_sirh_employees` | table | Dimension employés enrichie (poste, département, contrat) |
+
+**QMS**
+
+| Modèle | Type | Description |
+|--------|------|-------------|
+| `fct_qms_non_conformities` | table | Faits non-conformités avec actions correctives |
+| `fct_qms_audits` | table | Faits audits avec résultats agrégés |
+| `fct_qms_corrective_actions` | table | Faits actions correctives CAPA |
+| `fct_qms_certifications` | table | Faits certifications (ISO, etc.) |
+| `fct_qms_supplier_quality` | table | Qualité fournisseur agrégée par période |
+
+**Finance**
+
+| Modèle | Type | Description |
+|--------|------|-------------|
+| `dim_finance_accounts` | table | Plan comptable |
+| `dim_finance_cost_centers` | table | Centres de coût |
+| `dim_finance_fiscal_years` | table | Exercices fiscaux |
+| `fct_finance_journal_lines` | table | Lignes d'écriture comptable (statut posted) |
+| `fct_finance_budget_lines` | table | Lignes budgétaires |
+| `fct_finance_bank_transactions` | table | Transactions bancaires |
+
+**Procurement**
+
+| Modèle | Type | Description |
+|--------|------|-------------|
+| `dim_procurement_suppliers` | table | Dimension fournisseurs enrichie (nb PO, score évaluation) |
+| `fct_procurement_purchase_orders` | table | Faits bons de commande avec lignes |
+| `fct_procurement_receipts` | table | Faits réceptions avec coût total |
+| `fct_procurement_rfq_responses` | table | Réponses AO avec classement prix |
+| `fct_procurement_supplier_evaluations` | table | Évaluations fournisseurs |
+
+---
+
+## 9. Couche Marts — Reports
+
+**Matérialisation :** `table` (MergeTree)  
+**Convention :** `rpt_<domaine>__<sujet>`  
+**Principe :** large et dénormalisé, consommé directement par les outils BI sans transformation supplémentaire.
+
+| Domaine | Modèle | Description |
+|---------|--------|-------------|
+| WMS | `rpt_wms__stock_status` | Stock actuel par produit × emplacement (zone, allée, rack) |
+| WMS | `rpt_wms__receiving_performance` | Performance réceptions hebdo par fournisseur (taux conformité) |
+| WMS | `rpt_wms__outbound_performance` | Performance expéditions avec métriques de picking |
+| MES | `rpt_mes__production_kpis` | KPIs production (OEE, taux rebut, délais) |
+| Marketing | `rpt_marketing__campaign_performance` | Performance campagne (emails, ads, ROI) |
+| Marketing | `rpt_marketing__lead_funnel` | Entonnoir de conversion leads |
+| Marketing | `rpt_marketing__channel_roi` | ROI par canal marketing |
+| SAV | `rpt_sav__ticket_performance` | Performance SAV (MTTR, backlog, satisfaction) |
+| PLM | `rpt_plm__product_lifecycle` | Cycle de vie produits (versions, CR en cours) |
+| SIRH | `rpt_sirh__workforce_overview` | Vue effectifs RH (postes, contrats, ancienneté) |
+| QMS | `rpt_qms__nc_overview` | Vue d'ensemble non-conformités (type, sévérité, délai) |
+| QMS | `rpt_qms__audit_results` | Résultats audits avec taux conformité |
+| QMS | `rpt_qms__supplier_quality` | Qualité fournisseur par période d'évaluation |
+| Finance | `rpt_finance__journal_enriched` | Écritures comptables enrichies (compte, centre de coût) |
+| Finance | `rpt_finance__budget_vs_actuals` | Budget vs réalisé avec écart et % variance |
+| Finance | `rpt_finance__bank_summary` | Récapitulatif bancaire par compte et période |
+| Procurement | `rpt_procurement__po_status` | Statut bons de commande avec info fournisseur |
+| Procurement | `rpt_procurement__supplier_performance` | Performance fournisseurs (scores, délais) |
+| Procurement | `rpt_procurement__rfq_analysis` | Analyse appels d'offres avec classement prix |
+| ERP | `rpt_erp__journal_entries_enriched` | Écritures comptables ERP enrichies |
+| ERP | `rpt_erp__hr_workforce` | Effectifs : employés + contrats + congés + temps |
+| ERP | `rpt_erp__inventory_stock_status` | État stock par entrepôt/emplacement |
+| ERP | `rpt_erp__procurement_orders` | Commandes achat ERP enrichies |
+| MKT | `rpt_mkt__revenue_daily` | CA journalier marketplace |
+| MKT | `rpt_mkt__customer_ltv` | Lifetime value par client |
+| MKT | `rpt_mkt__product_performance` | Performance produit (ventes, avis) |
+| MKT | `rpt_mkt__logistics_performance` | Performance livraison (délais, transporteurs) |
+| CRM | `rpt_crm__pipeline_overview` | Pipeline commercial complet (opps + compte + commercial) |
+| CRM | `rpt_crm__sales_rep_performance` | Performance commerciaux (win rate, CA, tendance 30j) |
+
+---
+
+## 10. BI Datamarts cross-domaines
+
+Les datamarts BI combinent des données de **plusieurs domaines sources** pour des analyses transversales. Ils constituent la couche de consommation finale pour les dashboards et outils de BI.
+
+### `BI_PRODUCTION` (`DB_WH_BI_PRODUCTION`)
+
+Croise **MES + WMS + PLM + Procurement** pour la vision production :
+
+| Modèle | Description |
+|--------|-------------|
+| `bi_prod__production_overview` | Vue globale production (ordres, OEE, défauts, stock) |
+| `bi_prod__bom_vs_stock` | BOM vs disponibilité stock (couverture production) |
+
+### `BI_LOGISTIQUE` (`DB_WH_BI_LOGISTIQUE`)
+
+Croise **WMS + MKT + ERP + BI_PRODUCTION** pour la vision logistique :
+
+| Modèle | Description |
+|--------|-------------|
+| `bi_log__stock_overview` | Stock cross-domaines (ERP + MKT + WMS) |
+| `bi_log__shortage_coverage` | Couverture des ruptures de stock (réf. `bi_prod__bom_vs_stock`) |
+
+### `BI_MARKETING` (`DB_WH_BI_MARKETING`)
+
+Croise **Marketing + MKT + CRM** pour la vision marketing client :
+
+| Modèle | Description |
+|--------|-------------|
+| `bi_mkt__customer_360` | Vue 360° client (MKT + CRM + fidélité) |
+| `bi_mkt__revenue_pipeline` | CA confirmé MKT + pipeline CRM par jour |
+| `bi_mkt__campaign_performance` | Performances cross-canal (newsletter, codes promo, flash sales) |
+| `bi_mkt__wishlist_insights` | Analyse wishlist (désirés vs achetés, taux conversion) |
+| `bi_mkt__churn_risk` | Scoring churn par client (never_ordered / active / at_risk / churning / churned) |
+| `bi_mkt__cohort_retention` | Rétention par cohorte mensuelle (M+1, M+3, M+6, M+12) |
+| `bi_mkt__product_affinity` | Matrice d'affinité produits (Jaccard, cross-sell) |
+
+### `BI_FINANCE` (`DB_WH_BI_FINANCE`)
+
+Croise **Finance + ERP + Procurement** pour la vision financière :
+
+| Modèle | Description |
+|--------|-------------|
+| `bi_fin__p_and_l` | Compte de résultat analytique |
+| `bi_fin__budget_tracking` | Suivi budgétaire avec alertes sur dépassement |
+| `bi_fin__cash_flow` | Flux de trésorerie (entrées/sorties bancaires) |
+| `bi_fin__procurement_spend` | Dépenses achats par fournisseur et catégorie |
+
+### `BI_RH` (`DB_WH_BI_RH`)
+
+Croise **SIRH + ERP + Finance** pour la vision ressources humaines :
+
+| Modèle | Description |
+|--------|-------------|
+| `bi_rh__workforce_overview` | Effectifs cross-domaines (SIRH + ERP) |
+| `bi_rh__headcount_trend` | Évolution effectifs dans le temps |
+
+### `BI_SAV` (`DB_WH_BI_SAV`)
+
+Croise **SAV + MKT + QMS** pour la vision qualité & satisfaction client :
+
+| Modèle | Description |
+|--------|-------------|
+| `bi_sav__customer_satisfaction` | Satisfaction client cross-domaines (tickets + avis + NC) |
+| `bi_sav__quality_overview` | Vue qualité (NC + actions correctives + audits) |
+
+---
+
+## 11. Orchestration Airflow
+
+### DAG principal — `warehouse_pipeline.py`
+
+| Paramètre | Valeur |
+|-----------|--------|
+| Schedule | `0 3 * * *` (chaque nuit à 3h UTC) |
+| Start date | 2026-06-01 |
+| Max active runs | 1 |
+| Catchup | False |
+| Notifications | `on_failure_callback` sur toutes les tâches |
+
+### Architecture en 3 phases
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ PHASE 1+2 — 12 domaines en parallèle (pool airbyte_pool = 3 slots max)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  [airbyte_trigger_erp]  ──► [airbyte_wait_erp]  ──► [dbt_run_erp]  ──► [dbt_test_erp]
+  [airbyte_trigger_crm]  ──► [airbyte_wait_crm]  ──► [dbt_run_crm]  ──► [dbt_test_crm]
+  [airbyte_trigger_mkt]  ──► [airbyte_wait_mkt]  ──► [dbt_run_mkt]  ──► [dbt_test_mkt]
+                                                   ──► [dbt_run_wms]  ──► [dbt_test_wms]
+                                                   ──► [dbt_run_mes]  ──► [dbt_test_mes]
+                              (optionnel si UUID    ──► [dbt_run_marketing] ──► ...
+                               Airbyte configuré)   ──► [dbt_run_sav]  ──► ...
+                                                   ──► [dbt_run_plm]  ──► ...
+                                                   ──► [dbt_run_sirh] ──► ...
+                                                   ──► [dbt_run_qms]  ──► ...
+                                                   ──► [dbt_run_finance] ──► ...
+                                                   ──► [dbt_run_procurement] ──► ...
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ PHASE 3 — BI datamarts (déclenchés après les 12 dbt_test_*)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  [dbt_run_bi_production] ──► [dbt_test_bi_production] ──► [dbt_run_bi_logistique]
+  [dbt_run_bi_marketing]  ──► [dbt_test_bi_marketing]
+  [dbt_run_bi_finance]    ──► [dbt_test_bi_finance]
+  [dbt_run_bi_rh]         ──► [dbt_test_bi_rh]
+  [dbt_run_bi_sav]        ──► [dbt_test_bi_sav]
+
+  Note : bi_logistique dépend de bi_production (bi_log__shortage_coverage
+         référence bi_prod__bom_vs_stock) → démarre après dbt_test_bi_production.
+```
+
+### Sensor Airbyte — résilience et gestion des statuts
+
+Le `AirbyteSyncSensor` custom gère les aléas réseau/Docker avec un mode `reschedule` (libère le worker slot entre chaque poll) :
+
+| Statut API Airbyte | Comportement |
+|-------------------|--------------|
+| `running` / `pending` | Reschedule dans 30s (pas de blocage worker) |
+| `succeeded` | ✅ Tâche terminée — dbt_run démarre |
+| `incomplete` | ⚠️ Warning loggé — pipeline continue (sync partielle ou job reset Airbyte OSS) |
+| `failed` / `cancelled` | ❌ Exception — tâche Airflow en erreur, notification |
+| `ConnectionError` / Timeout | Reschedule 30s (erreur transitoire réseau/Docker) |
+| `HTTP 5xx` | Reschedule 30s (crash/restart transitoire Airbyte) |
+| `HTTP 4xx` | Exception immédiate (erreur de configuration) |
+
+> **Pourquoi `incomplete` n'est pas fatal ?** Airbyte OSS peut retourner `incomplete` pour un job reset internalement (nouveau job_id créé en parallèle) pendant qu'une vraie sync tourne. Traiter `incomplete` comme une erreur bloque le pipeline indéfiniment sur un job_id qui ne changera plus.
+
+### Auth Airbyte OAuth2
+
+Token renouvelé à chaque poke du sensor via `client_credentials` :
+
+```python
+POST /api/v1/applications/token
+{
+  "client_id":     AIRBYTE_CLIENT_ID,
+  "client_secret": AIRBYTE_CLIENT_SECRET,
+  "grant_type":    "client_credentials"
+}
+```
+
+Si un job est déjà en cours sur la connexion (HTTP 409), le trigger récupère l'ID du job existant via `/api/public/v1/jobs?connectionId=...` et le transmet au sensor via XCom.
+
+### Pool Airflow — concurrence Airbyte
+
+```bash
+# Créer le pool (une fois après le démarrage)
+airflow pools set airbyte_pool 3 "Limite syncs Airbyte simultanées"
+```
+
+Déclaré dans `airflow_settings.yaml` — recréé automatiquement au démarrage.
+
+### Commande dbt dans les BashOperators
+
+```bash
+cd /usr/local/airflow/dbt/warehouse \
+&& /usr/local/airflow/dbt_venv/bin/dbt run \
+   --profiles-dir . \
+   --target <domain> \
+   --select "path:models/staging/<domain> path:models/intermediate/<domain> path:models/marts/<domain>"
+```
+
+Le dbt s'exécute dans un **virtualenv Python isolé** (`dbt_venv`) avec `dbt-core==1.8.9` + `dbt-clickhouse` — version différente du dbt local (1.11.2) pour compatibilité avec l'image Astronomer.
+
+---
+
+## 12. Spécificités ClickHouse 25.7
+
+ClickHouse 25.7 active par défaut le nouvel analyseur de requêtes (`enable_analyzer=1`), plus strict que les versions précédentes. Plusieurs patterns SQL courants ne fonctionnent plus.
+
+### Pattern 1 — `alias.column` dans GROUP BY depuis une VIEW
+
+**Erreur :**
+```
+DB::Exception: Identifier 'je.period_id' cannot be resolved from table with name je.
+```
+
+**Cause :** ClickHouse 25.7 ne peut pas résoudre `alias.column` dans un GROUP BY quand `alias` référence une VIEW (ou une CTE wrappant une VIEW).
+
+**Solution :** aliaser explicitement dans le SELECT, utiliser le nom non qualifié dans GROUP BY :
+
+```sql
+-- ❌ Problématique
+select je.period_id
+from stg_journal_entries as je
+group by je.period_id
+
+-- ✅ Correct
+select je.period_id as period_id     -- alias explicite dans SELECT
+from stg_journal_entries as je
+group by period_id                   -- non qualifié dans GROUP BY
+```
+
+### Pattern 2 — CTEs imbriquées avec VIEWs
+
+**Erreur :**
+```
+DB::Exception: Unknown expression identifier `col` in scope WITH __dbt__cte__... AS (WITH ...)
+```
+
+**Cause :** dbt inline les modèles `ephemeral` comme CTEs. Si l'ephemeral contient lui-même des CTEs référençant des VIEWs, ClickHouse 25.7 ne peut pas résoudre les identifiants dans les CTEs imbriquées.
+
+**Solution :** convertir les `ephemeral` problématiques en `view`, utiliser des `ref()` directs :
+
+```sql
+-- ❌ Ephemeral avec CTEs (génère des WITH imbriqués)
+{{ config(materialized='ephemeral') }}
+with source as (select * from {{ ref('stg_table') }})
+select ...
+
+-- ✅ View avec refs directs
+{{ config(materialized='view') }}
+select ...
+from {{ ref('stg_table') }} as t
+left join {{ ref('stg_other') }} as o on o.id = t.foreign_id
+```
+
+### Pattern 3 — `allow_nullable_key` sur MergeTree
+
+**Erreur :**
+```
+DB::Exception: Sorting key contains nullable columns, but merge tree setting
+allow_nullable_key is disabled.
+```
+
+**Solution :** ajouter `settings={'allow_nullable_key': 1}` au config dbt :
+
+```sql
+{{ config(
+    materialized='table',
+    engine='MergeTree()',
+    order_by='(supplier_id, evaluation_period_year)',
+    settings={'allow_nullable_key': 1}
+) }}
+```
+
+### Pattern 4 — `NULL` dans `toStartOfWeek`
+
+**Comportement :** `toStartOfWeek(NULL)` retourne `NULL` — les tests `not_null` échouent si la colonne source peut être NULL.
+
+**Solution :** filtrer en amont :
+
+```sql
+from {{ ref('fct_receipts') }}
+where received_at is not null   -- évite les week NULL
+```
+
+### Pattern 5 — Colonnes manquantes dans staging
+
+Les sources Airbyte ne contiennent pas toujours toutes les colonnes attendues. Le pattern défensif dans les stagings :
+
+```sql
+-- Colonne absente de la source → valeur par défaut typée
+cast(0   as decimal(18,2))             as missing_amount
+cast(''  as varchar)                   as missing_text
+cast(null as Nullable(DateTime64(3))) as missing_timestamp
+where 1 = 0  -- table vide mais schema correct
+```
+
+---
+
+## 13. Commandes dbt
+
+```powershell
+# Depuis le répertoire dbt
+Set-Location 'C:\data_erp\project_warehouse_entreprise\dbt\warehouse'
+
+# ── Run par domaine ──────────────────────────────────────────────────
+
+dbt run --profiles-dir . --target erp
+dbt run --profiles-dir . --target crm
+dbt run --profiles-dir . --target mkt
+dbt run --profiles-dir . --target wms
+dbt run --profiles-dir . --target mes
+dbt run --profiles-dir . --target marketing
+dbt run --profiles-dir . --target sav
+dbt run --profiles-dir . --target plm
+dbt run --profiles-dir . --target sirh
+dbt run --profiles-dir . --target qms
+dbt run --profiles-dir . --target finance
+dbt run --profiles-dir . --target procurement
+
+# ── Run sélectif (staging + intermediate + marts d'un domaine) ───────
+
+dbt run --profiles-dir . --target finance \
+  --select "path:models/staging/finance path:models/intermediate/finance path:models/marts/finance"
+
+# ── Tests par domaine ────────────────────────────────────────────────
+
+dbt test --profiles-dir . --target finance \
+  --select "path:models/staging/finance path:models/intermediate/finance path:models/marts/finance"
+
+# ── BI datamarts ─────────────────────────────────────────────────────
+
+dbt run --profiles-dir . --target bi_production
+dbt run --profiles-dir . --target bi_logistique
+dbt run --profiles-dir . --target bi_marketing
+dbt run --profiles-dir . --target bi_finance
+dbt run --profiles-dir . --target bi_rh
+dbt run --profiles-dir . --target bi_sav
+
+# ── Utilitaires ──────────────────────────────────────────────────────
+
+# Compiler sans exécuter (inspecter le SQL généré)
+dbt compile --profiles-dir . --target finance --select int_finance__budget_vs_actuals
+
+# Vérifier les connexions
+dbt debug --profiles-dir . --target finance
+
+# Full-refresh (rebuild incrémentaux depuis zéro)
+dbt run --profiles-dir . --target erp --full-refresh --select fct_leaves
+
+# Run des modèles modifiés + leurs dépendants
+dbt run --profiles-dir . --target erp --select "state:modified+"
+
+# Générer et servir la documentation
+dbt docs generate --profiles-dir . --target erp
+dbt docs serve --profiles-dir . --target erp
+```
+
+---
+
+## 14. Installation et démarrage
+
+### Prérequis
+
+- **Docker Desktop** (Windows/Mac) ou Docker Engine (Linux)
+- **Python 3.11+** pour dbt en local
+- **ClickHouse** accessible sur `host.docker.internal:8123`
+
+### 1. Cloner et configurer l'environnement
+
+```powershell
+git clone <repo-url>
+Set-Location project_warehouse_entreprise
+
+# Copier le template d'environnement
+Copy-Item .env.example .env
+# Éditer .env avec vos credentials
+```
+
+### 2. Variables d'environnement requises
+
+```bash
+# ClickHouse
+CLICKHOUSE_HOST=host.docker.internal
+CLICKHOUSE_PORT=8123
+CLICKHOUSE_USER=admin
+CLICKHOUSE_PASSWORD=<password>
+
+# Airbyte OAuth2
+AIRBYTE_API_URL=http://host.docker.internal:8000
+AIRBYTE_CLIENT_ID=<uuid>
+AIRBYTE_CLIENT_SECRET=<secret>
+
+# UUIDs connexions Airbyte (3 obligatoires, 9 optionnels)
+AIRBYTE_CONN_ERP=<uuid>
+AIRBYTE_CONN_CRM=<uuid>
+AIRBYTE_CONN_MKT=<uuid>
+# Optionnels (pipeline tourne même sans eux — sources vides)
+AIRBYTE_CONN_WMS=<uuid>
+AIRBYTE_CONN_MES=<uuid>
+AIRBYTE_CONN_MARKETING=<uuid>
+AIRBYTE_CONN_SAV=<uuid>
+AIRBYTE_CONN_PLM=<uuid>
+AIRBYTE_CONN_SIRH=<uuid>
+AIRBYTE_CONN_QMS=<uuid>
+AIRBYTE_CONN_FINANCE=<uuid>
+AIRBYTE_CONN_PROCUREMENT=<uuid>
+```
+
+### 3. Démarrer Airbyte (self-hosted)
+
+```powershell
+git clone https://github.com/airbytehq/airbyte.git
+Set-Location airbyte
+.\run-ab-platform.ps1   # Windows
+# ./run-ab-platform.sh  # Linux/Mac
+```
+
+UI Airbyte : http://localhost:8000 — Configurer les 12 connexions PostgreSQL → ClickHouse.
+
+**Sync modes recommandés :**
+- `Full Refresh | Overwrite` : tables de référence (produits, fournisseurs, employés)
+- `Incremental | Append` : tables transactionnelles (commandes, écritures, mouvements)
+
+### 4. Démarrer Airflow
+
+```powershell
+docker compose up -d
+```
+
+Le `docker-compose.override.yml` monte `./dbt` dans le conteneur sous `/usr/local/airflow/dbt`.
+
+**UI Airflow :** http://localhost:8080
+
+```powershell
+# Créer le pool Airbyte (une fois)
+docker exec <scheduler-container> airflow pools set airbyte_pool 3 "Airbyte concurrency"
+```
+
+### 5. Installer dbt en local
+
+```powershell
+pip install dbt-core==1.11.2 dbt-clickhouse==1.9.8
+Set-Location dbt/warehouse
+dbt deps
+dbt debug --profiles-dir . --target erp
+```
+
+---
+
+## 15. Macros personnalisées
+
+### `clickhouse_delete_existing_rows`
+
+Génère un `ALTER TABLE ... DELETE WHERE id IN (SELECT id FROM source WHERE date >= now() - INTERVAL N DAY)`. Utilisé en `pre_hook` sur les tables incrémentales pour éviter les doublons sur la fenêtre de rejeu.
+
 ```sql
 {{
     config(
         materialized='incremental',
-        pre_hook="{{ clickhouse_delete_existing_rows(ref('stg_erp__leaves'), 'id_leave', 'id_leave', 'starts_at', 7) }}"
+        engine='MergeTree()',
+        pre_hook="{{ clickhouse_delete_existing_rows(
+            ref('stg_erp__leaves'), 'id_leave', 'id_leave', 'starts_at', 7
+        ) }}"
     )
 }}
 ```
 
-> ℹ️ La macro retourne une chaîne vide si la table cible n'existe pas encore (premier run) — comportement sûr.
+La macro retourne une chaîne vide si la table cible n'existe pas encore (premier run).
 
 ### `drop_table`
 
-**Fichier :** `macros/drop_table.sql`
-
-Utilitaire pour supprimer une table ClickHouse (usage en hooks ou scripts de maintenance).
+Utilitaire pour supprimer une table ClickHouse — utilisé dans des hooks de maintenance ou scripts de reset.
 
 ---
 
-## 9. Orchestration Airflow
+## 16. Bonnes pratiques appliquées
 
-Le DAG principal est `dags/warehouse_pipeline.py`.
+| Pratique | Détail |
+|----------|--------|
+| **Ingestion découplée** | Airbyte gère l'ingestion raw — dbt ne lit jamais les sources directement via SQL |
+| **`source()` dans staging uniquement** | Les marts et intermediates utilisent uniquement `ref()` |
+| **Nommage strict** | `stg_` / `int_` / `dim_` / `fct_` / `rpt_` / `bi_` — préfixes fonctionnels |
+| **Double underscore** | Séparateur source/entité : `stg_finance__journal_entries` |
+| **Tests systématiques** | `unique` + `not_null` sur toutes les PKs, `not_null` sur les FKs critiques |
+| **`accepted_values` compatibles 1.8.9** | Syntaxe `values: [...]` directe (pas d'`arguments:` wrapper — incompatible dbt < 1.9) |
+| **`allow_nullable_key`** | Déclaré sur tous les MergeTree dont l'`ORDER BY` peut contenir des NULL |
+| **Déduplication Airbyte** | `argMax(col, _airbyte_extracted_at)` + `GROUP BY id` dans chaque staging |
+| **Colonnes manquantes** | Stub typés (`cast(0 as decimal)`, `where 1=0`) pour les sources incomplètes |
+| **query-comment** | Traçabilité des requêtes dbt dans `system.query_log` ClickHouse |
+| **on_schema_change** | `append_new_columns` sur les incrementals |
+| **Sensor non-bloquant** | Mode `reschedule` Airflow — libère le worker slot entre chaque poll Airbyte |
+| **venv isolé** | dbt 1.8.9 dans Airflow, dbt 1.11.2 en local — pas de conflit de version |
 
-### Pipeline en 3 phases
+### Convention de nommage des colonnes
 
-```
-Phase 1+2 — 12 domaines en parallèle (limité par airbyte_pool)
-  airbyte_trigger_<d> → airbyte_wait_<d> → dbt_run_<d> → dbt_test_<d>
-
-Phase 3 — BI datamarts (déclenchés après les 12 dbt_test_*)
-  dbt_run_bi_production → dbt_test_bi_production → dbt_run_bi_logistique
-  dbt_run_bi_marketing / bi_finance / bi_rh / bi_sav  (parallèles)
-```
-
-### Configuration DAG
-
-| Paramètre       | Valeur                                     |
-|-----------------|--------------------------------------------|
-| Schedule        | `0 3 * * *` (chaque nuit à 3h)            |
-| Start date      | 2026-06-01                                 |
-| Max active runs | 1                                          |
-| Catchup         | False                                      |
-| Notifications   | `on_failure_callback` sur toutes les tâches|
-
-### Pool Airflow — concurrence Airbyte
-
-Pour éviter de saturer Docker Desktop avec trop de syncs Airbyte simultanées, les tâches `airbyte_trigger_*` et `airbyte_wait_*` utilisent un pool dédié :
-
-```bash
-# À créer une fois après astro dev start (ou configurer dans Admin > Pools)
-docker exec <scheduler-container> airflow pools set airbyte_pool 3 "Limite syncs Airbyte Docker local"
-```
-
-Le pool est aussi déclaré dans `airflow_settings.yaml` (recréé automatiquement au démarrage).
-
-### Sensor Airbyte — résilience aux crashs transitoires
-
-Le `AirbyteSyncSensor` gère les erreurs transitoires d'Airbyte (OOM, restart Docker) :
-
-| Erreur                  | Comportement         |
-|-------------------------|----------------------|
-| `ConnectionError`       | reschedule (30s)     |
-| `Timeout`               | reschedule (30s)     |
-| `HTTPError` 5xx         | reschedule (30s)     |
-| `HTTPError` 4xx         | échec immédiat       |
-| Job Airbyte `failed`    | échec immédiat       |
-
-### Auth Airbyte
-
-OAuth2 `client_credentials` — token renouvelé à chaque poke. Si un job est déjà en cours (409), le trigger récupère son ID et le transmet au sensor.
-
-**Chemins configurés** (`include/constants.py`) :
-
-| Constante        | Valeur                                |
-|------------------|---------------------------------------|
-| `WAREHOUSE_DIR`  | `/usr/local/airflow/dbt/warehouse`    |
-| `DBT_BIN`        | `/usr/local/airflow/dbt_venv/bin/dbt` |
-
-**Volume Docker** — `docker-compose.override.yml` :
-```yaml
-services:
-  scheduler:
-    volumes:
-      - ./dbt:/usr/local/airflow/dbt
-```
+| Type | Convention | Exemples |
+|------|-----------|---------|
+| Clé primaire | `id_<entité>` | `id_employee`, `id_purchase_order` |
+| Clé étrangère | `<entité>_id` | `supplier_id`, `campaign_id` |
+| Booléen | `is_<état>` | `is_active`, `is_over_budget` |
+| Timestamp | `<événement>_at` | `created_at`, `resolved_at` |
+| Date | `<événement>_date` | `entry_date`, `hire_date` |
+| Compteur | `nb_<entité>` | `nb_orders`, `nb_messages` |
+| Taux/ratio | `<nom>_rate` / `<nom>_pct` | `open_rate`, `variance_pct` |
+| Montant | snake_case complet | `total_amount`, `budget_amount` |
 
 ---
 
-## 10. Bonnes pratiques appliquées
+## 17. Troubleshooting
 
-Ce projet suit les recommandations dbt documentées dans `dbt_best_practices.md` :
-
-| Pratique                                              | Statut |
-|-------------------------------------------------------|--------|
-| Ingestion via Airbyte (self-hosted, ERP + Marketplace)| ✅     |
-| `source()` pointe sur les tables Airbyte              | ✅     |
-| Nommage `stg_[source]__[entity]s`                     | ✅     |
-| `source()` uniquement dans les stagings               | ✅     |
-| Staging matérialisé en `view`                         | ✅     |
-| Intermediate en `ephemeral`                           | ✅     |
-| Marts en `table` / `incremental`                      | ✅     |
-| Couche reports dénormalisée pour la BI                | ✅     |
-| Tests `unique` + `not_null` sur les PKs               | ✅     |
-| Fichiers YAML par dossier domaine                     | ✅     |
-| `query-comment` pour traçabilité ClickHouse           | ✅     |
-| `on_schema_change: append_new_columns`                | ✅     |
-| `send_anonymous_usage_stats: false`                   | ✅     |
-
-**Convention de nommage des colonnes :**
-
-| Type       | Convention          | Exemple               |
-|------------|---------------------|-----------------------|
-| Clé primaire | `id_<entity>`     | `id_employee`         |
-| Booléen    | `is_<something>`    | `is_active`           |
-| Timestamp  | `<event>_at`        | `hired_at`, `created_at` |
-| Date       | `<event>_date`      | `order_date`          |
-| Montant    | snake_case complet  | `unit_price`, `total_ht` |
-
----
-
-## 11. Sécurité — Credentials
-
-### Fichiers sensibles
-
-| Fichier         | Statut git   | Contenu                            |
-|-----------------|--------------|------------------------------------|
-| `.env`          | ignoré ✅    | Credentials réels (Airbyte, ClickHouse) |
-| `.env.example`  | tracké ✅    | Template vide (pas de secrets)     |
-| `profiles.yml`  | tracké ✅    | `env_var()` uniquement — pas de mot de passe en dur |
-
-### Variables d'environnement requises
-
-```bash
-# ClickHouse
-CLICKHOUSE_USER=admin
-CLICKHOUSE_PASSWORD=<votre-mot-de-passe>
-
-# Airbyte OAuth2
-AIRBYTE_CLIENT_ID=<uuid>
-AIRBYTE_CLIENT_SECRET=<secret>
-
-# Connexions Airbyte (UUIDs)
-AIRBYTE_CONN_ERP=<uuid>
-AIRBYTE_CONN_CRM=<uuid>
-AIRBYTE_CONN_MKT=<uuid>
-# + optionnels : AIRBYTE_CONN_WMS, _MES, _MARKETING, _SAV, _PLM, _SIRH, _QMS, _FINANCE, _PROCUREMENT
-```
-
-> ⚠️ Si le repo a été public avec l'ancien `profiles.yml` (password en dur), changer le mot de passe ClickHouse et utiliser `git filter-branch` ou BFG Repo-Cleaner pour purger l'historique.
-
----
-
-## 12. Troubleshooting ClickHouse
-
-### ❌ Airbyte : tables non visibles dans ClickHouse après sync
-
-- Vérifier que le sync a bien terminé (statut `Succeeded` dans l'UI Airbyte)
-- Vérifier que le **schema** de destination correspond au bon schéma (`DB_WH_ERP`, `DB_WH_MKT` ou `DB_WH_CRM`)
-- Airbyte crée parfois les tables dans un namespace différent : inspecter avec :
-  ```sql
-  SHOW TABLES FROM DB_WH_ERP;
-  SHOW TABLES FROM DB_WH_MKT;
-  SHOW TABLES FROM DB_WH_CRM;
-  ```
-- Si Basic Normalization est activée dans Airbyte, des tables `<entity>` normalisées sont créées à côté des `_airbyte_raw_<entity>`. Les sources dbt dans `_erp__sources.yml`, `_market_place__sources.yml` et `_crm__sources.yml` doivent pointer sur les bonnes tables.
-
-### ❌ Airbyte : erreur de connexion ClickHouse destination
+### ClickHouse — `UNKNOWN_IDENTIFIER` (alias.column dans GROUP BY)
 
 ```
-Connection refused to host.docker.internal:8123
+DB::Exception: Identifier 'alias.col' cannot be resolved from table with name alias.
 ```
 
-- S'assurer que ClickHouse est bien accessible depuis le réseau Docker d'Airbyte
-- Sur Windows/Mac, `host.docker.internal` résout automatiquement vers la machine hôte
-- Sur Linux, ajouter `--add-host=host.docker.internal:host-gateway` au conteneur Airbyte, ou utiliser l'IP de la machine hôte directement
+Ajouter un `AS col_name` dans le SELECT et utiliser `col_name` non qualifié dans GROUP BY. Voir [Section 12](#12-spécificités-clickhouse-257).
 
----
-
-### ❌ `CANNOT_INSERT_NULL_IN_ORDINARY_COLUMN`
+### ClickHouse — `CANNOT_INSERT_NULL_IN_ORDINARY_COLUMN`
 
 ```
-Cannot convert NULL value to non-Nullable type: CAST(col, 'varchar')
+Cannot convert NULL value to non-Nullable type
 ```
 
-**Cause :** colonne source NULL insérée dans un type `String` non-Nullable ClickHouse.
-
-**Solution :** dans le modèle staging, entourer le CAST avec un COALESCE :
+Dans le staging, entourer le CAST d'un COALESCE :
 ```sql
--- Avant
-cast(col as varchar) as col
-
--- Après
 cast(coalesce(col, '') as varchar) as col
 ```
 
----
-
-### ❌ `SYNTAX_ERROR` sur `EXISTS ... DELETE`
+### ClickHouse — `UNKNOWN_TABLE` sur un intermédiaire
 
 ```
-Syntax error: failed at position 25 (EXISTS) ...
-Expected one of: ON, a list of ALTER commands ...
+DB::Exception: Unknown table expression identifier 'DB_WH_X.int_domain__model'
 ```
 
-**Cause :** le hook `pre_hook` produit une instruction mal formée.
+Le modèle intermédiaire n'est pas encore matérialisé (s'il était précédemment `ephemeral`). Lancer `dbt run --select int_domain__model` avant le test.
 
-**Solution :** vérifier le SQL compilé dans `target/compiled/` et s'assurer que la macro `clickhouse_delete_existing_rows` produit bien :
-```sql
-ALTER TABLE DB_WH_ERP.fct_leaves DELETE WHERE id_leave IN (SELECT ...)
-```
+### Airflow — Sensor bloqué sur `incomplete`
 
----
+Si `airbyte_wait_<domain>` reste bloqué : Airbyte a renvoyé `incomplete` pour un job reset. Depuis la version actuelle du DAG, `incomplete` est traité comme un avertissement non-fatal — le pipeline continue. Si le sensor reste bloqué sur une ancienne version du DAG, forcer l'état `FAILED` via l'UI Airflow pour débloquer.
 
-### ❌ `UNKNOWN_IDENTIFIER` dans un modèle `ephemeral`
+### dbt — `arguments` key dans `accepted_values`
 
 ```
-Unknown expression identifier `col_name` in scope WITH __dbt__cte__... AS (WITH ... )
+macro 'dbt_macro__test_accepted_values' takes no keyword argument 'arguments'
 ```
 
-**Cause :** ClickHouse ne supporte pas les WITH imbriqués générés par l'inlining des `ephemeral` qui contiennent eux-mêmes des CTEs.
+La syntaxe `arguments:` dans `accepted_values` n'est supportée qu'à partir de dbt 1.9+. Airflow utilise dbt 1.8.9. Utiliser la syntaxe directe :
 
-**Solution :** réécrire les modèles `ephemeral` sans bloc `WITH` interne :
+```yaml
+# ❌ dbt 1.11+ uniquement
+- accepted_values:
+    arguments:
+      values: ['a', 'b']
 
-```sql
--- ❌ À éviter (génère un WITH imbriqué à l'inlining)
-with employees as (select * from {{ ref('stg_erp__employees') }})
-select ...
-
--- ✅ Correct pour un ephemeral ClickHouse
-select e.id_employee, ...
-from {{ ref('stg_erp__employees') }} as e
-left join {{ ref('stg_erp__employee_contracts') }} as c
-    on e.id_employee = c.employee_id
+# ✅ Compatible 1.8.9+
+- accepted_values:
+    values: ['a', 'b']
 ```
 
----
-
-### 🔍 Commandes de debug ClickHouse
+### Airbyte — Tables non visibles dans ClickHouse
 
 ```sql
+-- Lister toutes les tables d'un schéma
+SHOW TABLES FROM DB_WH_FINANCE;
+
 -- Dernières requêtes dbt
 SELECT query, log_comment, query_duration_ms
 FROM system.query_log
 WHERE log_comment LIKE '%dbt%'
   AND type = 'QueryFinish'
-ORDER BY event_time DESC
-LIMIT 20;
+ORDER BY event_time DESC LIMIT 20;
 
--- Erreurs récentes
+-- Erreurs récentes ClickHouse
 SELECT query, exception, event_time
 FROM system.query_log
 WHERE type = 'ExceptionWhileProcessing'

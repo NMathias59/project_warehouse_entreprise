@@ -1,0 +1,62 @@
+version: 2
+
+models:
+
+  - name: bi_qlt__non_conformity_dashboard
+    description: >
+      Tableau de bord des non-conformités — une ligne par NC détectée.
+      Enrichit fct_qms_non_conformities avec des colonnes métier : année/mois de détection,
+      flag sévérité haute, statut de santé de la NC (intégrant les CAPA associées),
+      et flag de résolution dans les délais (≤30j).
+      Usage BI : pilotage qualité, suivi CAPA, analyse de tendances NC par produit/fournisseur/type.
+    columns:
+      - name: id_non_conformity
+        description: "PK — identifiant unique de la non-conformité."
+        tests:
+          - unique
+          - not_null
+      - name: nc_health_status
+        description: "Statut de santé : closed / closed_pending_capa / in_progress / open_no_capa / open."
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['closed', 'closed_pending_capa', 'in_progress', 'open_no_capa', 'open']
+      - name: is_high_severity
+        description: "1 si la sévérité est critique ou majeure, 0 sinon."
+      - name: is_resolved_on_time
+        description: "True si la NC fermée a été résolue en ≤30 jours. Null si NC encore ouverte."
+      - name: resolution_days
+        description: "Nombre de jours entre detected_at et closed_at (null si encore ouverte)."
+      - name: nb_actions_open
+        description: "Nombre d'actions correctives (CAPA) encore ouvertes sur cette NC."
+      - name: detection_year
+        description: "Année de détection de la NC (pour les filtres et agrégations temporelles)."
+
+  - name: bi_qlt__audit_results
+    description: >
+      Résultats des audits qualité — une ligne par audit.
+      Enrichit fct_qms_audits avec des KPIs calculés : taux de conformité (% findings conformes),
+      durée de l'audit, respect du calendrier, niveau de risque colorimétrique et année d'audit.
+      Usage BI : pilotage programme d'audit, suivi des écarts, préparation certifications, reporting direction qualité.
+    columns:
+      - name: id_audit
+        description: "PK — identifiant unique de l'audit."
+        tests:
+          - unique
+          - not_null
+      - name: risk_level
+        description: "Niveau de risque basé sur le résultat : green (satisfactory) / orange (minor_issues) / red (major_issues) / unknown."
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['green', 'orange', 'red', 'unknown']
+      - name: conformity_rate_pct
+        description: "% de findings conformes (nb_conformities / nb_findings × 100). Null si aucun finding."
+      - name: audit_duration_days
+        description: "Durée en jours entre planned_at et completed_at (null si audit non terminé)."
+      - name: is_completed_on_schedule
+        description: "True si l'audit a été complété dans les 7 jours suivant la date planifiée."
+      - name: nb_with_capa
+        description: "Nombre de findings ayant une action corrective (CAPA) associée."
+      - name: audit_year
+        description: "Année planifiée de l'audit (pour les filtres et agrégations temporelles)."

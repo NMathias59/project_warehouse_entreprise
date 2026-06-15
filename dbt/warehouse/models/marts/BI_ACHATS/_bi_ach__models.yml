@@ -1,0 +1,64 @@
+version: 2
+
+models:
+
+  - name: bi_ach__purchase_order_tracking
+    description: >
+      Suivi des commandes fournisseurs — une ligne par bon de commande (PO).
+      Consolide les données ERP : commande (fct_purchase_orders), réceptions (fct_purchase_receipt)
+      et factures fournisseurs (fct_vendor_invoice).
+      Calcule le taux de réception, le délai de livraison vs attendu, le statut de livraison
+      et l'état de facturation.
+      Usage BI : pilotage supply chain, détection des retards fournisseurs, réconciliation commandes/factures.
+    columns:
+      - name: id_purchase_order
+        description: "PK — identifiant unique du bon de commande."
+        tests:
+          - unique
+          - not_null
+      - name: delivery_status
+        description: "Statut de livraison : cancelled / delivered / partial / late / pending."
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['cancelled', 'delivered', 'partial', 'late', 'pending']
+      - name: receipt_rate_pct
+        description: "% des quantités commandées reçues (quantity_received / quantity_ordered × 100)."
+      - name: delivery_delay_days
+        description: "Délai de livraison en jours vs date attendue (positif = retard, négatif = avance). Null si pas encore reçu."
+      - name: is_on_time
+        description: "True si la première réception est arrivée avant ou à la date attendue. Null si pas encore reçu."
+      - name: nb_invoices_overdue
+        description: "Nombre de factures fournisseurs en retard de paiement pour cette commande."
+      - name: invoiced_ht
+        description: "Total facturé HT par les fournisseurs pour cette commande."
+
+  - name: bi_ach__supplier_performance
+    description: >
+      Scorecard de performance fournisseurs — une ligne par fournisseur.
+      Combine : le volume d'achat ERP (dim_suppliers), les scores d'évaluation qualité QMS
+      (fct_qms_supplier_quality) et les évaluations achats (fct_procurement_supplier_evaluations).
+      Calcule un score composite (moyenne QMS + procurement) et un statut fournisseur global.
+      Usage BI : qualification fournisseurs, revues annuelles, sélection sourcing, homologation.
+    columns:
+      - name: id_supplier
+        description: "PK — identifiant unique du fournisseur."
+        tests:
+          - unique
+          - not_null
+      - name: composite_score
+        description: "Score composite (moyenne du score QMS et du score procurement). Null si aucune évaluation."
+      - name: supplier_status
+        description: "Statut global : preferred (≥80) / approved (≥60) / at_risk (<60) / not_evaluated."
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['preferred', 'approved', 'at_risk', 'not_evaluated']
+      - name: qms_overall_score
+        description: "Score global QMS le plus récent (0 = aucune évaluation QMS)."
+      - name: proc_overall_score
+        description: "Score global achats le plus récent (0 = aucune évaluation achats)."
+      - name: proc_price_score
+        description: "Score de compétitivité prix issu des évaluations achats."
+      - name: last_qms_evaluation_year
+        description: "Année de la dernière évaluation QMS (0 = jamais évalué)."

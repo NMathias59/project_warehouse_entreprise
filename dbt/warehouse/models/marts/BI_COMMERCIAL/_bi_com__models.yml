@@ -1,0 +1,81 @@
+version: 2
+
+models:
+
+  - name: bi_com__pipeline_dashboard
+    description: >
+      Pipeline commercial enrichi — une ligne par opportunité CRM.
+      Combine les données d'opportunité (stage, probabilité, montant), le profil du compte client,
+      le commercial responsable et les activités associées.
+      Ajoute le montant pondéré (weighted_amount = amount × probability), le flag is_stalled
+      (aucune activité depuis 30 jours sur une opp ouverte) et le label de confiance.
+      Usage BI : tableau de bord pipeline, suivi par commercial, priorisation des deals.
+    columns:
+      - name: id_opportunity
+        description: "PK — identifiant unique de l'opportunité CRM."
+        tests:
+          - unique
+          - not_null
+      - name: stage
+        description: "Étape du pipeline commercial (ex : prospection, qualification, proposition, négociation)."
+      - name: weighted_amount
+        description: "Montant estimé pondéré par la probabilité de closing (amount_estimated × probability / 100)."
+      - name: confidence_label
+        description: "Niveau de confiance : won / lost / high_confidence (≥70%) / medium_confidence (≥40%) / low_confidence."
+      - name: is_stalled
+        description: "True si l'opportunité est ouverte et n'a eu aucune activité depuis plus de 30 jours."
+      - name: days_since_last_activity
+        description: "Nombre de jours depuis la dernière activité (null si aucune activité)."
+      - name: sales_rep_name
+        description: "Nom complet du commercial responsable (first_name + last_name)."
+
+  - name: bi_com__sales_performance
+    description: >
+      Scorecard de performance par commercial — une ligne par représentant commercial.
+      Agrège depuis dim_crm_sales_reps (stats historiques) et fct_crm_opportunities (pipeline actif).
+      Calcule le taux de complétion des tâches, la taille moyenne des deals gagnés,
+      le pipeline pondéré courant et le nombre d'opportunités se fermant dans 30 jours.
+      Usage BI : tableau de bord managers commerciaux, rankings, identification des points de blocage.
+    columns:
+      - name: id_sales_rep
+        description: "PK — identifiant unique du commercial."
+        tests:
+          - unique
+          - not_null
+      - name: win_rate_pct
+        description: "Taux de conversion historique (nb deals gagnés / total closés × 100)."
+      - name: avg_deal_size
+        description: "Montant moyen des deals gagnés (revenue_won / nb_opp_won)."
+      - name: weighted_pipeline
+        description: "Pipeline actif pondéré par probabilité — valeur prévisionnelle des opportunités ouvertes."
+      - name: nb_opps_closing_30d
+        description: "Nombre d'opportunités ouvertes dont la date de closing est dans les 30 prochains jours."
+      - name: avg_days_to_close_won
+        description: "Durée moyenne en jours pour fermer un deal gagné."
+      - name: task_completion_rate_pct
+        description: "% de tâches complétées (nb_tasks_done / nb_tasks × 100)."
+
+  - name: bi_com__forecast_monthly
+    description: >
+      Prévisions commerciales mensuelles par territoire — une ligne par (mois de closing, territoire).
+      Agrège les opportunités CRM par mois de clôture attendu et par territoire du commercial.
+      Calcule le pipeline total, le forecast pondéré (probabilités × montants), le CA confirmé (deals gagnés)
+      et le taux de conversion par mois.
+      Usage BI : forecast de revenus, allocation des ressources commerciales, comparaisons période sur période.
+    columns:
+      - name: close_month
+        description: "PK partielle — premier jour du mois de clôture attendu."
+        tests:
+          - not_null
+      - name: territory
+        description: "PK partielle — territoire du commercial ('' si non affecté)."
+        tests:
+          - not_null
+      - name: weighted_forecast
+        description: "Forecast pondéré : somme des (amount_estimated × probability / 100) pour les opportunités ouvertes."
+      - name: confirmed_revenue
+        description: "CA confirmé : somme des montants des deals gagnés sur ce mois."
+      - name: win_rate_pct
+        description: "Taux de conversion des opportunités closées ce mois (gagnées / (gagnées + perdues) × 100)."
+      - name: avg_deal_size
+        description: "Montant moyen des opportunités prévues sur ce mois."

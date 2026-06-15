@@ -1,0 +1,67 @@
+version: 2
+
+models:
+
+  - name: bi_prd__product_lifecycle
+    description: >
+      État du cycle de vie produit — une ligne par produit PLM.
+      Enrichit dim_plm_products avec les statistiques BOM (nombre de composants, composants critiques,
+      délai d'approvisionnement max) et des indicateurs de cycle de vie : jours avant fin de vie (EOL),
+      flag produit en approche EOL (<90j), flag changements en cours et label de cycle de vie.
+      Usage BI : tableau de bord portefeuille produit, anticipation EOL, priorisation des change requests.
+    columns:
+      - name: id_product
+        description: "PK — identifiant unique du produit PLM."
+        tests:
+          - unique
+          - not_null
+      - name: lifecycle_label
+        description: "Label simplifié du cycle de vie : active / development / eol / discontinued / unknown."
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['active', 'development', 'eol', 'discontinued', 'unknown']
+      - name: days_to_eol
+        description: "Nombre de jours avant la date de fin de vie (négatif = déjà passée). Null si pas de date EOL."
+      - name: is_approaching_eol
+        description: "1 si le produit est actif et sa date EOL est dans les 90 prochains jours."
+      - name: has_pending_changes
+        description: "1 si le produit a des change requests ouverts ou à haute priorité."
+      - name: nb_bom_components
+        description: "Nombre total de composants dans les BOMs de toutes les versions du produit."
+      - name: nb_critical_components
+        description: "Nombre de composants critiques dans les BOMs (is_critical = true)."
+      - name: max_component_lead_time_days
+        description: "Délai d'approvisionnement maximum parmi tous les composants BOM (indicateur de risque supply)."
+
+  - name: bi_prd__change_request_tracking
+    description: >
+      Suivi des demandes de changement produit (ECR/ECO) — une ligne par change request.
+      Enrichit fct_plm_change_requests avec le contexte produit (code, famille, statut cycle de vie)
+      et des délais calculés : délai d'approbation, délai d'implémentation, durée totale du cycle.
+      Ajoute un tracking_status simplifié et un flag is_overdue (ouverte depuis +30j sans approbation).
+      Usage BI : pilotage ingénierie, suivi des ECR/ECO, analyse des temps de cycle, reporting R&D.
+    columns:
+      - name: id_change_request
+        description: "PK — identifiant unique de la demande de changement."
+        tests:
+          - unique
+          - not_null
+      - name: tracking_status
+        description: "Statut de suivi : completed / rejected / awaiting_implementation / in_review / pending_review / draft."
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['completed', 'rejected', 'awaiting_implementation', 'in_review', 'pending_review', 'draft']
+      - name: is_overdue
+        description: "1 si la CR est en statut ouvert (draft/submitted/under_review) depuis plus de 30 jours."
+      - name: approval_lead_time_days
+        description: "Nombre de jours entre submitted_at et approved_at (null si non approuvée)."
+      - name: implementation_lead_time_days
+        description: "Nombre de jours entre approved_at et implemented_at (null si non implémentée)."
+      - name: total_cycle_days
+        description: "Durée totale du cycle CR de submitted_at à implemented_at (null si non complétée)."
+      - name: product_name
+        description: "Nom du produit concerné par la demande de changement."
+      - name: product_lifecycle_status
+        description: "Statut du cycle de vie du produit au moment de la requête (depuis dim_plm_products)."

@@ -16,6 +16,7 @@ with receipts as (
         quantity_received,
         received_at
     from {{ ref('fct_wms_receipts') }}
+    where received_at is not null
 ),
 
 final as (

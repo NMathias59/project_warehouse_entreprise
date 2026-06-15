@@ -18,21 +18,21 @@ WAREHOUSE_DIR = str(warehouse_path)
 DBT_BIN       = str(dbt_executable)
 
 # ── Sélecteurs dbt — couche warehouse (par domaine source) ────────────────────
-# Les ephemeral (intermediate) sont inlinés automatiquement dans le run.
-# path:models/marts/<domain> couvre core/ et reports/ ensemble.
+# Les intermédiaires sont des views (plus ephemeral) → doivent être inclus
+# explicitement dans le --select pour être créés avant les marts.
 
-DBT_SELECT_ERP         = "path:models/staging/erp path:models/marts/erp"
-DBT_SELECT_CRM         = "path:models/staging/crm path:models/marts/crm"
-DBT_SELECT_MKT         = "path:models/staging/market_place path:models/marts/market_place"
-DBT_SELECT_WMS         = "path:models/staging/wms path:models/marts/wms"
-DBT_SELECT_MES         = "path:models/staging/mes path:models/marts/mes"
-DBT_SELECT_MARKETING   = "path:models/staging/marketing path:models/marts/marketing"
-DBT_SELECT_SAV         = "path:models/staging/sav path:models/marts/sav"
-DBT_SELECT_PLM         = "path:models/staging/plm path:models/marts/plm"
-DBT_SELECT_SIRH        = "path:models/staging/sirh path:models/marts/sirh"
-DBT_SELECT_QMS         = "path:models/staging/qms path:models/marts/qms"
-DBT_SELECT_FINANCE     = "path:models/staging/finance path:models/marts/finance"
-DBT_SELECT_PROCUREMENT = "path:models/staging/procurement path:models/marts/procurement"
+DBT_SELECT_ERP         = "path:models/staging/erp path:models/intermediate/erp path:models/marts/erp"
+DBT_SELECT_CRM         = "path:models/staging/crm path:models/intermediate/crm path:models/marts/crm"
+DBT_SELECT_MKT         = "path:models/staging/market_place path:models/intermediate/market_place path:models/marts/market_place"
+DBT_SELECT_WMS         = "path:models/staging/wms path:models/intermediate/wms path:models/marts/wms"
+DBT_SELECT_MES         = "path:models/staging/mes path:models/intermediate/mes path:models/marts/mes"
+DBT_SELECT_MARKETING   = "path:models/staging/marketing path:models/intermediate/marketing path:models/marts/marketing"
+DBT_SELECT_SAV         = "path:models/staging/sav path:models/intermediate/sav path:models/marts/sav"
+DBT_SELECT_PLM         = "path:models/staging/plm path:models/intermediate/plm path:models/marts/plm"
+DBT_SELECT_SIRH        = "path:models/staging/sirh path:models/intermediate/sirh path:models/marts/sirh"
+DBT_SELECT_QMS         = "path:models/staging/qms path:models/intermediate/qms path:models/marts/qms"
+DBT_SELECT_FINANCE     = "path:models/staging/finance path:models/intermediate/finance path:models/marts/finance"
+DBT_SELECT_PROCUREMENT = "path:models/staging/procurement path:models/intermediate/procurement path:models/marts/procurement"
 
 # ── Sélecteurs dbt — BI datamarts (par domaine métier) ────────────────────────
 # BI_LOGISTIQUE dépend de BI_PRODUCTION (bi_log__shortage_coverage ref()

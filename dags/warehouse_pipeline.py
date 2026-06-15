@@ -133,7 +133,8 @@ def _on_failure_callback(context: dict) -> None:
 
 # ─── Airbyte helpers ──────────────────────────────────────────────────────────
 
-_TERMINAL_STATUSES = {"succeeded", "failed", "cancelled", "incomplete"}
+_TERMINAL_STATUSES        = {"succeeded", "failed", "cancelled", "incomplete"}
+_TERMINAL_ERROR_STATUSES  = {"failed", "cancelled"}  # incomplete = sync partielle, on continue
 
 
 def _get_airbyte_token() -> str:
@@ -230,7 +231,17 @@ class AirbyteSyncSensor(BaseSensorOperator):
         status = resp.json()["status"]
         if status == "succeeded":
             return True
-        if status in _TERMINAL_STATUSES:
+        if status == "incomplete":
+            # Airbyte OSS retourne "incomplete" quand le job est reset/redémarré
+            # en interne (nouveau job_id) — le job_id triggeré ne changera plus.
+            # On logue un warning et on laisse dbt tourner avec les données syncées.
+            log.warning(
+                "Airbyte job %s status=incomplete — sync partielle ou job reset par Airbyte. "
+                "Le pipeline continue, dbt tournera avec les données disponibles.",
+                self.job_id,
+            )
+            return True
+        if status in _TERMINAL_ERROR_STATUSES:
             raise AirflowException(
                 f"Airbyte job {self.job_id} terminé en erreur : {status}"
             )

@@ -27,9 +27,7 @@ models:
         tests:
           - not_null
       - name: moved_at
-        description: "Horodatage du mouvement."
-        tests:
-          - not_null
+        description: "Horodatage du mouvement (nullable — peut être absent pour les ajustements manuels)."
 
   - name: fct_wms_stock_levels
     description: "Niveaux de stock consolidés par produit et emplacement."

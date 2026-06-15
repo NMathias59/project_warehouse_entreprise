@@ -24,8 +24,8 @@ models:
   - name: fct_procurement_purchase_orders
     description: "Table de faits des bons de commande Procurement avec lignes."
     columns:
-      - name: purchase_order_id
-        description: "Identifiant du bon de commande."
+      - name: id_purchase_order_line
+        description: "PK — identifiant unique de la ligne de bon de commande."
         tests:
           - not_null
       - name: sent_at

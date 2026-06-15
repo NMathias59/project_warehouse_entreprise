@@ -33,5 +33,5 @@ models:
         description: "Identifiant du fournisseur."
         tests:
           - not_null
-      - name: evaluation_year
+      - name: evaluation_period_year
         description: "Année d'évaluation."

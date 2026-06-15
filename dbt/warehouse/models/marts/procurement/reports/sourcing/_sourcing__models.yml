@@ -3,8 +3,8 @@ models:
   - name: rpt_procurement__po_status
     description: "Report statut des bons de commande Procurement agrégés par PO avec informations fournisseur."
     columns:
-      - name: purchase_order_id
-        description: "Identifiant du bon de commande."
+      - name: id_purchase_order
+        description: "PK — identifiant du bon de commande."
         tests:
           - not_null
       - name: status

@@ -771,21 +771,41 @@ Croise **PLM + MES + WMS** pour la vision cycle de vie produit :
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- PHASE 1+2 — 12 domaines en parallèle (pool airbyte_pool = 3 slots max)
+ PHASE 1 — Airbyte syncs (12 domaines en parallèle, pool airbyte_pool=3)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  [airbyte_trigger_erp]  ──► [airbyte_wait_erp]  ──► [dbt_run_erp]  ──► [dbt_test_erp]
-  [airbyte_trigger_crm]  ──► [airbyte_wait_crm]  ──► [dbt_run_crm]  ──► [dbt_test_crm]
-  [airbyte_trigger_mkt]  ──► [airbyte_wait_mkt]  ──► [dbt_run_mkt]  ──► [dbt_test_mkt]
-                                                   ──► [dbt_run_wms]  ──► [dbt_test_wms]
-                                                   ──► [dbt_run_mes]  ──► [dbt_test_mes]
-                              (optionnel si UUID    ──► [dbt_run_marketing] ──► ...
-                               Airbyte configuré)   ──► [dbt_run_sav]  ──► ...
-                                                   ──► [dbt_run_plm]  ──► ...
-                                                   ──► [dbt_run_sirh] ──► ...
-                                                   ──► [dbt_run_qms]  ──► ...
-                                                   ──► [dbt_run_finance] ──► ...
-                                                   ──► [dbt_run_procurement] ──► ...
+  [airbyte_trigger_erp]         ──► [airbyte_wait_erp]  ─┐
+  [airbyte_trigger_crm]         ──► [airbyte_wait_crm]  ─┤
+  [airbyte_trigger_mkt]         ──► [airbyte_wait_mkt]  ─┤
+  [airbyte_trigger_wms]         ──► [airbyte_wait_wms]  ─┤
+  [airbyte_trigger_mes]         ──► [airbyte_wait_mes]  ─┤
+  [airbyte_trigger_marketing]   ──► [airbyte_wait_marketing] ─┤
+  [airbyte_trigger_sav]         ──► [airbyte_wait_sav]  ─┤
+  [airbyte_trigger_plm]         ──► [airbyte_wait_plm]  ─┤
+  [airbyte_trigger_sirh]        ──► [airbyte_wait_sirh] ─┤
+  [airbyte_trigger_qms]         ──► [airbyte_wait_qms]  ─┤
+  [airbyte_trigger_finance]     ──► [airbyte_wait_finance] ─┤
+  [airbyte_trigger_procurement] ──► [airbyte_wait_procurement] ─┤
+                                                               │
+                        ┌──────────────────────────────────────┘
+                        │  BARRIÈRE : tous les airbyte_wait_* verts
+                        ▼
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ PHASE 2 — dbt warehouse (12 domaines en parallèle)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  [dbt_run_erp]         ──► [dbt_test_erp]
+  [dbt_run_crm]         ──► [dbt_test_crm]
+  [dbt_run_mkt]         ──► [dbt_test_mkt]
+  [dbt_run_wms]         ──► [dbt_test_wms]
+  [dbt_run_mes]         ──► [dbt_test_mes]
+  [dbt_run_marketing]   ──► [dbt_test_marketing]
+  [dbt_run_sav]         ──► [dbt_test_sav]
+  [dbt_run_plm]         ──► [dbt_test_plm]
+  [dbt_run_sirh]        ──► [dbt_test_sirh]
+  [dbt_run_qms]         ──► [dbt_test_qms]
+  [dbt_run_finance]     ──► [dbt_test_finance]
+  [dbt_run_procurement] ──► [dbt_test_procurement]
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  PHASE 3 — BI datamarts (déclenchés après les 12 dbt_test_*)
@@ -804,6 +824,8 @@ Croise **PLM + MES + WMS** pour la vision cycle de vie produit :
   Note : bi_logistique dépend de bi_production (bi_log__shortage_coverage
          référence bi_prod__bom_vs_stock) → démarre après dbt_test_bi_production.
 ```
+
+> **Pourquoi une barrière globale ?** Sans elle, un `dbt_run_erp` démarrait dès que sa propre sync Airbyte était terminée, et pouvait jointure des données ERP fraîches avec des données MES vieilles d'une journée si la sync MES était encore en cours. La barrière garantit que toutes les sources sont à la même fraîcheur avant toute transformation.
 
 ### Sensor Airbyte — résilience et gestion des statuts
 

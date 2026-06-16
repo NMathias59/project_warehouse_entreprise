@@ -151,7 +151,7 @@ warehouse:
       driver: http
       user: admin
       password: password123
-      schema: "DB_WH_BI_LOGISTIQUE"
+      schema: "DB_BI_LOGISTIQUE"
       secure: false
       verify: false
       connect_timeout: 10
@@ -163,7 +163,7 @@ warehouse:
       driver: http
       user: admin
       password: password123
-      schema: "DB_WH_BI_MARKETING"
+      schema: "DB_BI_MARKETING"
       secure: false
       verify: false
       connect_timeout: 10
@@ -175,7 +175,7 @@ warehouse:
       driver: http
       user: admin
       password: password123
-      schema: "DB_WH_BI_PRODUCTION"
+      schema: "DB_BI_PRODUCTION"
       secure: false
       verify: false
       connect_timeout: 10
@@ -187,7 +187,7 @@ warehouse:
       driver: http
       user: admin
       password: password123
-      schema: "DB_WH_BI_FINANCE"
+      schema: "DB_BI_FINANCE"
       secure: false
       verify: false
       connect_timeout: 10
@@ -199,7 +199,7 @@ warehouse:
       driver: http
       user: admin
       password: password123
-      schema: "DB_WH_BI_RH"
+      schema: "DB_BI_RH"
       secure: false
       verify: false
       connect_timeout: 10
@@ -211,11 +211,60 @@ warehouse:
       driver: http
       user: admin
       password: password123
-      schema: "DB_WH_BI_SAV"
+      schema: "DB_BI_SAV"
+      secure: false
+      verify: false
+      connect_timeout: 10
+
+    bi_commercial:
+      type: clickhouse
+      host: host.docker.internal
+      port: 8123
+      driver: http
+      user: admin
+      password: password123
+      schema: "DB_BI_COMMERCIAL"
+      secure: false
+      verify: false
+      connect_timeout: 10
+
+    bi_achats:
+      type: clickhouse
+      host: host.docker.internal
+      port: 8123
+      driver: http
+      user: admin
+      password: password123
+      schema: "DB_BI_ACHATS"
+      secure: false
+      verify: false
+      connect_timeout: 10
+
+    bi_qualite:
+      type: clickhouse
+      host: host.docker.internal
+      port: 8123
+      driver: http
+      user: admin
+      password: password123
+      schema: "DB_BI_QUALITE"
+      secure: false
+      verify: false
+      connect_timeout: 10
+
+    bi_produit:
+      type: clickhouse
+      host: host.docker.internal
+      port: 8123
+      driver: http
+      user: admin
+      password: password123
+      schema: "DB_BI_PRODUIT"
       secure: false
       verify: false
       connect_timeout: 10
 
   # targets disponibles : erp, mkt, crm, wms, mes, marketing, sav, plm, sirh, qms, finance, procurement
-  # targets BI cross-domaines : bi_logistique, bi_marketing, bi_production, bi_finance, bi_rh, bi_sav
+  # targets BI cross-domaines : bi_production, bi_logistique, bi_marketing, bi_finance, bi_rh, bi_sav,
+  #                              bi_commercial, bi_achats, bi_qualite, bi_produit
   target: erp

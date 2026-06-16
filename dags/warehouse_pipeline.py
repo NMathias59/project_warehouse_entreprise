@@ -22,10 +22,14 @@ Pipeline principal warehouse — déclenché chaque nuit à 3h.
 
     ├─ dbt_run_bi_production → dbt_test_bi_production ─┐
     │                                                   └─► dbt_run_bi_logistique
-    ├─ dbt_run_bi_marketing  → dbt_test_bi_marketing
-    ├─ dbt_run_bi_finance    → dbt_test_bi_finance
-    ├─ dbt_run_bi_rh         → dbt_test_bi_rh
-    └─ dbt_run_bi_sav        → dbt_test_bi_sav
+    ├─ dbt_run_bi_marketing   → dbt_test_bi_marketing
+    ├─ dbt_run_bi_finance     → dbt_test_bi_finance
+    ├─ dbt_run_bi_rh          → dbt_test_bi_rh
+    ├─ dbt_run_bi_sav         → dbt_test_bi_sav
+    ├─ dbt_run_bi_commercial  → dbt_test_bi_commercial
+    ├─ dbt_run_bi_achats      → dbt_test_bi_achats
+    ├─ dbt_run_bi_qualite     → dbt_test_bi_qualite
+    └─ dbt_run_bi_produit     → dbt_test_bi_produit
 
   bi_log__shortage_coverage ref() bi_prod__bom_vs_stock
   → BI_LOGISTIQUE démarre après dbt_test_bi_production uniquement.
@@ -74,10 +78,14 @@ from include.constants import (
     AIRBYTE_CONN_SIRH,
     AIRBYTE_CONN_WMS,
     DBT_BIN,
+    DBT_SELECT_BI_ACHATS,
+    DBT_SELECT_BI_COMMERCIAL,
     DBT_SELECT_BI_FINANCE,
     DBT_SELECT_BI_LOGISTIQUE,
     DBT_SELECT_BI_MARKETING,
     DBT_SELECT_BI_PRODUCTION,
+    DBT_SELECT_BI_PRODUIT,
+    DBT_SELECT_BI_QUALITE,
     DBT_SELECT_BI_RH,
     DBT_SELECT_BI_SAV,
     DBT_SELECT_CRM,
@@ -373,13 +381,18 @@ def warehouse_pipeline() -> None:
     run_bi_log, _ = _dbt_domain("bi_logistique", DBT_SELECT_BI_LOGISTIQUE, "bi_logistique")
     test_bi_prod >> run_bi_log
 
-    # BI_MARKETING, BI_FINANCE, BI_RH, BI_SAV — indépendants, parallèles
-    run_bi_mkt, _ = _dbt_domain("bi_marketing", DBT_SELECT_BI_MARKETING, "bi_marketing")
-    run_bi_fin, _ = _dbt_domain("bi_finance",   DBT_SELECT_BI_FINANCE,   "bi_finance")
-    run_bi_rh,  _ = _dbt_domain("bi_rh",        DBT_SELECT_BI_RH,        "bi_rh")
-    run_bi_sav, _ = _dbt_domain("bi_sav",       DBT_SELECT_BI_SAV,       "bi_sav")
+    # BI_MARKETING, BI_FINANCE, BI_RH, BI_SAV, BI_COMMERCIAL, BI_ACHATS, BI_QUALITE, BI_PRODUIT — indépendants, parallèles
+    run_bi_mkt, _ = _dbt_domain("bi_marketing",  DBT_SELECT_BI_MARKETING,  "bi_marketing")
+    run_bi_fin, _ = _dbt_domain("bi_finance",    DBT_SELECT_BI_FINANCE,    "bi_finance")
+    run_bi_rh,  _ = _dbt_domain("bi_rh",         DBT_SELECT_BI_RH,         "bi_rh")
+    run_bi_sav, _ = _dbt_domain("bi_sav",        DBT_SELECT_BI_SAV,        "bi_sav")
+    run_bi_com, _ = _dbt_domain("bi_commercial", DBT_SELECT_BI_COMMERCIAL, "bi_commercial")
+    run_bi_ach, _ = _dbt_domain("bi_achats",     DBT_SELECT_BI_ACHATS,     "bi_achats")
+    run_bi_qlt, _ = _dbt_domain("bi_qualite",    DBT_SELECT_BI_QUALITE,    "bi_qualite")
+    run_bi_prd, _ = _dbt_domain("bi_produit",    DBT_SELECT_BI_PRODUIT,    "bi_produit")
 
-    for run_bi in [run_bi_mkt, run_bi_fin, run_bi_rh, run_bi_sav]:
+    for run_bi in [run_bi_mkt, run_bi_fin, run_bi_rh, run_bi_sav,
+                   run_bi_com, run_bi_ach, run_bi_qlt, run_bi_prd]:
         all_domain_tests >> run_bi
 
 

@@ -44,6 +44,10 @@ DBT_SELECT_BI_MARKETING   = "path:models/marts/BI_MARKETING"
 DBT_SELECT_BI_FINANCE     = "path:models/marts/BI_FINANCE"
 DBT_SELECT_BI_RH          = "path:models/marts/BI_RH"
 DBT_SELECT_BI_SAV         = "path:models/marts/BI_SAV"
+DBT_SELECT_BI_COMMERCIAL  = "path:models/marts/BI_COMMERCIAL"
+DBT_SELECT_BI_ACHATS      = "path:models/marts/BI_ACHATS"
+DBT_SELECT_BI_QUALITE     = "path:models/marts/BI_QUALITE"
+DBT_SELECT_BI_PRODUIT     = "path:models/marts/BI_PRODUIT"
 
 # ── URL + Auth Airbyte OSS (abctl / Kubernetes) ───────────────────────────────
 # Credentials chargés depuis .env (voir .env.example).

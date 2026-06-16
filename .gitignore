@@ -1,3 +1,6 @@
+# Claude Code
+.claude/worktrees/
+
 # dbt-specific
 dbt/warehouse/logs/
 dbt/warehouse/target/

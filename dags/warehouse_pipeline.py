@@ -1,22 +1,25 @@
 """
 Pipeline principal warehouse — déclenché chaque nuit à 3h.
 
-─── Phase 1+2 : Sync Airbyte → dbt warehouse (12 domaines en parallèle) ────
+─── Phase 1 : Airbyte syncs (12 domaines en parallèle) ──────────────────────
+
+  Tous les triggers et sensors Airbyte s'exécutent en parallèle.
+  Aucun dbt ne démarre tant que le dernier airbyte_wait_* n'est pas vert.
 
   Domaines avec Airbyte configuré (AIRBYTE_CONN_* présent dans .env) :
-    airbyte_trigger_<d> → airbyte_wait_<d> → dbt_run_<d> → dbt_test_<d>
+    airbyte_trigger_<d> → airbyte_wait_<d>
 
   Domaines sans UUID Airbyte encore (.env absent) :
-    dbt_run_<d> → dbt_test_<d>   (sources vides, tests passent quand même)
-
-  Domaines couverts :
-    erp · crm · mkt             (connexions Airbyte obligatoires)
-    wms · mes · marketing · sav · plm · sirh · qms · finance · procurement
-                                (connexions optionnelles — see .env.example)
+    (aucune tâche Airbyte — dbt tourne directement avec les sources vides)
 
   Pattern Airbyte : trigger (PythonOperator, ~1 s, retourne job_id via XCom)
                   + AirbyteSyncSensor (mode=reschedule, poke toutes les 30 s)
   → le worker slot est libéré entre chaque poke (pas de sleep() bloquant).
+
+─── Phase 2 : dbt warehouse (12 domaines en parallèle) ──────────────────────
+
+  Barrière : tous les airbyte_wait_* doivent être verts avant le premier dbt_run_*.
+    [tous les airbyte_wait_*] → dbt_run_<d> → dbt_test_<d>  (×12, en parallèle)
 
 ─── Phase 3 : BI datamarts — gatée sur les 12 dbt_test_ ─────────────────────
 
@@ -294,13 +297,11 @@ def _domain_pipeline(
     select: str,
     target: str,
     conn_id: str | None = None,
-) -> tuple[BashOperator, BashOperator]:
+) -> tuple[BashOperator, BashOperator, AirbyteSyncSensor | None]:
     """
-    Crée le pipeline complet d'un domaine :
-      - Avec conn_id  : airbyte_trigger → airbyte_wait (sensor) → dbt_run → dbt_test
-      - Sans conn_id  : dbt_run → dbt_test  (Airbyte pas encore configuré)
-
-    Retourne (dbt_run, dbt_test) dans les deux cas.
+    Crée les tâches Airbyte (si conn_id) et dbt d'un domaine.
+    Ne câble PAS airbyte → dbt : le câblage global est fait dans le DAG body.
+    Retourne (dbt_run, dbt_test, airbyte_sensor_or_None).
     """
     run, test = _dbt_domain(domain, select, target)
 
@@ -319,9 +320,10 @@ def _domain_pipeline(
             execution_timeout=timedelta(hours=3),
             pool="airbyte_pool",
         )
-        trigger >> sensor >> run
+        trigger >> sensor
+        return run, test, sensor
 
-    return run, test
+    return run, test, None
 
 
 # ─── DAG ──────────────────────────────────────────────────────────────────────
@@ -347,31 +349,42 @@ default_args: dict = {
 )
 def warehouse_pipeline() -> None:
 
-    # ── Phase 1+2 : 12 domaines en parallèle ─────────────────────────────────
+    # ── Phase 1 : Airbyte syncs + Phase 2 : dbt — barrière globale ──────────
+    # Tous les airbyte_wait_* doivent être verts avant le premier dbt_run_*.
 
-    # Domaines initiaux — connexions Airbyte obligatoires
-    _, test_erp = _domain_pipeline("erp", DBT_SELECT_ERP, "erp", AIRBYTE_CONN_ERP)
-    _, test_crm = _domain_pipeline("crm", DBT_SELECT_CRM, "crm", AIRBYTE_CONN_CRM)
-    _, test_mkt = _domain_pipeline("mkt", DBT_SELECT_MKT, "mkt", AIRBYTE_CONN_MKT)
+    DOMAINS = [
+        ("erp",         DBT_SELECT_ERP,         "erp",         AIRBYTE_CONN_ERP),
+        ("crm",         DBT_SELECT_CRM,         "crm",         AIRBYTE_CONN_CRM),
+        ("mkt",         DBT_SELECT_MKT,         "mkt",         AIRBYTE_CONN_MKT),
+        ("wms",         DBT_SELECT_WMS,         "wms",         AIRBYTE_CONN_WMS),
+        ("mes",         DBT_SELECT_MES,         "mes",         AIRBYTE_CONN_MES),
+        ("marketing",   DBT_SELECT_MARKETING,   "marketing",   AIRBYTE_CONN_MARKETING),
+        ("sav",         DBT_SELECT_SAV,         "sav",         AIRBYTE_CONN_SAV),
+        ("plm",         DBT_SELECT_PLM,         "plm",         AIRBYTE_CONN_PLM),
+        ("sirh",        DBT_SELECT_SIRH,        "sirh",        AIRBYTE_CONN_SIRH),
+        ("qms",         DBT_SELECT_QMS,         "qms",         AIRBYTE_CONN_QMS),
+        ("finance",     DBT_SELECT_FINANCE,     "finance",     AIRBYTE_CONN_FINANCE),
+        ("procurement", DBT_SELECT_PROCUREMENT, "procurement", AIRBYTE_CONN_PROCUREMENT),
+    ]
 
-    # Nouveaux domaines — sync Airbyte conditionnel (None si UUID absent du .env)
-    _, test_wms         = _domain_pipeline("wms",         DBT_SELECT_WMS,         "wms",         AIRBYTE_CONN_WMS)
-    _, test_mes         = _domain_pipeline("mes",         DBT_SELECT_MES,         "mes",         AIRBYTE_CONN_MES)
-    _, test_marketing   = _domain_pipeline("marketing",   DBT_SELECT_MARKETING,   "marketing",   AIRBYTE_CONN_MARKETING)
-    _, test_sav         = _domain_pipeline("sav",         DBT_SELECT_SAV,         "sav",         AIRBYTE_CONN_SAV)
-    _, test_plm         = _domain_pipeline("plm",         DBT_SELECT_PLM,         "plm",         AIRBYTE_CONN_PLM)
-    _, test_sirh        = _domain_pipeline("sirh",        DBT_SELECT_SIRH,        "sirh",        AIRBYTE_CONN_SIRH)
-    _, test_qms         = _domain_pipeline("qms",         DBT_SELECT_QMS,         "qms",         AIRBYTE_CONN_QMS)
-    _, test_finance     = _domain_pipeline("finance",     DBT_SELECT_FINANCE,     "finance",     AIRBYTE_CONN_FINANCE)
-    _, test_procurement = _domain_pipeline("procurement", DBT_SELECT_PROCUREMENT, "procurement", AIRBYTE_CONN_PROCUREMENT)
+    airbyte_ends = []
+    domain_runs  = []
+    all_domain_tests = []
+
+    for domain, select, target, conn_id in DOMAINS:
+        run, test, airbyte_end = _domain_pipeline(domain, select, target, conn_id)
+        domain_runs.append(run)
+        all_domain_tests.append(test)
+        if airbyte_end:
+            airbyte_ends.append(airbyte_end)
+
+    # Barrière : tous les airbyte_wait_* → chaque dbt_run_*
+    if airbyte_ends:
+        for run in domain_runs:
+            airbyte_ends >> run
 
     # ── Phase 3 : BI datamarts ────────────────────────────────────────────────
-    # Condition d'entrée : les 12 tests domaines doivent être verts.
-    all_domain_tests = [
-        test_erp, test_crm, test_mkt,
-        test_wms, test_mes, test_marketing, test_sav,
-        test_plm, test_sirh, test_qms, test_finance, test_procurement,
-    ]
+    # Condition d'entrée : les 12 dbt_test_* doivent être verts.
 
     # BI_PRODUCTION — aucune dépendance BI croisée
     run_bi_prod, test_bi_prod = _dbt_domain("bi_production", DBT_SELECT_BI_PRODUCTION, "bi_production")

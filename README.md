@@ -1,7 +1,7 @@
 # Data Warehouse Entreprise — Pipeline ERP/CRM/Marketplace vers ClickHouse
 
 > Plateforme analytique complète couvrant **12 domaines métier** d'une entreprise industrielle : ingestion via **Airbyte** (self-hosted), orchestration via **Apache Airflow**, transformations via **dbt Core**, stockage dans **ClickHouse 25.7**.
-> **436 modèles · 878 tests · 12 sources · 6 BI datamarts cross-domaines**
+> **436 modèles · 878 tests · 208 sources · 10 BI datamarts cross-domaines**
 
 ---
 
@@ -47,7 +47,7 @@ Ce projet implémente un entrepôt de données analytique pour une **entreprise 
 | 10 | **QMS** — Quality Management | PostgreSQL QMS | `DB_WH_QMS` |
 | 11 | **Finance** — Comptabilité & budget | PostgreSQL FIN | `DB_WH_FINANCE` |
 | 12 | **Procurement** — Achats | PostgreSQL PROC | `DB_WH_PROCUREMENT` |
-| + | **BI datamarts** cross-domaines | — | `DB_WH_BI_*` |
+| + | **BI datamarts** cross-domaines | — | `DB_BI_*` |
 
 ### Chiffres clés
 
@@ -56,10 +56,10 @@ Ce projet implémente un entrepôt de données analytique pour une **entreprise 
 | Modèles dbt | **436** |
 | Tests dbt | **878** |
 | Sources déclarées | **208** |
-| Macros dbt | **900** |
+| Macros dbt | **3** |
 | Domaines sources | **12** |
-| BI datamarts | **6** |
-| Targets dbt | **18** (12 domaines + 6 BI) |
+| BI datamarts | **10** |
+| Targets dbt | **22** (12 domaines + 10 BI) |
 
 ---
 
@@ -140,8 +140,8 @@ ClickHouse est un moteur OLAP orienté colonnes offrant des performances de lect
 │  DATA WAREHOUSE — ClickHouse 25.7                                    │
 │  18 schémas : DB_WH_{ERP,CRM,MKT,WMS,MES,MARKETING,SAV,PLM,         │
 │               SIRH,QMS,FINANCE,PROCUREMENT}                          │
-│               DB_WH_BI_{PRODUCTION,LOGISTIQUE,MARKETING,             │
-│                          FINANCE,RH,SAV}                             │
+│               DB_BI_{PRODUCTION,LOGISTIQUE,MARKETING,FINANCE,       │
+│                       RH,SAV,COMMERCIAL,ACHATS,QUALITE,PRODUIT}      │
 │  Consommé par : outils BI, notebooks analytiques, dashboards         │
 └──────────────────────────────────────────────────────────────────────┘
 ```
@@ -298,7 +298,11 @@ project_warehouse_entreprise/
 │           │   ├── BI_MARKETING/
 │           │   ├── BI_FINANCE/
 │           │   ├── BI_RH/
-│           │   └── BI_SAV/
+│           │   ├── BI_SAV/
+│           │   ├── BI_COMMERCIAL/
+│           │   ├── BI_ACHATS/
+│           │   ├── BI_QUALITE/
+│           │   └── BI_PRODUIT/
 │           │
 │           └── seeds/
 ```
@@ -643,16 +647,20 @@ Les grandes tables de faits utilisent une stratégie `incremental` avec fenêtre
 
 Les datamarts BI combinent des données de **plusieurs domaines sources** pour des analyses transversales. Ils constituent la couche de consommation finale pour les dashboards et outils de BI.
 
-### `BI_PRODUCTION` (`DB_WH_BI_PRODUCTION`)
+### `BI_PRODUCTION` (`DB_BI_PRODUCTION`)
 
-Croise **MES + WMS + PLM + Procurement** pour la vision production :
+Croise **MES + WMS + PLM + ERP** pour la vision production :
 
 | Modèle | Description |
 |--------|-------------|
-| `bi_prod__production_overview` | Vue globale production (ordres, OEE, défauts, stock) |
 | `bi_prod__bom_vs_stock` | BOM vs disponibilité stock (couverture production) |
+| `bi_prod__work_order_performance` | Performance des ordres de fabrication (délais, taux complétion) |
+| `bi_prod__operator_performance` | Performance opérateurs (cadences, défauts par opérateur) |
+| `bi_prod__quality_overview` | Vue qualité production (taux rebut, défauts par centre de travail) |
+| `bi_prod__production_forecast` | Prévisions de production basées sur les tendances MES |
+| `bi_prod__serial_tracking` | Traçabilité numéros de série (WMS + ERP) |
 
-### `BI_LOGISTIQUE` (`DB_WH_BI_LOGISTIQUE`)
+### `BI_LOGISTIQUE` (`DB_BI_LOGISTIQUE`)
 
 Croise **WMS + MKT + ERP + BI_PRODUCTION** pour la vision logistique :
 
@@ -660,8 +668,12 @@ Croise **WMS + MKT + ERP + BI_PRODUCTION** pour la vision logistique :
 |--------|-------------|
 | `bi_log__stock_overview` | Stock cross-domaines (ERP + MKT + WMS) |
 | `bi_log__shortage_coverage` | Couverture des ruptures de stock (réf. `bi_prod__bom_vs_stock`) |
+| `bi_log__stock_rotation` | Rotation des stocks par produit et emplacement |
+| `bi_log__carrier_kpis` | KPIs transporteurs (délais, taux de livraison à temps) |
+| `bi_log__reception_performance` | Performance des réceptions (conformité, délais fournisseurs) |
+| `bi_log__supply_chain` | Vue chaîne d'approvisionnement end-to-end |
 
-### `BI_MARKETING` (`DB_WH_BI_MARKETING`)
+### `BI_MARKETING` (`DB_BI_MARKETING`)
 
 Croise **Marketing + MKT + CRM** pour la vision marketing client :
 
@@ -675,34 +687,71 @@ Croise **Marketing + MKT + CRM** pour la vision marketing client :
 | `bi_mkt__cohort_retention` | Rétention par cohorte mensuelle (M+1, M+3, M+6, M+12) |
 | `bi_mkt__product_affinity` | Matrice d'affinité produits (Jaccard, cross-sell) |
 
-### `BI_FINANCE` (`DB_WH_BI_FINANCE`)
+### `BI_FINANCE` (`DB_BI_FINANCE`)
 
 Croise **Finance + ERP + Procurement** pour la vision financière :
 
 | Modèle | Description |
 |--------|-------------|
-| `bi_fin__p_and_l` | Compte de résultat analytique |
-| `bi_fin__budget_tracking` | Suivi budgétaire avec alertes sur dépassement |
 | `bi_fin__cash_flow` | Flux de trésorerie (entrées/sorties bancaires) |
-| `bi_fin__procurement_spend` | Dépenses achats par fournisseur et catégorie |
+| `bi_fin__budget_vs_actual` | Budget vs réalisé avec écart et % variance |
+| `bi_fin__vendor_invoice_aging` | Vieillissement des factures fournisseurs par échéance |
 
-### `BI_RH` (`DB_WH_BI_RH`)
+### `BI_RH` (`DB_BI_RH`)
 
 Croise **SIRH + ERP + Finance** pour la vision ressources humaines :
 
 | Modèle | Description |
 |--------|-------------|
 | `bi_rh__workforce_overview` | Effectifs cross-domaines (SIRH + ERP) |
-| `bi_rh__headcount_trend` | Évolution effectifs dans le temps |
+| `bi_rh__leave_management` | Gestion des congés (soldes, absences, tendances) |
+| `bi_rh__timesheet_summary` | Récapitulatif feuilles de temps par employé et période |
 
-### `BI_SAV` (`DB_WH_BI_SAV`)
+### `BI_SAV` (`DB_BI_SAV`)
 
 Croise **SAV + MKT + QMS** pour la vision qualité & satisfaction client :
 
 | Modèle | Description |
 |--------|-------------|
-| `bi_sav__customer_satisfaction` | Satisfaction client cross-domaines (tickets + avis + NC) |
-| `bi_sav__quality_overview` | Vue qualité (NC + actions correctives + audits) |
+| `bi_sav__repair_performance` | Performance des réparations (délais, taux résolution) |
+| `bi_sav__warranty_overview` | Vue garanties (taux retour, coûts, produits concernés) |
+
+### `BI_COMMERCIAL` (`DB_BI_COMMERCIAL`)
+
+Croise **CRM + MKT + ERP** pour la vision commerciale :
+
+| Modèle | Description |
+|--------|-------------|
+| `bi_com__pipeline_dashboard` | Vue pipeline commercial (opportunités par étape et commercial) |
+| `bi_com__sales_performance` | Performance des ventes (CA, win rate, panier moyen) |
+| `bi_com__forecast_monthly` | Prévisions de ventes mensuelles (pipeline pondéré) |
+
+### `BI_ACHATS` (`DB_BI_ACHATS`)
+
+Croise **Procurement + ERP + Finance** pour la vision achats :
+
+| Modèle | Description |
+|--------|-------------|
+| `bi_ach__purchase_order_tracking` | Suivi des bons de commande (statuts, délais, conformité) |
+| `bi_ach__supplier_performance` | Performance fournisseurs (score, délais, taux de service) |
+
+### `BI_QUALITE` (`DB_BI_QUALITE`)
+
+Croise **QMS + MES + Procurement** pour la vision qualité globale :
+
+| Modèle | Description |
+|--------|-------------|
+| `bi_qlt__non_conformity_dashboard` | Tableau de bord non-conformités (type, sévérité, délai résolution) |
+| `bi_qlt__audit_results` | Résultats d'audits (taux conformité, constats, actions) |
+
+### `BI_PRODUIT` (`DB_BI_PRODUIT`)
+
+Croise **PLM + MES + WMS** pour la vision cycle de vie produit :
+
+| Modèle | Description |
+|--------|-------------|
+| `bi_prd__product_lifecycle` | Cycle de vie produits (versions, statut, BOM stats) |
+| `bi_prd__change_request_tracking` | Suivi des demandes de changement produit (CR en cours, délais) |
 
 ---
 
@@ -747,6 +796,10 @@ Croise **SAV + MKT + QMS** pour la vision qualité & satisfaction client :
   [dbt_run_bi_finance]    ──► [dbt_test_bi_finance]
   [dbt_run_bi_rh]         ──► [dbt_test_bi_rh]
   [dbt_run_bi_sav]        ──► [dbt_test_bi_sav]
+  [dbt_run_bi_commercial] ──► [dbt_test_bi_commercial]
+  [dbt_run_bi_achats]     ──► [dbt_test_bi_achats]
+  [dbt_run_bi_qualite]    ──► [dbt_test_bi_qualite]
+  [dbt_run_bi_produit]    ──► [dbt_test_bi_produit]
 
   Note : bi_logistique dépend de bi_production (bi_log__shortage_coverage
          référence bi_prod__bom_vs_stock) → démarre après dbt_test_bi_production.
